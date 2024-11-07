@@ -22,7 +22,7 @@ jobs:
         run: npm install
 
       - name: Update react-toastify package
-        run: npm install react-toastify
+        run: npm install --legacy-peer-deps react-toastify
 
       - name: Commit changes
         run: |
