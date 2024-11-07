@@ -21,8 +21,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Update next-themes package
-        run: npm install next-themes@latest
+      - name: Update react-toastify package
+        run: npm install react-toastify
 
       - name: Commit changes
         run: |
