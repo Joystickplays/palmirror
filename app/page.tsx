@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input"
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'; // Include the default CSS
 
-
+//
 export default function Home() {
   const notify = () => {
     toast("Wow, this is a beautiful toast!");
