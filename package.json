@@ -10,17 +10,27 @@
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.1",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-toggle": "^1.1.0",
+    "@radix-ui/react-toggle-group": "^1.1.0",
+    "@react-spring/web": "^9.7.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.454.0",
     "next": "15.0.2",
     "next-themes": "^0.4.3",
+    "openai": "^4.71.1",
     "react": "19.0.0-rc-02c0e824-20241028",
     "react-dom": "19.0.0-rc-02c0e824-20241028",
+    "react-flip-toolkit": "^7.2.4",
+    "react-markdown": "^9.0.1",
     "react-toastify": "^10.0.6",
     "tailwind-merge": "^2.5.4",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "use-typewriter-hook": "^3.1.2",
+    "vaul": "^1.1.1"
   },
   "devDependencies": {
     "@types/node": "^20",
