@@ -9,6 +9,12 @@ import OpenAI from "openai";
 
 let openai: OpenAI
 
+type ChatCompletionCreateParamsMessage = {
+  role: "system" | "user" | "assistant" | "function";
+  content: string;
+  name?: string;
+};
+
 const ChatPage = () => {
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [characterData, setCharacterData] = useState({
@@ -61,7 +67,7 @@ const ChatPage = () => {
         const comp = await openai.chat.completions.create({
           messages: [
             { role: "system", content: systemMessageContent },
-            ...messages as any,
+            ...messages as ChatCompletionCreateParamsMessage[],
             { role: 'user', content: userMessageContent }
           ],
           model: "gpt-3.5-turbo",
