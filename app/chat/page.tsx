@@ -61,7 +61,7 @@ const ChatPage = () => {
         const comp = await openai.chat.completions.create({
           messages: [
             { role: "system", content: systemMessageContent },
-            ...messages,
+            ...messages as any,
             { role: 'user', content: userMessageContent }
           ],
           model: "gpt-3.5-turbo",
