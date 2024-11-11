@@ -43,8 +43,8 @@ const ChatPage = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSendMessage = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.ctrlKey && newMessage.trim() !== "") {
+  const handleSendMessage = (e: React.KeyboardEvent<HTMLTextAreaElement>, force: boolean) => {
+    if (e.key === 'Enter' && !e.ctrlKey && newMessage.trim() !== "" || force) {
       try { e.preventDefault(); } catch {}
 
       // Check if a proxy URL is provided (contains https://)
@@ -57,11 +57,12 @@ const ChatPage = () => {
       setIsThinking(true);
 
       // Add user message
-      setMessages(prevMessages => [
-        ...prevMessages,
-        { role: "user", content: newMessage, stillGenerating: false }
-      ]);
-
+      if (newMessage.trim() !== "") {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { role: "user", content: newMessage, stillGenerating: false }
+        ]);
+      }
       setNewMessage('');
       textareaRef.current?.focus();
 
@@ -129,6 +130,12 @@ const ChatPage = () => {
     }
   };
 
+  const regenerateFunction = () => {
+      setIsThinking(true)
+      setMessages(prevMessages => prevMessages.slice(0, -1));
+      handleSendMessage({ key: 'Enter', ctrlKey: false } as React.KeyboardEvent<HTMLTextAreaElement>, true);
+  }
+
   const onCancel = () => {
     if (abortController.current) {
       abortController.current.abort(); // Abort the ongoing request
@@ -170,10 +177,10 @@ const ChatPage = () => {
       />
       <div className="grid max-w-[40rem] w-full h-screen p-2 sm:p-8 font-[family-name:var(--font-geist-sans)] grid-rows-[auto_1fr] gap-4">
         <ChatHeader characterName={characterData.name} />
-        <div className="overflow-y-auto">
+        <div className="overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col justify-end gap-2 min-h-full">
             {messages.map((message, index) => (
-              <MessageCard key={index} role={message.role} content={message.content} stillGenerating={message.stillGenerating} />
+              <MessageCard key={index} role={message.role} content={message.content} stillGenerating={message.stillGenerating} regenerateFunction={regenerateFunction} globalIsThinking={isThinking} isLastMessage={index === messages.length - 1} />
             ))}
             <div ref={messageEndRef} />
           </div>
@@ -181,7 +188,9 @@ const ChatPage = () => {
         <MessageInput
           newMessage={newMessage}
           setNewMessage={setNewMessage}
-          handleSendMessage={handleSendMessage}
+          handleSendMessage={(e) => {
+            handleSendMessage(e, false);
+          }}
           onCancel={onCancel}
           isThinking={isThinking}
         />
