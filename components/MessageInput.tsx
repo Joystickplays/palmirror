@@ -22,7 +22,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, 
         onChange={(e) => setNewMessage(e.target.value)}
         onKeyDown={handleSendMessage}
       />
-      <Button className="absolute right-2 bottom-2 p-2" onClick={(isThinking) => isThinking ? onCancel() : handleSendMessage({ key: 'Enter' } as React.KeyboardEvent<HTMLTextAreaElement>)}>
+      <Button className="absolute right-2 bottom-2 p-2"onClick={() => isThinking ? onCancel() : handleSendMessage({ key: 'Enter' } as React.KeyboardEvent<HTMLTextAreaElement>)}      >
         {isThinking ? (
           <OctagonX className="animate-pulse" />
         ) : (

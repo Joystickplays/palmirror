@@ -4,6 +4,7 @@ import MessageCard from "@/components/MessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
 import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import { getSystemMessage } from "@/components/systemMessageGeneration"
 
@@ -47,7 +48,7 @@ const ChatPage = () => {
       try { e.preventDefault(); } catch {}
 
       // Check if a proxy URL is provided (contains https://)
-      if (baseURL.includes('https://')) {
+      if (!baseURL.includes('https://')) {
         toast.error("You need to configure your AI provider first in Settings.")
         return
       }
@@ -157,7 +158,17 @@ const ChatPage = () => {
 
   return (
     <div className="grid place-items-center">
-      <div className="grid max-w-[40rem] w-full h-screen p-8 font-[family-name:var(--font-geist-sans)] grid-rows-[auto_1fr] gap-4">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        theme="dark"
+      />
+      <div className="grid max-w-[40rem] w-full h-screen p-2 sm:p-8 font-[family-name:var(--font-geist-sans)] grid-rows-[auto_1fr] gap-4">
         <ChatHeader characterName={characterData.name} />
         <div className="overflow-y-auto">
           <div className="flex flex-col justify-end gap-2 min-h-full">
@@ -175,16 +186,7 @@ const ChatPage = () => {
           isThinking={isThinking}
         />
       </div>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        theme="dark"
-      />
+      
     </div>
   );
 };
