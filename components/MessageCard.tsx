@@ -15,7 +15,7 @@ interface MessageCardProps {
 }
 
 const MessageCard: React.FC<MessageCardProps> = ({ content, role, stillGenerating, regenerateFunction, globalIsThinking, isLastMessage }) => {
-  const [hasTriggered, setHasTriggered] = useState(false);
+  
   const [{ x, y, scale, height }, apiSpring] = useSpring(() => ({ x: 0, y: 0, scale: 1, height: 100 }));
 
   const triggerRegenerate = useCallback(() => {
@@ -29,7 +29,7 @@ const MessageCard: React.FC<MessageCardProps> = ({ content, role, stillGeneratin
     apiSpring.start({ x: down ? ((mx >= 0 ? 0.15 * mx : 0.75 * mx) / (role === "user" || stillGenerating || !isLastMessage || globalIsThinking ? 10 : 1)) : 0, y: 0, scale: 1, height: down ? 80 : 100, config: { tension: 120, friction: 14 } });
 
     if (mx < -200 && !globalIsThinking && !stillGenerating && role !== "user" && isLastMessage && !down) {
-      setHasTriggered(true);
+      
       apiSpring.start({
         x: -500, 
         y: 0, 
