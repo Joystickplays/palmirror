@@ -60,12 +60,12 @@ const ChatPage = () => {
         const userMessageContent = newMessage ?? "Hello";
 
         const comp = await openai.chat.completions.create({
-          messages: [
-            { role: "system", content: systemMessageContent },
-            ...messages,
-            { role: 'user', content: userMessageContent }
-          ],
           model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: systemMessageContent, name: "system" },
+            ...messages.map(msg => ({ ...msg, name: msg.name || "default_name" })),
+            { role: 'user', content: userMessageContent, name: "user" }
+          ]
         });
       
         const assistantMessage = comp.choices[0].message.content ?? ""; // Use empty string if content is null
