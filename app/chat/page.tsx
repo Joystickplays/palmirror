@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import MessageCard from "@/components/MessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
+import { ToastContainer, toast } from 'react-toastify';
 
 import { getSystemMessage } from "@/components/systemMessageGeneration"
 
@@ -21,7 +22,7 @@ const ChatPage = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [baseURL, setBaseURL] = useState('');
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState('none');
 
   const abortController = useRef<AbortController | null>(null);
 
@@ -32,7 +33,7 @@ const ChatPage = () => {
     if (savedApiKey) setApiKey(savedApiKey);
 
     openai = new OpenAI({
-      apiKey: savedApiKey ?? undefined,
+      apiKey: savedApiKey ?? 'none',
       baseURL: savedBaseURL ?? undefined,
       dangerouslyAllowBrowser: true // nothing could possibly go wrong, right
     });
@@ -44,6 +45,14 @@ const ChatPage = () => {
   const handleSendMessage = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.ctrlKey && newMessage.trim() !== "") {
       try { e.preventDefault(); } catch {}
+
+      // Check if a proxy URL is provided (contains https://)
+      if (baseURL.includes('https://')) {
+        toast.error("You need to configure your AI provider first in Settings.")
+        return
+      }
+
+
       setIsThinking(true);
 
       // Add user message
@@ -166,6 +175,16 @@ const ChatPage = () => {
           isThinking={isThinking}
         />
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        theme="dark"
+      />
     </div>
   );
 };

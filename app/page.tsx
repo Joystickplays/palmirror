@@ -39,7 +39,7 @@ export default function Home() {
     }
 
     localStorage.setItem('characterData', JSON.stringify(characterData));
-    toast.success('Character data saved and chat started!');
+    toast.success('Character data saved! Starting chat...');
     router.push('/chat');
   };
 
