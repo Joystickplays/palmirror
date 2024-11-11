@@ -1,5 +1,5 @@
 // components/MessageCard.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
 import { useSpring, animated } from '@react-spring/web';
