@@ -59,7 +59,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName }) => {
                   <Label htmlFor="Proxy_baseURL">Base URL</Label>
                   <Input
                     id="Proxy_baseURL"
-                    placeholder="https://awesome.llm/v1/chat/completions"
+                    placeholder="https://awesome.llm/v1"
                     value={baseURL}
                     onChange={handleBaseURLChange}
                   />

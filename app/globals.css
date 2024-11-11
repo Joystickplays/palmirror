@@ -97,3 +97,7 @@ body {
   /* background: linear-gradient(to left, rgb(255, 255, 255), rgba(255, 255, 255, 0.63));  */
 }
 
+em::after {
+  content: "\A"; 
+  white-space: pre;
+}

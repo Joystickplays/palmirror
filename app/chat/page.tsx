@@ -4,14 +4,14 @@ import MessageCard from "@/components/MessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
 
+import { getSystemMessage } from "@/components/systemMessageGeneration"
 
 import OpenAI from "openai";
 
-let openai: OpenAI
-
+let openai: OpenAI;
 
 const ChatPage = () => {
-  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string, stillGenerating: boolean }>>([]);
   const [characterData, setCharacterData] = useState({
     name: '',
     personality: '',
@@ -20,9 +20,10 @@ const ChatPage = () => {
   });
   const [newMessage, setNewMessage] = useState('');
   const [isThinking, setIsThinking] = useState(false);
-
   const [baseURL, setBaseURL] = useState('');
   const [apiKey, setApiKey] = useState('');
+
+  const abortController = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const savedBaseURL = localStorage.getItem('Proxy_baseURL');
@@ -30,11 +31,10 @@ const ChatPage = () => {
     if (savedBaseURL) setBaseURL(savedBaseURL);
     if (savedApiKey) setApiKey(savedApiKey);
 
-
     openai = new OpenAI({
       apiKey: savedApiKey ?? undefined,
       baseURL: savedBaseURL ?? undefined,
-      dangerouslyAllowBrowser: true // nothing could possibly go wrong right
+      dangerouslyAllowBrowser: true // nothing could possibly go wrong, right
     });
   }, [apiKey, baseURL]);
 
@@ -42,42 +42,87 @@ const ChatPage = () => {
   const messageEndRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.ctrlKey && newMessage.trim() !== "") {      
+    if (e.key === 'Enter' && !e.ctrlKey && newMessage.trim() !== "") {
       try { e.preventDefault(); } catch {}
       setIsThinking(true);
 
       // Add user message
       setMessages(prevMessages => [
         ...prevMessages,
-        { role: 'user', content: newMessage }
-      ]);      
+        { role: "user", content: newMessage, stillGenerating: false }
+      ]);
 
       setNewMessage('');
       textareaRef.current?.focus();
 
       const sendMessage = async () => {
-        const systemMessageContent = `${characterData.name ?? "Character"}'s personality: ${characterData.personality ?? "No personality provided"}`;
+        const systemMessageContent = getSystemMessage(characterData)
         const userMessageContent = newMessage ?? "Hello";
 
-        const comp = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo",
-          messages: [
-            { role: "system", content: systemMessageContent, name: "system" },
-            ...messages.map(msg => ({ ...msg, name: msg.name || "default_name" })),
-            { role: 'user', content: userMessageContent, name: "user" }
-          ]
-        });
-      
-        const assistantMessage = comp.choices[0].message.content ?? ""; // Use empty string if content is null
-        setMessages(prevMessages => [
-          ...prevMessages,
-          { role: 'assistant', content: assistantMessage }
-        ]);
-        setIsThinking(false);
-      }
-      
+        // Create a new AbortController instance for each request
+        abortController.current = new AbortController();
+
+        try {
+          const comp = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+              { role: "system", content: systemMessageContent, name: "system" },
+              ...messages.map(msg => ({ ...msg, name: "-" })),
+              { role: "user", content: userMessageContent, name: "user" }
+            ],
+            stream: true
+          });
+
+          let assistantMessage = ""; // To accumulate the streamed content
+          
+          setMessages(prevMessages => [
+            ...prevMessages,
+            { role: "assistant", content: "...", stillGenerating: true }
+          ]);
+          for await (const chunk of comp) {
+            // Check if the request has been aborted
+            if (abortController.current?.signal.aborted) {
+              console.log("Request was cancelled");
+              break;
+            }
+
+            const chunkContent = chunk.choices[0].delta.content || "";
+            assistantMessage += chunkContent;
+
+            // Update the chat messages in real-time
+            setMessages(prevMessages => [
+              ...prevMessages.slice(0, -1),
+              { role: "assistant", content: assistantMessage, stillGenerating: true }
+            ]);
+          }
+        } catch (error) {
+          if (abortController.current?.signal.aborted) {
+            console.log('Request was canceled');
+          } else {
+            console.error('Error occurred:', error);
+          }
+        } finally {
+          setMessages(prevMessages => [
+            ...prevMessages.slice(0, -1),
+            { 
+              role: "assistant", 
+              content: prevMessages[prevMessages.length - 1]?.content || "", 
+              stillGenerating: false 
+            }
+          ]);          
+          abortController.current = null;
+          setIsThinking(false);
+        }
+      };
+
       sendMessage();
-      
+    }
+  };
+
+  const onCancel = () => {
+    if (abortController.current) {
+      abortController.current.abort(); // Abort the ongoing request
+      setIsThinking(false); // Stop the thinking state
     }
   };
 
@@ -91,7 +136,7 @@ const ChatPage = () => {
   useEffect(() => {
     if (messages.length === 0 && characterData.initialMessage) {
       setMessages([
-        { role: 'assistant', content: characterData.initialMessage },
+        { role: "assistant", content: characterData.initialMessage, stillGenerating: false },
       ]);
     }
   }, [messages, characterData.initialMessage]);
@@ -108,7 +153,7 @@ const ChatPage = () => {
         <div className="overflow-y-auto">
           <div className="flex flex-col justify-end gap-2 min-h-full">
             {messages.map((message, index) => (
-              <MessageCard key={index} role={message.role} content={message.content} />
+              <MessageCard key={index} role={message.role} content={message.content} stillGenerating={message.stillGenerating} />
             ))}
             <div ref={messageEndRef} />
           </div>
@@ -117,6 +162,7 @@ const ChatPage = () => {
           newMessage={newMessage}
           setNewMessage={setNewMessage}
           handleSendMessage={handleSendMessage}
+          onCancel={onCancel}
           isThinking={isThinking}
         />
       </div>
