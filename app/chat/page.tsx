@@ -6,7 +6,7 @@ import MessageInput from "@/components/MessageInput";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import { getSystemMessage } from "@/components/systemMessageGeneration"
+import { getSystemMessage } from "@/components/systemMessageGeneration";
 
 import OpenAI from "openai";
 
@@ -24,35 +24,51 @@ const ChatPage = () => {
   const [isThinking, setIsThinking] = useState(false);
   const [baseURL, setBaseURL] = useState('');
   const [apiKey, setApiKey] = useState('none');
+  const [generationTemperature, setGenerationTemperature] = useState(0.5);
 
   const abortController = useRef<AbortController | null>(null);
+  const messageEndRef = useRef<HTMLDivElement>(null);
+  const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  const getProxyConf = () => {
     const savedBaseURL = localStorage.getItem('Proxy_baseURL');
     const savedApiKey = localStorage.getItem('Proxy_apiKey');
-    if (savedBaseURL) setBaseURL(savedBaseURL);
-    if (savedApiKey) setApiKey(savedApiKey);
+    const savedTemperature = localStorage.getItem('Proxy_Temperature')
+    if (savedBaseURL) { setBaseURL(savedBaseURL) };
+    if (savedApiKey) { setApiKey(savedApiKey) };
+    if (savedTemperature) { setGenerationTemperature(parseFloat(savedTemperature)) };
+  };
 
+  
+  useEffect(() => {
+    getProxyConf()
+    console.log(baseURL)
     openai = new OpenAI({
-      apiKey: savedApiKey ?? 'none',
-      baseURL: savedBaseURL ?? undefined,
+      apiKey: apiKey ?? 'none',
+      baseURL: baseURL ?? undefined,
       dangerouslyAllowBrowser: true // nothing could possibly go wrong, right
     });
   }, [apiKey, baseURL]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const messageEndRef = useRef<HTMLDivElement>(null);
+
+  const vibrate = (dur: number) => {
+    if ("vibrate" in navigator) {
+      navigator.vibrate(dur)
+    }
+  }
 
   const handleSendMessage = (e: React.KeyboardEvent<HTMLTextAreaElement>, force: boolean) => {
     if (e.key === 'Enter' && !e.ctrlKey && newMessage.trim() !== "" || force) {
       try { e.preventDefault(); } catch {}
 
       // Check if a proxy URL is provided (contains https://)
-      if (!baseURL.includes('https://')) {
-        toast.error("You need to configure your AI provider first in Settings.")
-        return
-      }
+      getProxyConf()
 
+      if (!baseURL.includes('https://')) {
+        toast.error("You need to configure your AI provider first in Settings.");
+        return;
+      }
 
       setIsThinking(true);
 
@@ -67,7 +83,7 @@ const ChatPage = () => {
       textareaRef.current?.focus();
 
       const sendMessage = async () => {
-        const systemMessageContent = getSystemMessage(characterData)
+        const systemMessageContent = getSystemMessage(characterData);
         const userMessageContent = newMessage ?? "Hello";
 
         // Create a new AbortController instance for each request
@@ -81,7 +97,8 @@ const ChatPage = () => {
               ...messages.map(msg => ({ ...msg, name: "-" })),
               { role: "user", content: userMessageContent, name: "user" }
             ],
-            stream: true
+            stream: true,
+            temperature: generationTemperature
           });
 
           let assistantMessage = ""; // To accumulate the streamed content
@@ -105,6 +122,7 @@ const ChatPage = () => {
               ...prevMessages.slice(0, -1),
               { role: "assistant", content: assistantMessage, stillGenerating: true }
             ]);
+            vibrate(10)
           }
         } catch (error) {
           if (abortController.current?.signal.aborted) {
@@ -131,10 +149,16 @@ const ChatPage = () => {
   };
 
   const regenerateFunction = () => {
-      setIsThinking(true)
+    setIsThinking(true);
+    // Scroll to the second-to-last message
+    secondLastMessageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    console.log("Scrolling")
+    setTimeout(() => {
       setMessages(prevMessages => prevMessages.slice(0, -1));
       handleSendMessage({ key: 'Enter', ctrlKey: false } as React.KeyboardEvent<HTMLTextAreaElement>, true);
-  }
+    }, 1000); // Delay to ensure DOM updates
+
+  };
 
   const onCancel = () => {
     if (abortController.current) {
@@ -158,7 +182,6 @@ const ChatPage = () => {
     }
   }, [messages, characterData.initialMessage]);
 
-  // Scroll to the bottom of the message list whenever a new message is added
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -175,13 +198,29 @@ const ChatPage = () => {
         draggable
         theme="dark"
       />
-      <div className="grid max-w-[40rem] w-full h-screen p-2 sm:p-8 font-[family-name:var(--font-geist-sans)] grid-rows-[auto_1fr] gap-4">
+      <div className="grid max-w-[40rem] w-full h-dvh p-2 sm:p-8 font-[family-name:var(--font-geist-sans)] grid-rows-[auto_1fr] gap-4">
         <ChatHeader characterName={characterData.name} />
         <div className="overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col justify-end gap-2 min-h-full">
-            {messages.map((message, index) => (
-              <MessageCard key={index} role={message.role} content={message.content} stillGenerating={message.stillGenerating} regenerateFunction={regenerateFunction} globalIsThinking={isThinking} isLastMessage={index === messages.length - 1} />
-            ))}
+            <div style={{ height: '60vh'}}></div>
+            {messages.map((message, index) => {
+              const isSecondLast = index === messages.length - 2;
+              return (
+                <div
+                  key={index}
+                  ref={isSecondLast ? secondLastMessageRef : null}
+                >
+                  <MessageCard
+                    role={message.role}
+                    content={message.content}
+                    stillGenerating={message.stillGenerating}
+                    regenerateFunction={regenerateFunction}
+                    globalIsThinking={isThinking}
+                    isLastMessage={index === messages.length - 1}
+                  />
+                </div>
+              );
+            })}
             <div ref={messageEndRef} />
           </div>
         </div>
@@ -195,7 +234,6 @@ const ChatPage = () => {
           isThinking={isThinking}
         />
       </div>
-      
     </div>
   );
 };

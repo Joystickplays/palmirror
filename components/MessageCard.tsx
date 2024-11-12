@@ -14,21 +14,36 @@ interface MessageCardProps {
   isLastMessage: boolean;
 }
 
+const vibrate = (dur: number) => {
+  if ("vibrate" in navigator) {
+    navigator.vibrate(dur)
+  }
+}
+
 const MessageCard: React.FC<MessageCardProps> = ({ content, role, stillGenerating, regenerateFunction, globalIsThinking, isLastMessage }) => {
   
   const [{ x, y, scale, height }, apiSpring] = useSpring(() => ({ x: 0, y: 0, scale: 1, height: 100 }));
+  let aboutToRegenerate = false;
 
   const triggerRegenerate = useCallback(() => {
     regenerateFunction();
     console.log("trigger")
   }, [regenerateFunction]);
 
-  const bind = useDrag(({ down, movement: [mx] }) => {
+  const bind = useDrag(({ down, movement: [mx], velocity: [vx] }) => {
     // const [offsetX, offsetY] = state.offset;
 
-    apiSpring.start({ x: down ? ((mx >= 0 ? 0.15 * mx : 0.75 * mx) / (role === "user" || stillGenerating || !isLastMessage || globalIsThinking ? 10 : 1)) : 0, y: 0, scale: 1, height: down ? 80 : 100, config: { tension: 120, friction: 14 } });
-
-    if (mx < -200 && !globalIsThinking && !stillGenerating && role !== "user" && isLastMessage && !down) {
+    if (mx < -200 && !globalIsThinking && !stillGenerating && role !== "user" && isLastMessage) {
+      if (aboutToRegenerate === false ) {
+        aboutToRegenerate = true
+        vibrate(50);
+      }
+      apiSpring.start({ x: down ? ((mx >= 0 ? 0.15 * mx : 0.75 * mx) / (role === "user" || stillGenerating || !isLastMessage || globalIsThinking ? 10 : 1)) + -50 : 0, y: 0, scale: .8, height: down ? 80 : 100, config: { tension: 120, friction: 14 } });
+    } else {
+      aboutToRegenerate = false
+      apiSpring.start({ x: down ? ((mx >= 0 ? 0.15 * mx : 0.75 * mx) / (role === "user" || stillGenerating || !isLastMessage || globalIsThinking ? 10 : 1)) : 0, y: 0, scale: 1, height: down ? 80 : 100, config: { tension: 120, friction: 14 } });
+    }
+    if ((vx < -50 || mx < -200) && !globalIsThinking && !stillGenerating && role !== "user" && isLastMessage && !down) {
       
       apiSpring.start({
         x: -500, 

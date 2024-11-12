@@ -12,6 +12,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider"
+
 
 interface ChatHeaderProps {
   characterName: string;
@@ -20,6 +22,7 @@ interface ChatHeaderProps {
 const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName }) => {
   const [baseURL, setBaseURL] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [temperature, setTemperature] = useState(0.5);
 
   // Load values from localStorage on mount
   useEffect(() => {
@@ -41,6 +44,11 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName }) => {
     setApiKey(value);
     localStorage.setItem('Proxy_apiKey', value);
   };
+
+  const handleTemperatureChange = (value: number[]) => {
+    setTemperature(value[0]);
+    localStorage.setItem('Proxy_temperature', value.toString());
+  }
 
   return (
     <Card>
@@ -72,6 +80,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName }) => {
                     onChange={handleApiKeyChange}
                   />
                 </div>
+              </div>
+              <h2 className="my-4 font-bold">AI generation settings</h2>
+              <div>
+                <div className="flex row justify-between mb-4">
+                  <Label>Temperature</Label>
+                  <Label className="font-bold">{temperature}</ Label>
+                </div>
+                <Slider defaultValue={[0.5]} min={0} max={1} step={0.01} onValueChange={(val: number[]) => { handleTemperatureChange(val) }}/>
               </div>
             </DialogHeader>
           </DialogContent>
