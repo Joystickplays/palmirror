@@ -18,6 +18,8 @@ const ChatPage = () => {
     personality: "",
     initialMessage: "",
     scenario: "",
+    userName: "",
+    userPersonality: ""
   });
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);

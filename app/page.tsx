@@ -16,6 +16,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
@@ -25,6 +32,8 @@ export default function Home() {
     personality: "",
     initialMessage: "",
     scenario: "",
+    userName: "",
+    userPersonality: ""
   });
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof typeof characterData) => {
@@ -82,6 +91,25 @@ export default function Home() {
                   <Input id="charScenario" value={characterData.scenario} onChange={(e) => handleInputChange(e, 'scenario')} />
                 </div>
               </div>
+              <Accordion type="single" collapsible className="w-full mb-4">
+                <AccordionItem value="item-1">
+                  <AccordionTrigger>Your personality</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="py-4">
+                      <div className="grid w-full items-center gap-1.5 w-80">
+                        <Label htmlFor="userName">Your name</Label>
+                        <Input id="userName" value={characterData.userName} onChange={(e) => handleInputChange(e, 'userName')} />
+                      </div>
+                    </div>
+                    <div className="py-4">
+                      <div className="grid w-full items-center gap-1.5 w-80">
+                        <Label htmlFor="userPersonality">Your personality</Label>
+                        <Textarea id="userPersonality" value={characterData.userPersonality} onChange={(e) => handleInputChange(e, 'userPersonality')} />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
               <Button className="w-80" onClick={startChat}>Start chat</Button>
             </DialogHeader>
           </DialogContent>
