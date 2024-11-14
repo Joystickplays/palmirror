@@ -60,7 +60,7 @@ const ChatPage = () => {
     force = false,
     regenerate = false
   ) => {
-    if (e && e.key == "Enter") e.preventDefault();
+    if (e && e.key == "Enter") try { e.preventDefault() } catch {};
     if (!force && (!newMessage.trim() || (e && e.key !== "Enter"))) return;
     
     // debugger;
