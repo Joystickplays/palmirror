@@ -7,12 +7,21 @@ import { Send, OctagonX } from 'lucide-react';
 interface MessageInputProps {
   newMessage: string;
   setNewMessage: React.Dispatch<React.SetStateAction<string>>;
-  handleSendMessage: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  handleSendMessage: (e: React.KeyboardEvent<HTMLTextAreaElement> | null) => void; // Updated to handle both keyboard and button click
   onCancel: () => void;        
   isThinking: boolean;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, handleSendMessage, onCancel, isThinking }) => {
+  const handleButtonClick = () => {
+    if (isThinking) {
+      onCancel();
+    } else {
+      // Create a mock KeyboardEvent with the Enter key when the button is clicked
+      handleSendMessage({ key: 'Enter', ctrlKey: false } as React.KeyboardEvent<HTMLTextAreaElement>);
+    }
+  };
+
   return (
     <div className="relative w-full">
       <Textarea
@@ -20,9 +29,12 @@ const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, 
         className="w-full p-2"
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
-        onKeyDown={handleSendMessage}
+        onKeyDown={(e) => handleSendMessage(e)} // Pass the actual event for keyboard input
       />
-      <Button className="absolute right-2 bottom-2 p-2"onClick={() => isThinking ? onCancel() : handleSendMessage({ key: 'Enter' } as React.KeyboardEvent<HTMLTextAreaElement>)}      >
+      <Button
+        className="absolute right-2 bottom-2 p-2"
+        onClick={handleButtonClick} // Use the new handleButtonClick function
+      >
         {isThinking ? (
           <OctagonX className="animate-pulse" />
         ) : (

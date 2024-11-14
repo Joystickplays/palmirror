@@ -43,7 +43,7 @@ const MessageCard: React.FC<MessageCardProps> = ({ content, role, stillGeneratin
       aboutToRegenerate = false
       apiSpring.start({ x: down ? ((mx >= 0 ? 0.15 * mx : 0.75 * mx) / (role === "user" || stillGenerating || !isLastMessage || globalIsThinking ? 10 : 1)) : 0, y: 0, scale: 1, height: down ? 80 : 100, config: { tension: 120, friction: 14 } });
     }
-    if ((vx < -50 || mx < -200) && !globalIsThinking && !stillGenerating && role !== "user" && isLastMessage && !down) {
+    if ((vx < -20 || mx < -200) && !globalIsThinking && !stillGenerating && role !== "user" && isLastMessage && !down) {
       
       apiSpring.start({
         x: -500, 

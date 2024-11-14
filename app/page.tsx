@@ -32,6 +32,7 @@ export default function Home() {
     setCharacterData({ ...characterData, [field]: value });
   };
 
+
   const startChat = () => {
     if (!characterData.name || !characterData.personality || !characterData.initialMessage) {
       toast.error('Please fill in all required fields (name, personality, first message).');

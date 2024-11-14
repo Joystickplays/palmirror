@@ -1,190 +1,187 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+
+import { useState, useEffect, useRef } from "react";
 import MessageCard from "@/components/MessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/components/systemMessageGeneration";
-
 import OpenAI from "openai";
 
 let openai: OpenAI;
 
 const ChatPage = () => {
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string, stillGenerating: boolean }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>>([]);
   const [characterData, setCharacterData] = useState({
-    name: '',
-    personality: '',
-    initialMessage: '',
-    scenario: '',
+    name: "",
+    personality: "",
+    initialMessage: "",
+    scenario: "",
   });
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
-  const [baseURL, setBaseURL] = useState('');
-  const [apiKey, setApiKey] = useState('none');
+  const [baseURL, setBaseURL] = useState("");
+  const [apiKey, setApiKey] = useState("none");
   const [generationTemperature, setGenerationTemperature] = useState(0.5);
 
   const abortController = useRef<AbortController | null>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
   const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const getProxyConf = () => {
-    const savedBaseURL = localStorage.getItem('Proxy_baseURL');
-    const savedApiKey = localStorage.getItem('Proxy_apiKey');
-    const savedTemperature = localStorage.getItem('Proxy_Temperature')
-    if (savedBaseURL) { setBaseURL(savedBaseURL) };
-    if (savedApiKey) { setApiKey(savedApiKey) };
-    if (savedTemperature) { setGenerationTemperature(parseFloat(savedTemperature)) };
+  // Load Proxy Configuration
+  const loadProxyConfig = () => {
+    const savedBaseURL = localStorage.getItem("Proxy_baseURL");
+    const savedApiKey = localStorage.getItem("Proxy_apiKey");
+    const savedTemperature = localStorage.getItem("Proxy_Temperature");
+    if (savedBaseURL) setBaseURL(savedBaseURL);
+    if (savedApiKey) setApiKey(savedApiKey);
+    if (savedTemperature) setGenerationTemperature(parseFloat(savedTemperature));
   };
 
-  
   useEffect(() => {
-    getProxyConf()
-    console.log(baseURL)
+    loadProxyConfig();
     openai = new OpenAI({
-      apiKey: apiKey ?? 'none',
+      apiKey: apiKey ?? "none",
       baseURL: baseURL ?? undefined,
-      dangerouslyAllowBrowser: true // nothing could possibly go wrong, right
+      dangerouslyAllowBrowser: true,
     });
   }, [apiKey, baseURL]);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Vibrate Device
+  const vibrate = (duration: number) => {
+    if ("vibrate" in navigator) navigator.vibrate(duration);
+  };
 
-  const vibrate = (dur: number) => {
-    if ("vibrate" in navigator) {
-      navigator.vibrate(dur)
+  // Send Message Function
+  const handleSendMessage = async (
+    e: React.KeyboardEvent<HTMLTextAreaElement> | null,
+    force = false,
+    regenerate = false
+  ) => {
+    if (e && e.key == "Enter") e.preventDefault();
+    if (!force && (!newMessage.trim() || (e && e.key !== "Enter"))) return;
+    
+    // debugger;
+    // Ensure Proxy Configuration
+    loadProxyConfig();
+    if (!baseURL.includes("https://")) {
+      toast.error("You need to configure your AI provider first in Settings.");
+      return;
     }
-  }
 
-  const handleSendMessage = (e: React.KeyboardEvent<HTMLTextAreaElement>, force: boolean) => {
-    if (e.key === 'Enter' && !e.ctrlKey && newMessage.trim() !== "" || force) {
-      try { e.preventDefault(); } catch {}
+    let regenerationMessage: string | undefined;
+    if (regenerate) {
+      // set regenerationMessage to latest message with user role content
+      const userMessage = messages.slice().reverse().find(message => message.role === 'user');
+      regenerationMessage = userMessage?.content;
+    }
 
-      // Check if a proxy URL is provided (contains https://)
-      getProxyConf()
+    let messagesList = messages
+    if (regenerate) {
+      messagesList = [
+        ...messagesList.slice(0, -2),
+      ]
+      setMessages(messagesList);
+      console.log(messages)
+    };
 
-      if (!baseURL.includes('https://')) {
-        toast.error("You need to configure your AI provider first in Settings.");
-        return;
-      }
-
-      setIsThinking(true);
-
-      // Add user message
-      if (newMessage.trim() !== "") {
-        setMessages(prevMessages => [
-          ...prevMessages,
-          { role: "user", content: newMessage, stillGenerating: false }
-        ]);
-      }
-      setNewMessage('');
+    const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : newMessage.trim();
+    
+    // Add User Message
+    if (userMessageContent) {
+      messagesList =  [
+        ...messagesList, 
+        { role: "user", content: userMessageContent, stillGenerating: false }
+      ]
+      setMessages(messagesList);
+      setNewMessage("");
       textareaRef.current?.focus();
-
-      const sendMessage = async () => {
-        const systemMessageContent = getSystemMessage(characterData);
-        const userMessageContent = newMessage ?? "Hello";
-
-        // Create a new AbortController instance for each request
-        abortController.current = new AbortController();
-
-        try {
-          console.log(messages)
-          const comp = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
-            messages: [
-              { role: "system", content: systemMessageContent, name: "system" },
-              ...messages.map(msg => ({ ...msg, name: "-" })),
-              { role: "user", content: userMessageContent, name: "user" }
-            ],
-            stream: true,
-            temperature: generationTemperature
-          });
-
-          let assistantMessage = ""; // To accumulate the streamed content
-          
-          setMessages(prevMessages => [
-            ...prevMessages,
-            { role: "assistant", content: "...", stillGenerating: true }
-          ]);
-          for await (const chunk of comp) {
-            // Check if the request has been aborted
-            if (abortController.current?.signal.aborted) {
-              console.log("Request was cancelled");
-              break;
-            }
-
-            const chunkContent = chunk.choices[0].delta.content || "";
-            assistantMessage += chunkContent;
-
-            // Update the chat messages in real-time
-            setMessages(prevMessages => [
-              ...prevMessages.slice(0, -1),
-              { role: "assistant", content: assistantMessage, stillGenerating: true }
-            ]);
-            vibrate(10)
-          }
-        } catch (error) {
-          if (abortController.current?.signal.aborted) {
-            console.log('Request was canceled');
-          } else {
-            console.error('Error occurred:', error);
-          }
-        } finally {
-          setMessages(prevMessages => [
-            ...prevMessages.slice(0, -1),
-            { 
-              role: "assistant", 
-              content: prevMessages[prevMessages.length - 1]?.content || "", 
-              stillGenerating: false 
-            }
-          ]);          
-          abortController.current = null;
-          setIsThinking(false);
-        }
-      };
-
-      sendMessage();
     }
-  };
-
-  const regenerateFunction = () => {
+    console.log(messagesList)
     setIsThinking(true);
-    // Scroll to the second-to-last message
-    secondLastMessageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    console.log("Scrolling")
-    setTimeout(() => {
-      setMessages(prevMessages => prevMessages.slice(0, -1));
-      handleSendMessage({ key: 'Enter', ctrlKey: false } as React.KeyboardEvent<HTMLTextAreaElement>, true);
-    }, 1000); // Delay to ensure DOM updates
+    const systemMessageContent = getSystemMessage(characterData);
 
-  };
+    try {
+      abortController.current = new AbortController();
+      const comp = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: systemMessageContent, name: "system" },
+          ...messagesList.map((msg) => ({ ...msg, name: "-" })),
+        ],
+        stream: true,
+        temperature: generationTemperature,
+      });
 
-  const onCancel = () => {
-    if (abortController.current) {
-      abortController.current.abort(); // Abort the ongoing request
-      setIsThinking(false); // Stop the thinking state
+      let assistantMessage = "";
+      setMessages(prevMessages => [
+        ...prevMessages, 
+        { role: "assistant", content: "...", stillGenerating: true }
+      ]);
+
+      for await (const chunk of comp) {
+        if (abortController.current?.signal.aborted) break;
+
+        const chunkContent = chunk.choices[0].delta.content || "";
+        assistantMessage += chunkContent;
+
+        setMessages((prevMessages) => [
+          ...prevMessages.slice(0, -1),
+          { role: "assistant", content: assistantMessage, stillGenerating: true },
+        ]);
+        vibrate(10);
+      }
+    } catch (error) {
+      if (!abortController.current?.signal.aborted) console.error("Error:", error);
+    } finally {
+      setMessages((prevMessages) => [
+        ...prevMessages.slice(0, -1),
+        { ...prevMessages[prevMessages.length - 1], stillGenerating: false },
+      ]);
+      setIsThinking(false);
+      abortController.current = null;
     }
   };
 
+  // Regenerate Last Message
+  const regenerateMessage = () => {
+    // Temporarily save the current state of the messages
+    const updatedMessages = [...messages];
+  
+    // Remove the last message (which is presumably the one in progress)
+    updatedMessages.pop();
+  
+    // Regenerate the message by calling `handleSendMessage` only after the state update
+    setMessages(updatedMessages);
+    handleSendMessage(null, true, true);
+    secondLastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  
+
+  // Cancel Ongoing Request
+  const cancelRequest = () => {
+    if (abortController.current) abortController.current.abort();
+    setIsThinking(false);
+  };
+
+  // Load Character Data
   useEffect(() => {
-    const storedData = localStorage.getItem('characterData');
-    if (storedData) {
-      setCharacterData(JSON.parse(storedData));
-    }
+    const storedData = localStorage.getItem("characterData");
+    if (storedData) setCharacterData(JSON.parse(storedData));
   }, []);
 
+  // Initial Assistant Message
   useEffect(() => {
     if (messages.length === 0 && characterData.initialMessage) {
-      setMessages([
-        { role: "assistant", content: characterData.initialMessage, stillGenerating: false },
-      ]);
+      setMessages([{ role: "assistant", content: characterData.initialMessage, stillGenerating: false }]);
     }
-  }, [messages, characterData.initialMessage]);
+  }, [characterData.initialMessage]);
 
+  // Auto-scroll to Bottom
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
@@ -199,23 +196,20 @@ const ChatPage = () => {
         draggable
         theme="dark"
       />
-      <div className="grid max-w-[40rem] w-full h-dvh p-2 sm:p-8 font-[family-name:var(--font-geist-sans)] grid-rows-[auto_1fr] gap-4">
+      <div className="grid max-w-[40rem] w-full h-dvh p-2 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
         <ChatHeader characterName={characterData.name} />
         <div className="overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col justify-end gap-2 min-h-full">
-            <div style={{ height: '60vh'}}></div>
+            <div style={{ height: "60vh" }}></div>
             {messages.map((message, index) => {
               const isSecondLast = index === messages.length - 2;
               return (
-                <div
-                  key={index}
-                  ref={isSecondLast ? secondLastMessageRef : null}
-                >
+                <div key={index} ref={isSecondLast ? secondLastMessageRef : null}>
                   <MessageCard
                     role={message.role}
                     content={message.content}
                     stillGenerating={message.stillGenerating}
-                    regenerateFunction={regenerateFunction}
+                    regenerateFunction={regenerateMessage}
                     globalIsThinking={isThinking}
                     isLastMessage={index === messages.length - 1}
                   />
@@ -228,10 +222,8 @@ const ChatPage = () => {
         <MessageInput
           newMessage={newMessage}
           setNewMessage={setNewMessage}
-          handleSendMessage={(e) => {
-            handleSendMessage(e, false);
-          }}
-          onCancel={onCancel}
+          handleSendMessage={(e) => handleSendMessage(e, false)}
+          onCancel={cancelRequest}
           isThinking={isThinking}
         />
       </div>
