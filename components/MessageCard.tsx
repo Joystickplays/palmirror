@@ -21,8 +21,8 @@ const vibrate = (dur: number) => {
 }
 
 const MessageCard: React.FC<MessageCardProps> = ({ content, role, stillGenerating, regenerateFunction, globalIsThinking, isLastMessage }) => {
-  
-  const [{ x, y, scale, height }, apiSpring] = useSpring(() => ({ x: 0, y: 0, scale: 1, height: 100 }));
+
+  const [{ x, y, scale, height, fontSize }, apiSpring] = useSpring(() => ({ x: 0, y: 0, scale: 1, height: 100, fontSize: 1 }));
   let aboutToRegenerate = false;
 
   const triggerRegenerate = useCallback(() => {
@@ -34,7 +34,7 @@ const MessageCard: React.FC<MessageCardProps> = ({ content, role, stillGeneratin
     // const [offsetX, offsetY] = state.offset;
 
     if (mx < -200 && !globalIsThinking && !stillGenerating && role !== "user" && isLastMessage) {
-      if (aboutToRegenerate === false ) {
+      if (aboutToRegenerate === false) {
         aboutToRegenerate = true
         vibrate(50);
       }
@@ -44,13 +44,14 @@ const MessageCard: React.FC<MessageCardProps> = ({ content, role, stillGeneratin
       apiSpring.start({ x: down ? ((mx >= 0 ? 0.15 * mx : 0.75 * mx) / (role === "user" || stillGenerating || !isLastMessage || globalIsThinking ? 10 : 1)) : 0, y: 0, scale: 1, height: down ? 80 : 100, config: { tension: 120, friction: 14 } });
     }
     if ((vx < -20 || mx < -200) && !globalIsThinking && !stillGenerating && role !== "user" && isLastMessage && !down) {
-      
+
       apiSpring.start({
-        x: -500, 
-        y: 0, 
-        scale: 0, 
-        height: 0,  // Set width to 0 when the condition is met
-        config: { tension: 120, friction: 14 }, // Optionally adjust these values
+        x: -500,
+        y: 0,
+        scale: 0,
+        height: 0,
+        fontSize: 0,
+        config: { tension: 120, friction: 14 },
       });
       // trigger a generate after a bit
       setTimeout(triggerRegenerate, 250);
@@ -58,15 +59,35 @@ const MessageCard: React.FC<MessageCardProps> = ({ content, role, stillGeneratin
   });
 
   return (
-    <animated.div style={{ x, y, scale, height: height.to(h => `${h}%`) }}  className="flex flex-col justify-end gap-2 min-h-full">
-      <Card {...bind()} className={`bg-blue-900/20 rounded-xl max-w-lg border-0 grow-0 shrink h-fit touch-none ${role === 'user' ? 'bg-blue-950/20 ml-auto rounded-br-md text-end' : 'bg-gray-900/10 mr-auto rounded-bl-md'}`}>
+    <animated.div
+      style={{
+        x,
+        y,
+        scale,
+        height: height.to(h => `${h}%`),
+        fontSize: fontSize.to(s => `${s}rem`),
+      }}
+      className="flex flex-col justify-end gap-2 min-h-full overflow-hidden"
+    >
+      <Card
+        {...bind()}
+        className={`bg-blue-900/20 rounded-xl max-w-lg border-0 grow-0 shrink h-fit touch-none ${role === 'user'
+            ? 'bg-blue-950/20 ml-auto rounded-br-md text-end'
+            : 'bg-gray-900/10 mr-auto rounded-bl-md'
+          }`}
+      >
         <CardContent className="p-2 px-4">
-          <div className="whitespace-pre-line break-words max-w-full markdown-content">
-            <ReactMarkdown className={`${stillGenerating ? 'animate-pulse' : ''}`}>{content}</ReactMarkdown>
+          <div className="whitespace-pre-line break-words max-w-full markdown-content overflow-hidden">
+            <ReactMarkdown
+              className={`${stillGenerating ? 'animate-pulse' : ''}`}
+            >
+              {content}
+            </ReactMarkdown>
           </div>
         </CardContent>
       </Card>
     </animated.div>
+
 
   );
 };

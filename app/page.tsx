@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -26,6 +26,14 @@ import {
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const loadCharacterData = () => {
+    const storedData = localStorage.getItem('characterData');
+    if (storedData) {
+      setCharacterData(JSON.parse(storedData));
+    }
+  };
+
+
   const router = useRouter();
   const [characterData, setCharacterData] = useState({
     name: "",
@@ -40,6 +48,10 @@ export default function Home() {
     const value = event.target.value;
     setCharacterData({ ...characterData, [field]: value });
   };
+
+  useEffect(() => {
+    loadCharacterData();
+  }, []);
 
 
   const startChat = () => {
