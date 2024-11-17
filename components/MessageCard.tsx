@@ -138,7 +138,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
             className={`bg-blue-900/20 rounded-xl max-w-lg border-0 grow-0 shrink h-fit touch-none ${role === "user"
               ? "bg-blue-950/20 ml-auto rounded-br-md text-end"
               : "bg-gray-900/10 mr-auto rounded-bl-md"
-              }`}
+              } ${isEditing ? "w-full" : ""}`}
           >
             <CardContent className="p-2 px-4">
               <div className="whitespace-pre-line break-words max-w-full markdown-content overflow-hidden">
@@ -154,7 +154,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                       </span>
                     </Button>
                     <textarea
-                      className="w-full bg-transparent resize-none border rounded-xl w-96 p-3"
+                      className="w-full bg-transparent resize-none border rounded-xl w-full h-52 p-3"
                       value={editingContent}
                       onChange={(e) => { setEditingContent(e.target.value) }}
                     />
