@@ -32,7 +32,30 @@ const ChatPage = () => {
   const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load Proxy Configuration
+  const encodeMessages = () => {
+    try {
+      const json = JSON.stringify(messages);
+      toast.success("Chat exported!")
+      return btoa(json);
+    } catch (error) {
+      toast.error("Failed to encode messages: " + error);
+      return "";
+    }
+  };
+
+  const decodeMessages = (encoded: string) => {
+    try {
+      const json = atob(encoded);
+      setMessages(JSON.parse(json));
+      toast.success("Chat imported!")
+      return JSON.parse(json);
+
+    } catch (error) {
+      toast.error("Failed to decode messages: " + error);
+      return [];
+    }
+  };
+
   const loadProxyConfig = () => {
     const savedBaseURL = localStorage.getItem("Proxy_baseURL");
     const savedApiKey = localStorage.getItem("Proxy_apiKey");
@@ -51,22 +74,24 @@ const ChatPage = () => {
     });
   }, [apiKey, baseURL]);
 
-  // Vibrate Device
   const vibrate = (duration: number) => {
     if ("vibrate" in navigator) navigator.vibrate(duration);
   };
 
-  // Send Message Function
   const handleSendMessage = async (
     e: React.KeyboardEvent<HTMLTextAreaElement> | null,
     force = false,
     regenerate = false
   ) => {
-    if (e && e.key == "Enter") try { e.preventDefault() } catch {};
-    if (!force && (!newMessage.trim() || (e && e.key !== "Enter"))) return;
-    
-    // debugger;
-    // Ensure Proxy Configuration
+    // Prevent default behavior if Enter key is pressed
+    if (e && e.key === "Enter") {
+      try {
+        e.preventDefault();
+      } catch {}
+    }
+    // Return early if not forced, and Enter key not pressed
+    if (!force && ((e && e.key !== "Enter"))) return; 
+
     loadProxyConfig();
     if (!baseURL.includes("https://")) {
       toast.error("You need to configure your AI provider first in Settings.");
@@ -75,30 +100,31 @@ const ChatPage = () => {
 
     let regenerationMessage: string | undefined;
     if (regenerate) {
-      // set regenerationMessage to latest message with user role content
       const userMessage = messages.slice().reverse().find(message => message.role === 'user');
       regenerationMessage = userMessage?.content;
     }
 
-    let messagesList = messages
+    let messagesList = [...messages]; // Create a copy to avoid direct mutation, and because how React states work
     if (regenerate) {
       messagesList = [
         ...messagesList.slice(0, -2),
       ]
       setMessages(messagesList);
-      console.log(messages)
     };
 
     const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : newMessage.trim();
-    
-    // Add User Message
+
     if (userMessageContent) {
-      messagesList =  [
+      // Add user message to the message list
+      messagesList = [
         ...messagesList, 
         { role: "user", content: userMessageContent, stillGenerating: false }
       ]
+      // Update the messages state
       setMessages(messagesList);
+      // Clear the input field
       setNewMessage("");
+      // Refocus the textarea
       textareaRef.current?.focus();
     }
     console.log(messagesList)
@@ -118,6 +144,7 @@ const ChatPage = () => {
       });
 
       let assistantMessage = "";
+      // Add a placeholder message while waiting for the response
       setMessages(prevMessages => [
         ...prevMessages, 
         { role: "assistant", content: "...", stillGenerating: true }
@@ -129,6 +156,7 @@ const ChatPage = () => {
         const chunkContent = chunk.choices[0].delta.content || "";
         assistantMessage += chunkContent;
 
+        // Update the message with the latest chunk
         setMessages((prevMessages) => [
           ...prevMessages.slice(0, -1),
           { role: "assistant", content: assistantMessage, stillGenerating: true },
@@ -136,7 +164,8 @@ const ChatPage = () => {
         vibrate(10);
       }
     } catch (error) {
-      if (!abortController.current?.signal.aborted) console.error("Error:", error);
+      if (!abortController.current?.signal.aborted) toast.error("Error: " + error);
+      //Remove the placeholder message if there is an error
     } finally {
       setMessages((prevMessages) => [
         ...prevMessages.slice(0, -1),
@@ -147,29 +176,34 @@ const ChatPage = () => {
     }
   };
 
-  // Regenerate Last Message
-  const regenerateMessage = () => {
-    // Temporarily save the current state of the messages
+  const regenerateMessage = () => {    
     const updatedMessages = [...messages];
-  
-    // Remove the last message (which is presumably the one in progress)
+
     updatedMessages.pop();
-  
-    // Regenerate the message by calling `handleSendMessage` only after the state update
+
     setMessages(updatedMessages);
     handleSendMessage(null, true, true);
     secondLastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-  
 
-  // Cancel Ongoing Request
+  const editMessage = (index: number, content: string) => {
+    const updatedMessages = [...messages];
+    updatedMessages[index] = { ...updatedMessages[index], content };
+    setMessages(updatedMessages);
+  };
+
+  const rewindTo = (index: number) => {
+    setMessages(messages.slice(0, index + 1));
+  };
+
+
+
   const cancelRequest = () => {
     if (abortController.current) abortController.current.abort();
     setIsThinking(false);
   };
 
-  // Load Character Data
-  useEffect(() => {
+  useEffect(() => {    
     const storedData = localStorage.getItem("characterData");
     if (storedData) setCharacterData(JSON.parse(storedData));
   }, []);
@@ -199,7 +233,7 @@ const ChatPage = () => {
         theme="dark"
       />
       <div className="grid max-w-[40rem] w-full h-dvh p-2 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
-        <ChatHeader characterName={characterData.name} />
+        <ChatHeader characterName={characterData.name} getExportedMessages={encodeMessages} importMessages={decodeMessages} />
         <div className="overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col justify-end gap-2 min-h-full">
             <div style={{ height: "60vh" }}></div>
@@ -208,12 +242,16 @@ const ChatPage = () => {
               return (
                 <div key={index} ref={isSecondLast ? secondLastMessageRef : null}>
                   <MessageCard
+                    index={index}
                     role={message.role}
                     content={message.content}
                     stillGenerating={message.stillGenerating}
                     regenerateFunction={regenerateMessage}
                     globalIsThinking={isThinking}
                     isLastMessage={index === messages.length - 1}
+                    characterData={characterData}
+                    editMessage={editMessage}
+                    rewindTo={rewindTo}
                   />
                 </div>
               );

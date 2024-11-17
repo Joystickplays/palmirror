@@ -1,6 +1,7 @@
 // components/ChatHeader.tsx
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,18 +12,33 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider"
 
 
 interface ChatHeaderProps {
   characterName: string;
+  getExportedMessages: () => string;
+  importMessages: (messagesB64: string) => void;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessages, importMessages }) => {
   const [baseURL, setBaseURL] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [temperature, setTemperature] = useState(0.5);
+  const [importB64msgCode , setImportB64msgCode] = useState('');
+
+  const handleImportChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setImportB64msgCode(event.target.value);
+  };
+
+  const handleImport = () => {
+    if (importB64msgCode) {
+      importMessages(importB64msgCode);
+    }
+  };
+
 
   // Load values from localStorage on mount
   useEffect(() => {
@@ -87,7 +103,25 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName }) => {
                   <Label>Temperature</Label>
                   <Label className="font-bold">{temperature}</ Label>
                 </div>
-                <Slider defaultValue={[0.5]} min={0} max={1} step={0.01} onValueChange={(val: number[]) => { handleTemperatureChange(val) }}/>
+                <Slider defaultValue={[0.5]} min={0} max={1} step={0.01} onValueChange={(val: number[]) => { handleTemperatureChange(val) }} />
+              </div>
+              <div className="flex gap-2 pt-8">
+                <Button onClick={() => {navigator.clipboard.writeText(getExportedMessages())}}>Export chat</Button>
+                <Dialog>
+                  <DialogTrigger asChild><Button>Import chat</Button></DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="mb-4">Import chat</DialogTitle>
+                      <Textarea  placeholder="Enter your Base64-encoded chat..."
+                        value={importB64msgCode}
+                        onChange={handleImportChange}
+                      ></Textarea>
+                      <DialogClose asChild>
+                        <Button onClick={handleImport}>Import</Button>
+                      </DialogClose>
+                    </DialogHeader>
+                  </DialogContent>
+                </Dialog>
               </div>
             </DialogHeader>
           </DialogContent>
