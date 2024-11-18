@@ -28,6 +28,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
   const [apiKey, setApiKey] = useState('');
   const [temperature, setTemperature] = useState(0.5);
   const [importB64msgCode , setImportB64msgCode] = useState('');
+  const [modelName, setModelName] = useState('');
 
   const handleImportChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setImportB64msgCode(event.target.value);
@@ -44,8 +45,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
   useEffect(() => {
     const savedBaseURL = localStorage.getItem('Proxy_baseURL');
     const savedApiKey = localStorage.getItem('Proxy_apiKey');
+    const savedModelName = localStorage.getItem('Proxy_modelName');
     if (savedBaseURL) setBaseURL(savedBaseURL);
     if (savedApiKey) setApiKey(savedApiKey);
+    if (savedModelName) setModelName(savedModelName);
   }, []);
 
   // Save values to localStorage whenever they change
@@ -59,6 +62,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
     const value = event.target.value;
     setApiKey(value);
     localStorage.setItem('Proxy_apiKey', value);
+  };
+
+  const handleModelNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setModelName(value);
+    localStorage.setItem('Proxy_modelName', value);
   };
 
   const handleTemperatureChange = (value: number[]) => {
@@ -94,6 +103,15 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
                     id="Proxy_apiKey"
                     value={apiKey}
                     onChange={handleApiKeyChange}
+                  />
+                </div>
+                <div className="grid w-full items-center gap-1.5 w-80">
+                  <Label htmlFor="Proxy_modelName">Model Name</Label>
+                  <Input
+                    id="Proxy_modelName"
+                    placeholder="e.g., gpt-3.5-turbo"
+                    value={modelName}
+                    onChange={handleModelNameChange}
                   />
                 </div>
               </div>

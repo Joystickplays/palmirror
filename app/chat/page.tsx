@@ -26,6 +26,7 @@ const ChatPage = () => {
   const [baseURL, setBaseURL] = useState("");
   const [apiKey, setApiKey] = useState("none");
   const [generationTemperature, setGenerationTemperature] = useState(0.5);
+  const [modelName, setModelName] = useState('gpt-3.5-turbo');
 
   const abortController = useRef<AbortController | null>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -60,9 +61,11 @@ const ChatPage = () => {
     const savedBaseURL = localStorage.getItem("Proxy_baseURL");
     const savedApiKey = localStorage.getItem("Proxy_apiKey");
     const savedTemperature = localStorage.getItem("Proxy_Temperature");
+    const savedModelName = localStorage.getItem("Proxy_modelName")
     if (savedBaseURL) setBaseURL(savedBaseURL);
     if (savedApiKey) setApiKey(savedApiKey);
     if (savedTemperature) setGenerationTemperature(parseFloat(savedTemperature));
+    if (savedModelName) setModelName(savedModelName);
   };
 
   useEffect(() => {
@@ -134,7 +137,7 @@ const ChatPage = () => {
     try {
       abortController.current = new AbortController();
       const comp = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: modelName,
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
           ...messagesList.map((msg) => ({ ...msg, name: "-" })),
