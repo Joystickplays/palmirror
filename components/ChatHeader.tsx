@@ -29,6 +29,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
   const [temperature, setTemperature] = useState(0.5);
   const [importB64msgCode , setImportB64msgCode] = useState('');
   const [modelName, setModelName] = useState('');
+  const [modelInstructions, setModelInstructions] = useState('');
 
   const handleImportChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setImportB64msgCode(event.target.value);
@@ -42,37 +43,54 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
 
 
   // Load values from localStorage on mount
+  const loadSettingsFromLocalStorage = () => {
+    const settings = localStorage.getItem('Proxy_settings');
+    if (settings) {
+      const parsedSettings = JSON.parse(settings);
+      setBaseURL(parsedSettings.baseURL || '');
+      setApiKey(parsedSettings.apiKey || '');
+      setModelName(parsedSettings.modelName || '');
+      setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
+      setModelInstructions(parsedSettings.modelInstructions || '')
+    }
+  }
   useEffect(() => {
-    const savedBaseURL = localStorage.getItem('Proxy_baseURL');
-    const savedApiKey = localStorage.getItem('Proxy_apiKey');
-    const savedModelName = localStorage.getItem('Proxy_modelName');
-    if (savedBaseURL) setBaseURL(savedBaseURL);
-    if (savedApiKey) setApiKey(savedApiKey);
-    if (savedModelName) setModelName(savedModelName);
+    loadSettingsFromLocalStorage();
   }, []);
 
   // Save values to localStorage whenever they change
   const handleBaseURLChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setBaseURL(value);
-    localStorage.setItem('Proxy_baseURL', value);
+    saveSettingsToLocalStorage();
   };
 
   const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setApiKey(value);
-    localStorage.setItem('Proxy_apiKey', value);
+    saveSettingsToLocalStorage();
   };
 
   const handleModelNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setModelName(value);
-    localStorage.setItem('Proxy_modelName', value);
+    saveSettingsToLocalStorage();
+  };
+
+  const handleModelInstructionsChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = event.target.value;
+    setModelInstructions(value);
+    saveSettingsToLocalStorage();
   };
 
   const handleTemperatureChange = (value: number[]) => {
     setTemperature(value[0]);
-    localStorage.setItem('Proxy_temperature', value.toString());
+    saveSettingsToLocalStorage();
+  }
+
+  const saveSettingsToLocalStorage = () => {
+    const settings = { baseURL, apiKey, modelName, temperature, modelInstructions };
+    localStorage.setItem('Proxy_settings', JSON.stringify(settings));
   }
 
   return (
@@ -87,8 +105,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
             <DialogHeader>
               <DialogTitle className="mb-8">Chat settings</DialogTitle>
               <h2 className="my-4 font-bold">AI Provider settings</h2>
-              <div className="py-4">
-                <div className="grid w-full items-center gap-1.5 w-80">
+              <div className="py-4 flex flex-col gap-2">
+                <div className="grid w-full items-center gap-1.5">
                   <Label htmlFor="Proxy_baseURL">Base URL</Label>
                   <Input
                     id="Proxy_baseURL"
@@ -97,7 +115,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
                     onChange={handleBaseURLChange}
                   />
                 </div>
-                <div className="grid w-full items-center gap-1.5 w-80 my-5">
+                <div className="grid w-full items-center gap-1.5 my-5">
                   <Label htmlFor="Proxy_apiKey">API key</Label>
                   <Input
                     id="Proxy_apiKey"
@@ -105,14 +123,23 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
                     onChange={handleApiKeyChange}
                   />
                 </div>
-                <div className="grid w-full items-center gap-1.5 w-80">
+                <div className="grid w-full items-center gap-1.5">
                   <Label htmlFor="Proxy_modelName">Model Name</Label>
                   <Input
-                    id="Proxy_modelName"
+                    id="Proxy_modelName"                    
                     placeholder="e.g., gpt-3.5-turbo"
                     value={modelName}
                     onChange={handleModelNameChange}
                   />
+                </div>
+                <div className="grid w-full items-center gap-1.5">
+                  <Label htmlFor="Proxy_modelInstructions">Custom instructions</Label>
+                  <Textarea
+                    id="Proxy_modelInstructions"
+                    placeholder="! If custom instructions seem to worsen the responses, consider not using this."
+                    value={modelInstructions}
+                    onChange={handleModelInstructionsChange}>
+                  </Textarea>
                 </div>
               </div>
               <h2 className="my-4 font-bold">AI generation settings</h2>

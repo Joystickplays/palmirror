@@ -67,8 +67,11 @@ export default function Home() {
 
   return (
     <div className="grid items-center justify-items-center content-center min-h-screen p-8 pb-20 gap-4 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl pb-2">
+      <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2">
         PalMirror
+      </h1>
+      <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-5xl pb-2 text-center w-4/5">
+        Talk with your favorite characters—just with a bit more <em>style</em>
       </h1>
 
       <div className="pb-7">
@@ -127,7 +130,7 @@ export default function Home() {
           </DialogContent>
         </Dialog>
       </div>
-      <p className="text-sm opacity-40">PalMirror does NOT claim ownership of any given character. PalMirror does not store your chats.</p>
+      <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character. PalMirror does not store your chats.</p>
 
       <ToastContainer
         position="top-right"

@@ -25,7 +25,8 @@ const ChatPage = () => {
   const [isThinking, setIsThinking] = useState(false);
   const [baseURL, setBaseURL] = useState("");
   const [apiKey, setApiKey] = useState("none");
-  const [generationTemperature, setGenerationTemperature] = useState(0.5);
+  const [generationTemperature, setTemperature] = useState(0.5);
+  const [modelInstructions, setModelInstructions] = useState("");
   const [modelName, setModelName] = useState('gpt-3.5-turbo');
 
   const abortController = useRef<AbortController | null>(null);
@@ -57,19 +58,20 @@ const ChatPage = () => {
     }
   };
 
-  const loadProxyConfig = () => {
-    const savedBaseURL = localStorage.getItem("Proxy_baseURL");
-    const savedApiKey = localStorage.getItem("Proxy_apiKey");
-    const savedTemperature = localStorage.getItem("Proxy_Temperature");
-    const savedModelName = localStorage.getItem("Proxy_modelName")
-    if (savedBaseURL) setBaseURL(savedBaseURL);
-    if (savedApiKey) setApiKey(savedApiKey);
-    if (savedTemperature) setGenerationTemperature(parseFloat(savedTemperature));
-    if (savedModelName) setModelName(savedModelName);
-  };
+  const loadSettingsFromLocalStorage = () => {
+    const settings = localStorage.getItem('Proxy_settings');
+    if (settings) {
+      const parsedSettings = JSON.parse(settings);
+      setBaseURL(parsedSettings.baseURL || '');
+      setApiKey(parsedSettings.apiKey || '');
+      setModelName(parsedSettings.modelName || '');
+      setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
+      setModelInstructions(parsedSettings.modelInstructions || '')
+    }
+  }
 
   useEffect(() => {
-    loadProxyConfig();
+    loadSettingsFromLocalStorage();
     openai = new OpenAI({
       apiKey: apiKey ?? "none",
       baseURL: baseURL ?? undefined,
@@ -95,7 +97,7 @@ const ChatPage = () => {
     // Return early if not forced, and Enter key not pressed
     if (!force && ((e && e.key !== "Enter"))) return; 
 
-    loadProxyConfig();
+    loadSettingsFromLocalStorage();
     if (!baseURL.includes("https://")) {
       toast.error("You need to configure your AI provider first in Settings.");
       return;
@@ -132,7 +134,7 @@ const ChatPage = () => {
     }
     console.log(messagesList)
     setIsThinking(true);
-    const systemMessageContent = getSystemMessage(characterData);
+    const systemMessageContent = getSystemMessage(characterData, modelInstructions);
 
     try {
       abortController.current = new AbortController();
