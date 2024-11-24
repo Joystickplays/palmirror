@@ -29,11 +29,11 @@ const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, 
         className="w-full p-2"
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
-        onKeyDown={(e) => handleSendMessage(e)} // Pass the actual event for keyboard input
+        onKeyDown={(e) => handleSendMessage(e)}
       />
       <Button
         className="absolute right-2 bottom-2 p-2"
-        onClick={handleButtonClick} // Use the new handleButtonClick function
+        onClick={handleButtonClick} 
       >
         {isThinking ? (
           <OctagonX className="animate-pulse" />

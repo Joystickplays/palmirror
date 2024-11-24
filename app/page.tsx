@@ -43,6 +43,7 @@ export default function Home() {
     userName: "",
     userPersonality: ""
   });
+  const [caiLinkChar, setCaiLinkChar] = useState('')
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof typeof characterData) => {
     const value = event.target.value;
@@ -65,6 +66,47 @@ export default function Home() {
     router.push('/chat');
   };
 
+  const getCharacterId = (url: string): string | null => {
+    const match = url.match(/\/chat\/([^\/?]+)/);
+    return match ? match[1] : null;
+  };
+
+  const getCaiInfo = () => {
+    toast("Getting character...")
+    const fetchCaiData = async () => {
+      try {
+        const response = await fetch(`/api/charai?char=${getCharacterId(caiLinkChar)}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        const { name, personality, initialMessage, ...rest } = characterData;
+      
+        setCharacterData(() => {
+            const updatedData = {
+                ...rest,
+                name: data.character.name,
+                personality: data.character.definition,
+                initialMessage: data.character.greeting,
+            };
+            localStorage.setItem('characterData', JSON.stringify(updatedData));
+            toast.success(`${data.character.name} fetched from c.ai!`);
+            return updatedData;
+        });
+        
+        router.push("/chat");        
+      } catch (error) {
+        toast.error(`Failed to fetch character data from c.ai: ${error}`);
+      }
+    };
+    
+    if (caiLinkChar) {
+      fetchCaiData();
+    }
+
+  }
+
   return (
     <div className="grid items-center justify-items-center content-center min-h-screen p-8 pb-20 gap-4 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2">
@@ -75,60 +117,75 @@ export default function Home() {
       </h1>
 
       <div className="pb-7">
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>Setup character</Button>
-          </DialogTrigger>
-          <DialogContent className="w-auto max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Setup character</DialogTitle>
-              <div className="py-4">
-                <div className="grid w-full items-center gap-1.5 w-80">
-                  <Label htmlFor="charName">Character name <span className="text-red-500">*</span></Label>
-                  <Input id="charName" value={characterData.name} onChange={(e) => handleInputChange(e, 'name')} />
+        <div className="flex justify-items-center items-center gap-4">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>Get from c.ai</Button>
+            </DialogTrigger>
+            <DialogContent className="w-full max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Get from c.ai</DialogTitle>
+              </DialogHeader>
+                <Input value={caiLinkChar} onChange={(e) => setCaiLinkChar(e.target.value)} placeholder="c.ai character link (Must be a character with public definition!)" /> 
+                <Button onClick={getCaiInfo}>Get</Button>
+            </DialogContent>
+          </Dialog>
+          <em >or</em>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="mx-auto">Setup character</Button>
+            </DialogTrigger>
+            <DialogContent className="w-auto max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Setup character</DialogTitle>
+                <div className="py-4">
+                  <div className="grid w-full items-center gap-1.5 w-80">
+                    <Label htmlFor="charName">Character name <span className="text-red-500">*</span></Label>
+                    <Input id="charName" value={characterData.name} onChange={(e) => handleInputChange(e, 'name')} />
+                  </div>
                 </div>
-              </div>
-              <div className="py-4">
-                <div className="grid w-full items-center gap-1.5 w-80">
-                  <Label htmlFor="charPersonality">Personality <span className="text-red-500">*</span></Label>
-                  <Textarea id="charPersonality" value={characterData.personality} onChange={(e) => handleInputChange(e, 'personality')} />
+                <div className="py-4">
+                  <div className="grid w-full items-center gap-1.5 w-80">
+                    <Label htmlFor="charPersonality">Personality <span className="text-red-500">*</span></Label>
+                    <Textarea id="charPersonality" value={characterData.personality} onChange={(e) => handleInputChange(e, 'personality')} />
+                  </div>
                 </div>
-              </div>
-              <div className="py-4">
-                <div className="grid w-full items-center gap-1.5 w-80">
-                  <Label htmlFor="charInitialMessage">First message <span className="text-red-500">*</span></Label>
-                  <Textarea id="charInitialMessage" value={characterData.initialMessage} onChange={(e) => handleInputChange(e, 'initialMessage')} />
+                <div className="py-4">
+                  <div className="grid w-full items-center gap-1.5 w-80">
+                    <Label htmlFor="charInitialMessage">First message <span className="text-red-500">*</span></Label>
+                    <Textarea id="charInitialMessage" value={characterData.initialMessage} onChange={(e) => handleInputChange(e, 'initialMessage')} />
+                  </div>
                 </div>
-              </div>
-              <div className="py-4">
-                <div className="grid w-full items-center gap-1.5 w-80">
-                  <Label htmlFor="charScenario">Scenario</Label>
-                  <Input id="charScenario" value={characterData.scenario} onChange={(e) => handleInputChange(e, 'scenario')} />
+                <div className="py-4">
+                  <div className="grid w-full items-center gap-1.5 w-80">
+                    <Label htmlFor="charScenario">Scenario</Label>
+                    <Input id="charScenario" value={characterData.scenario} onChange={(e) => handleInputChange(e, 'scenario')} />
+                  </div>
                 </div>
-              </div>
-              <Accordion type="single" collapsible className="w-full mb-4">
-                <AccordionItem value="item-1">
-                  <AccordionTrigger>Your personality</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="py-4">
-                      <div className="grid w-full items-center gap-1.5 w-80">
-                        <Label htmlFor="userName">Your name</Label>
-                        <Input id="userName" value={characterData.userName} onChange={(e) => handleInputChange(e, 'userName')} />
+                <Accordion type="single" collapsible className="w-full mb-4">
+                  <AccordionItem value="item-1">
+                    <AccordionTrigger>Your personality</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="py-4">
+                        <div className="grid w-full items-center gap-1.5 w-80">
+                          <Label htmlFor="userName">Your name</Label>
+                          <Input id="userName" value={characterData.userName} onChange={(e) => handleInputChange(e, 'userName')} />
+                        </div>
                       </div>
-                    </div>
-                    <div className="py-4">
-                      <div className="grid w-full items-center gap-1.5 w-80">
-                        <Label htmlFor="userPersonality">Your personality</Label>
-                        <Textarea id="userPersonality" value={characterData.userPersonality} onChange={(e) => handleInputChange(e, 'userPersonality')} />
+                      <div className="py-4">
+                        <div className="grid w-full items-center gap-1.5 w-80">
+                          <Label htmlFor="userPersonality">Your personality</Label>
+                          <Textarea id="userPersonality" value={characterData.userPersonality} onChange={(e) => handleInputChange(e, 'userPersonality')} />
+                        </div>
                       </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-              <Button className="w-80" onClick={startChat}>Start chat</Button>
-            </DialogHeader>
-          </DialogContent>
-        </Dialog>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                <Button className="w-80" onClick={startChat}>Start chat</Button>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character. PalMirror does not store your chats.</p>
 
