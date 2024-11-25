@@ -2,7 +2,13 @@
 import React from 'react';
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Send, OctagonX } from 'lucide-react';
+import { Send, OctagonX, MessageSquareQuote, PenLine } from 'lucide-react';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
 
 interface MessageInputProps {
   newMessage: string;
@@ -31,7 +37,9 @@ const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, 
         onChange={(e) => setNewMessage(e.target.value)}
         onKeyDown={(e) => handleSendMessage(e)}
       />
-      <Button
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+        <Button
         className="absolute right-2 bottom-2 p-2"
         onClick={handleButtonClick} 
       >
@@ -40,7 +48,25 @@ const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, 
         ) : (
           <Send />
         )}
-      </Button>      
+      </Button>   
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-64 font-sans font-semibold">
+          <ContextMenuItem  disabled={isThinking} asChild>
+            <span className="flex items-center gap-2">
+              <MessageSquareQuote className="h-4 w-4" />
+              Suggest a reply
+            </span>
+          </ContextMenuItem>
+          <ContextMenuItem disabled={isThinking} asChild>
+            <span className="flex items-center gap-2">
+              <PenLine className="h-4 w-4" />
+              Rewrite message
+            </span>
+          </ContextMenuItem>
+        </ContextMenuContent>
+
+      </ContextMenu>
+         
     </div>
   );
 };
