@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 async function fetchData(char?: string): Promise<string> {
     const url = new URL('https://plus.character.ai/chat/character/info/');
 
-    let data = { external_id: "" };
+    const data = { external_id: "" };
     // Add external_id if provided
     if (char) {
         data.external_id = char;
