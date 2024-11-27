@@ -126,7 +126,7 @@ export default function Home() {
               <DialogHeader>
                 <DialogTitle>Get from c.ai</DialogTitle>
               </DialogHeader>
-                <Input value={caiLinkChar} onChange={(e) => setCaiLinkChar(e.target.value)} placeholder="c.ai character link (Must be a character with public definition!)" /> 
+                <Input value={caiLinkChar} onChange={(e) => setCaiLinkChar(e.target.value)} placeholder="c.ai character link (Characters with public definitions are recommended)" /> 
                 <Button onClick={getCaiInfo}>Get</Button>
             </DialogContent>
           </Dialog>

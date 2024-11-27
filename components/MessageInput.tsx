@@ -1,5 +1,5 @@
 // components/MessageInput.tsx
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Send, OctagonX, MessageSquareQuote, PenLine } from 'lucide-react';
@@ -9,6 +9,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
+import OpenAI from "openai";
 
 interface MessageInputProps {
   newMessage: string;
@@ -16,11 +17,14 @@ interface MessageInputProps {
   handleSendMessage: (e: React.KeyboardEvent<HTMLTextAreaElement> | null) => void; // Updated to handle both keyboard and button click
   onCancel: () => void;        
   isThinking: boolean;
+  userPromptThinking: boolean;
+  suggestReply: () => void;
+  rewriteMessage: () => void;
 }
 
-const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, handleSendMessage, onCancel, isThinking }) => {
+const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, handleSendMessage, onCancel, isThinking, userPromptThinking, suggestReply, rewriteMessage }) => {
   const handleButtonClick = () => {
-    if (isThinking) {
+    if (isThinking || userPromptThinking) {
       onCancel();
     } else {
       // Create a mock KeyboardEvent with the Enter key when the button is clicked
@@ -28,14 +32,19 @@ const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, 
     }
   };
 
+
+
+
+
   return (
     <div className="relative w-full">
       <Textarea
         id="Message"
-        className="w-full p-2"
+        className={`w-full p-2 ${userPromptThinking ? "text-white/50" : ""}`}
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
         onKeyDown={(e) => handleSendMessage(e)}
+        disabled={userPromptThinking}
       />
       <ContextMenu>
         <ContextMenuTrigger asChild>
@@ -43,7 +52,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, 
         className="absolute right-2 bottom-2 p-2"
         onClick={handleButtonClick} 
       >
-        {isThinking ? (
+        {isThinking || userPromptThinking ? (
           <OctagonX className="animate-pulse" />
         ) : (
           <Send />
@@ -51,13 +60,13 @@ const MessageInput: React.FC<MessageInputProps> = ({ newMessage, setNewMessage, 
       </Button>   
         </ContextMenuTrigger>
         <ContextMenuContent className="w-64 font-sans font-semibold">
-          <ContextMenuItem  disabled={isThinking} asChild>
+          <ContextMenuItem onClick={suggestReply}  disabled={isThinking || userPromptThinking} asChild>
             <span className="flex items-center gap-2">
               <MessageSquareQuote className="h-4 w-4" />
               Suggest a reply
             </span>
           </ContextMenuItem>
-          <ContextMenuItem disabled={isThinking} asChild>
+          <ContextMenuItem onClick={rewriteMessage} disabled={isThinking || userPromptThinking} asChild>
             <span className="flex items-center gap-2">
               <PenLine className="h-4 w-4" />
               Rewrite message

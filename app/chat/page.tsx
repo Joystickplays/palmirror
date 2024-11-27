@@ -23,6 +23,7 @@ const ChatPage = () => {
   });
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+  const [userPromptThinking, setUserPromptThinking] = useState(false);
   const [baseURL, setBaseURL] = useState("");
   const [apiKey, setApiKey] = useState("none");
   const [generationTemperature, setTemperature] = useState(0.5);
@@ -37,27 +38,33 @@ const ChatPage = () => {
   const encodeMessages = () => {
     try {
       const json = JSON.stringify(messages);
-      toast.success("Chat exported!")
-      return btoa(json);
+      const encoder = new TextEncoder();
+      const encodedArray = encoder.encode(json);
+      const base64String = btoa(String.fromCharCode(...encodedArray));
+      toast.success("Chat exported!");
+      return base64String;
     } catch (error) {
       toast.error("Failed to encode messages: " + error);
       return "";
     }
   };
-
+  
   const decodeMessages = (encoded: string) => {
     try {
-      const json = atob(encoded);
-      setMessages(JSON.parse(json));
-      toast.success("Chat imported!")
-      return JSON.parse(json);
-
+      const decodedString = atob(encoded);
+      const decodedArray = new Uint8Array(decodedString.split("").map(char => char.charCodeAt(0)));
+      const decoder = new TextDecoder();
+      const json = decoder.decode(decodedArray);
+      const parsedMessages = JSON.parse(json);
+      setMessages(parsedMessages);
+      toast.success("Chat imported!");
+      return parsedMessages;
     } catch (error) {
       toast.error("Failed to decode messages: " + error);
       return [];
     }
   };
-
+  
   const loadSettingsFromLocalStorage = () => {
     const settings = localStorage.getItem('Proxy_settings');
     if (settings) {
@@ -201,10 +208,88 @@ const ChatPage = () => {
     setMessages(messages.slice(0, index + 1));
   };
 
+  const suggestReply = async () => {
+    setUserPromptThinking(true);
+    const systemMessageContent = getSystemMessage(characterData, modelInstructions);
+
+    try {
+      abortController.current = new AbortController();
+      const comp = await openai.chat.completions.create({
+        model: modelName,
+        messages: [
+          { role: "system", content: systemMessageContent, name: "system" },
+          ...messages.map((msg) => ({ ...msg, name: "-" })),
+          { role: "user", content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a quick reply for ${characterData.userName} in accordance to ${characterData.userName}'s personality. Reply must be thoughtful and quick.`, name: "user" },
+        ],
+        stream: true,
+        temperature: generationTemperature,
+      });
+
+      let assistantMessage = "";
+
+      for await (const chunk of comp) {
+        if (abortController.current?.signal.aborted) break;
+
+        const chunkContent = chunk.choices[0].delta.content || "";
+        assistantMessage += chunkContent;
+
+        // Update the message input box
+        setNewMessage(assistantMessage)
+        vibrate(10);
+      }
+    } catch (error) {
+      if (!abortController.current?.signal.aborted) toast.error("Error: " + error);
+      setUserPromptThinking(false);
+      abortController.current = null;
+    } finally {
+      setUserPromptThinking(false);
+      abortController.current = null;
+    }
+  };
+
+  const rewriteMessage = async () => {
+    setUserPromptThinking(true);
+    const systemMessageContent = getSystemMessage(characterData, modelInstructions);
+
+    try {
+      abortController.current = new AbortController();
+      const comp = await openai.chat.completions.create({
+        model: modelName,
+        messages: [
+          { role: "system", content: systemMessageContent, name: "system" },
+          ...messages.map((msg) => ({ ...msg, name: "-" })),
+          { role: "user", content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${newMessage}\`\nYour enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`, name: "user" },
+        ],
+        stream: true,
+        temperature: generationTemperature,
+      });
+
+      let assistantMessage = "";
+
+      for await (const chunk of comp) {
+        if (abortController.current?.signal.aborted) break;
+
+        const chunkContent = chunk.choices[0].delta.content || "";
+        assistantMessage += chunkContent;
+
+        // Update the message input box
+        setNewMessage(assistantMessage)
+        vibrate(10);
+      }
+    } catch (error) {
+      if (!abortController.current?.signal.aborted) toast.error("Error: " + error);
+      setUserPromptThinking(false);
+      abortController.current = null;
+    } finally {
+      setUserPromptThinking(false);
+      abortController.current = null;
+    }
+  };
 
 
   const cancelRequest = () => {
     if (abortController.current) abortController.current.abort();
+    setUserPromptThinking(false);
     setIsThinking(false);
   };
 
@@ -270,6 +355,9 @@ const ChatPage = () => {
           handleSendMessage={(e) => handleSendMessage(e, false)}
           onCancel={cancelRequest}
           isThinking={isThinking}
+          userPromptThinking={userPromptThinking}
+          suggestReply={suggestReply}
+          rewriteMessage={rewriteMessage}
         />
       </div>
     </div>
