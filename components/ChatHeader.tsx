@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTheme } from '@/components/PalMirrorThemeProvider';
 import { Settings } from 'lucide-react';
 import {
   Dialog,
@@ -14,6 +15,13 @@ import {
   DialogTrigger,
   DialogClose
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 
 
@@ -27,9 +35,13 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
   const [baseURL, setBaseURL] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [temperature, setTemperature] = useState(0.5);
-  const [importB64msgCode , setImportB64msgCode] = useState('');
+  const [importB64msgCode, setImportB64msgCode] = useState('');
   const [modelName, setModelName] = useState('');
   const [modelInstructions, setModelInstructions] = useState('');
+
+  const { theme, setTheme } = useTheme();
+
+
 
   const handleImportChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setImportB64msgCode(event.target.value);
@@ -57,6 +69,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
   useEffect(() => {
     loadSettingsFromLocalStorage();
   }, []);
+
+  useEffect(() => {
+    console.log(theme)
+  }, [theme])
 
   // Save values to localStorage whenever they change
   const handleBaseURLChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,7 +111,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
 
   return (
     <Card>
-      <CardContent className='flex justify-between items-center p-5 w-full'>
+      <CardContent className={`flex justify-between items-center p-5 w-full ${ theme == "cai" ? "bg-[#26272b]" : ""}`}>
         <h2>PalMirror · <span className="font-bold">{characterName}</span></h2>
         <Dialog>
           <DialogTrigger asChild>
@@ -126,7 +142,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
                 <div className="grid w-full items-center gap-1.5">
                   <Label htmlFor="Proxy_modelName">Model Name</Label>
                   <Input
-                    id="Proxy_modelName"                    
+                    id="Proxy_modelName"
                     placeholder="e.g., gpt-3.5-turbo"
                     value={modelName}
                     onChange={handleModelNameChange}
@@ -151,13 +167,13 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
                 <Slider defaultValue={[0.5]} min={0} max={1} step={0.01} onValueChange={(val: number[]) => { handleTemperatureChange(val) }} />
               </div>
               <div className="flex gap-2 pt-8">
-                <Button onClick={() => {navigator.clipboard.writeText(getExportedMessages())}}>Export chat</Button>
+                <Button onClick={() => { navigator.clipboard.writeText(getExportedMessages()) }}>Export chat</Button>
                 <Dialog>
                   <DialogTrigger asChild><Button>Import chat</Button></DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle className="mb-4">Import chat</DialogTitle>
-                      <Textarea  placeholder="Enter your Base64-encoded chat..."
+                      <Textarea placeholder="Enter your Base64-encoded chat..."
                         value={importB64msgCode}
                         onChange={handleImportChange}
                       ></Textarea>
@@ -168,6 +184,16 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
                   </DialogContent>
                 </Dialog>
               </div>
+              <Select onValueChange={setTheme}>
+                <SelectTrigger className="w-full mt-5">
+                  <SelectValue placeholder="Theme" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="palmirror">PalMirror Original</SelectItem>
+                  <SelectItem value="cai">c.ai</SelectItem>
+                </SelectContent>
+              </Select>
+
             </DialogHeader>
           </DialogContent>
         </Dialog>

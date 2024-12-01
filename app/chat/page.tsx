@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import MessageCard from "@/components/MessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
+import { useTheme } from '@/components/PalMirrorThemeProvider';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/components/systemMessageGeneration";
@@ -35,13 +36,14 @@ const ChatPage = () => {
   const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const { theme, setTheme } = useTheme();
   const encodeMessages = () => {
     try {
       const json = JSON.stringify(messages);
       const encoder = new TextEncoder();
       const encodedArray = encoder.encode(json);
       const base64String = btoa(String.fromCharCode(...encodedArray));
-      toast.success("Chat exported!");
+      toast.success("Chat exported! Your chat is copied to clipboard.");
       return base64String;
     } catch (error) {
       toast.error("Failed to encode messages: " + error);
@@ -93,7 +95,8 @@ const ChatPage = () => {
   const handleSendMessage = async (
     e: React.KeyboardEvent<HTMLTextAreaElement> | null,
     force = false,
-    regenerate = false
+    regenerate = false,
+    optionalMessage = ""
   ) => {
     // Prevent default behavior if Enter key is pressed
     if (e && e.key === "Enter") {
@@ -124,7 +127,7 @@ const ChatPage = () => {
       setMessages(messagesList);
     };
 
-    const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : newMessage.trim();
+    const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
 
     if (userMessageContent) {
       // Add user message to the message list
@@ -139,7 +142,6 @@ const ChatPage = () => {
       // Refocus the textarea
       textareaRef.current?.focus();
     }
-    console.log(messagesList)
     setIsThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
 
@@ -247,7 +249,7 @@ const ChatPage = () => {
     }
   };
 
-  const rewriteMessage = async () => {
+  const rewriteMessage = async (base: string) => {
     setUserPromptThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
 
@@ -258,7 +260,7 @@ const ChatPage = () => {
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
           ...messages.map((msg) => ({ ...msg, name: "-" })),
-          { role: "user", content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${newMessage}\`\nYour enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`, name: "user" },
+          { role: "user", content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${base}\`\nYour enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`, name: "user" },
         ],
         stream: true,
         temperature: generationTemperature,
@@ -311,7 +313,7 @@ const ChatPage = () => {
   }, [messages]);
 
   return (
-    <div className="grid place-items-center">
+    <div className={`grid place-items-center ${theme == "cai" ? "bg-[#18181b]" : ""}`}>
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -325,7 +327,7 @@ const ChatPage = () => {
       <div className="grid max-w-[40rem] w-full h-dvh p-2 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
         <ChatHeader characterName={characterData.name} getExportedMessages={encodeMessages} importMessages={decodeMessages} />
         <div className="overflow-y-auto overflow-x-hidden">
-          <div className="flex flex-col justify-end gap-2 min-h-full">
+          <div className="flex flex-col justify-end min-h-full">
             <div style={{ height: "60vh" }}></div>
             {messages.map((message, index) => {
               const isSecondLast = index === messages.length - 2;
@@ -352,7 +354,7 @@ const ChatPage = () => {
         <MessageInput
           newMessage={newMessage}
           setNewMessage={setNewMessage}
-          handleSendMessage={(e) => handleSendMessage(e, false)}
+          handleSendMessage={handleSendMessage}
           onCancel={cancelRequest}
           isThinking={isThinking}
           userPromptThinking={userPromptThinking}
