@@ -37,34 +37,68 @@ const ChatPage = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { theme, setTheme } = useTheme();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Function to download a file
+  const downloadFile = (content: string, fileName: string, contentType: string) => {
+    const file = new Blob([content], { type: contentType });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(file);
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(link.href); // Clean up the URL object
+  };
+
+  const getFormattedFileName = () => {
+    const now = new Date();
+    const date = now.toISOString().split("T")[0]; // YYYY-MM-DD format
+    const time = now.toTimeString().split(" ")[0].replace(/:/g, "-"); // HH-MM-SS format
+    return `Chat-with-${characterData.name}-${date}-${time}.plm`;
+  };
+
   const encodeMessages = () => {
     try {
       const json = JSON.stringify(messages);
       const encoder = new TextEncoder();
       const encodedArray = encoder.encode(json);
       const base64String = btoa(String.fromCharCode(...encodedArray));
-      toast.success("Chat exported! Your chat is copied to clipboard.");
-      return base64String;
+
+      // Use the formatted file name
+      const fileName = getFormattedFileName();
+      downloadFile(base64String, fileName, "text/plain");
+      toast.success("Chat exported! File downloaded.");
     } catch (error) {
       toast.error("Failed to encode messages: " + error);
-      return "";
     }
   };
-  
-  const decodeMessages = (encoded: string) => {
+
+  const decodeMessages = async (file: File) => {
     try {
-      const decodedString = atob(encoded);
+      const fileContent = await file.text(); // Read the file content
+      const decodedString = atob(fileContent);
       const decodedArray = new Uint8Array(decodedString.split("").map(char => char.charCodeAt(0)));
       const decoder = new TextDecoder();
       const json = decoder.decode(decodedArray);
       const parsedMessages = JSON.parse(json);
+
       setMessages(parsedMessages);
-      toast.success("Chat imported!");
-      return parsedMessages;
+      toast.success("Chat imported successfully!");
     } catch (error) {
       toast.error("Failed to decode messages: " + error);
-      return [];
     }
+  };
+
+  const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      decodeMessages(file);
+    } else {
+      toast.error("No file selected.");
+    }
+  };
+
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
   };
   
   const loadSettingsFromLocalStorage = () => {
@@ -325,7 +359,7 @@ const ChatPage = () => {
         theme="dark"
       />
       <div className="grid max-w-[40rem] w-full h-dvh p-2 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
-        <ChatHeader characterName={characterData.name} getExportedMessages={encodeMessages} importMessages={decodeMessages} />
+        <ChatHeader characterName={characterData.name} getExportedMessages={encodeMessages} importMessages={openFilePicker} />
         <div className="overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col justify-end min-h-full">
             <div style={{ height: "60vh" }}></div>
@@ -362,6 +396,13 @@ const ChatPage = () => {
           rewriteMessage={rewriteMessage}
         />
       </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".plm"
+        style={{ display: "none" }}
+        onChange={handleFileInput}
+      />
     </div>
   );
 };

@@ -27,15 +27,15 @@ import { Slider } from "@/components/ui/slider"
 
 interface ChatHeaderProps {
   characterName: string;
-  getExportedMessages: () => string;
-  importMessages: (messagesB64: string) => void;
+  getExportedMessages: () => void;
+  importMessages: () => void;
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessages, importMessages }) => {
   const [baseURL, setBaseURL] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [temperature, setTemperature] = useState(0.5);
-  const [importB64msgCode, setImportB64msgCode] = useState('');
+  // const [importB64msgkCode, setImportB64msgCode] = useState('');
   const [modelName, setModelName] = useState('');
   const [modelInstructions, setModelInstructions] = useState('');
 
@@ -43,14 +43,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
 
 
 
-  const handleImportChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setImportB64msgCode(event.target.value);
-  };
+  // const handleImportChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+  //   setImportB64msgCode(event.target.value);
+  // };
 
   const handleImport = () => {
-    if (importB64msgCode) {
-      importMessages(importB64msgCode);
-    }
+    importMessages();
   };
 
 
@@ -167,9 +165,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
                 <Slider defaultValue={[0.5]} min={0} max={1} step={0.01} onValueChange={(val: number[]) => { handleTemperatureChange(val) }} />
               </div>
               <div className="flex gap-2 pt-8">
-                <Button onClick={() => { navigator.clipboard.writeText(getExportedMessages()) }}>Export chat</Button>
+                <Button onClick={getExportedMessages}>Export chat</Button>
+                <Button onClick={handleImport}>Import chat</Button>
+                  {/* <DialogTrigger asChild></DialogTrigger>
                 <Dialog>
-                  <DialogTrigger asChild><Button>Import chat</Button></DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle className="mb-4">Import chat</DialogTitle>
@@ -182,7 +181,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
                       </DialogClose>
                     </DialogHeader>
                   </DialogContent>
-                </Dialog>
+                </Dialog> */}
               </div>
               <Select onValueChange={setTheme}>
                 <SelectTrigger className="w-full mt-5">
