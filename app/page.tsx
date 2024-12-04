@@ -43,7 +43,7 @@ export default function Home() {
     userName: "",
     userPersonality: ""
   });
-  const [caiLinkChar, setCaiLinkChar] = useState('')
+  const [linkChar, setLinkChar] = useState('')
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof typeof characterData) => {
     const value = event.target.value;
@@ -71,11 +71,22 @@ export default function Home() {
     return match ? match[1] : null;
   };
 
+  const getChubCharacterAuthor = (url: string): string | null => {
+    const match = url.match(/\/characters\/([^\/?]+)/);
+    return match ? match[1] : null;
+  };
+
+  const getChubCharacterId = (url: string, author: string): string | null => {
+    const match = url.match(new RegExp(`/${author}/([^/?)]+)`));
+    return match ? match[1] : null;
+  };
+
+
   const getCaiInfo = () => {
     toast("Getting character...")
     const fetchCaiData = async () => {
       try {
-        const response = await fetch(`/api/charai?char=${getCharacterId(caiLinkChar)}`);
+        const response = await fetch(`/api/charai?char=${getCharacterId(linkChar)}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -101,8 +112,46 @@ export default function Home() {
       }
     };
     
-    if (caiLinkChar) {
+    if (linkChar) {
       fetchCaiData();
+    }
+
+  }
+
+  const getChubaiInfo = () => {
+    toast("Getting character...")
+    const fetchChubaiData = async () => {
+      try {
+        const authorName = getChubCharacterAuthor(linkChar)
+        const response = await fetch(`https://api.chub.ai/api/characters/${authorName}/${getChubCharacterId(linkChar, authorName || "")}?full=true`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        const { name, personality, initialMessage, ...rest } = characterData;
+      
+        setCharacterData(() => {
+            const updatedData = {
+                ...rest,
+                name: data.node.definition.name,
+                personality: data.node.definition.personality || data.node.definition.description,
+                initialMessage: data.node.definition.first_message,
+                scenario: data.node.definition.scenario,
+            };
+            localStorage.setItem('characterData', JSON.stringify(updatedData));
+            toast.success(`${data.node.definition.name} fetched from chub.ai!`);
+            return updatedData;
+        });
+        
+        router.push("/chat");        
+      } catch (error) {
+        toast.error(`Failed to fetch character data from chub.ai: ${error}`);
+      }
+    };
+    
+    if (linkChar) {
+      fetchChubaiData();
     }
 
   }
@@ -120,14 +169,17 @@ export default function Home() {
         <div className="flex justify-items-center items-center gap-4">
           <Dialog>
             <DialogTrigger asChild>
-              <Button>Get from c.ai</Button>
+              <Button>Get from a platform</Button>
             </DialogTrigger>
             <DialogContent className="w-full max-h-[80vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Get from c.ai</DialogTitle>
+                <DialogTitle>Get from a platform</DialogTitle>
               </DialogHeader>
-                <Input value={caiLinkChar} onChange={(e) => setCaiLinkChar(e.target.value)} placeholder="c.ai character link (Characters with public definitions are recommended)" /> 
-                <Button onClick={getCaiInfo}>Get</Button>
+                <Input value={linkChar} onChange={(e) => setLinkChar(e.target.value)} placeholder="Character link (Characters with public definitions are recommended)" /> 
+                <div className="flex justify-items-center items-center gap-4">
+                  <Button onClick={getCaiInfo}>Get from c.ai</Button>
+                  <Button onClick={getChubaiInfo}>Get from chub.ai</Button>
+                </div>
             </DialogContent>
           </Dialog>
           <em >or</em>

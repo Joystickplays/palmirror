@@ -65,7 +65,7 @@ const ChatPage = () => {
 
       // Use the formatted file name
       const fileName = getFormattedFileName();
-      downloadFile(base64String, fileName, "text/plain");
+      downloadFile(base64String, fileName, "application/octet-stream");
       toast.success("Chat exported! File downloaded.");
     } catch (error) {
       toast.error("Failed to encode messages: " + error);
