@@ -4,16 +4,31 @@ import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
 import { useSpring, animated } from '@react-spring/web';
 import { useDrag } from '@use-gesture/react';
-import { Pencil, Rewind, Check } from 'lucide-react';
+import { Pencil, Rewind, Check, MessagesSquare } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useTheme } from '@/components/PalMirrorThemeProvider';
-
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "@/components/ui/dialog";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 
 interface MessageCardProps {
   index: number;
@@ -22,10 +37,12 @@ interface MessageCardProps {
   stillGenerating: boolean;
   regenerateFunction: () => void;
   globalIsThinking: boolean;
+  isGreetingMessage: boolean;
   isLastMessage: boolean;
   characterData: {
     name: string;
     userName: string;
+    alternateInitialMessages: Array<string> | null | undefined
   };
   editMessage: (index: number, content: string) => void;
   rewindTo: (index: number) => void;
@@ -45,6 +62,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   regenerateFunction,
   globalIsThinking,
   isLastMessage,
+  isGreetingMessage,
   characterData,
   editMessage,
   rewindTo,
@@ -137,8 +155,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
 
     return (
-      <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none`}>
-        {content?.replace(/\{\{user\}\}/g, characterData.userName || "Y/N")}
+      <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
+        {content?.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")}
       </ReactMarkdown>
     );
   };
@@ -152,50 +170,95 @@ const MessageCard: React.FC<MessageCardProps> = ({
         height: height.to(h => `${h}%`),
         fontSize: fontSize.to(s => `${s}rem`),
         filter: blur.to(b => `blur(${b}px)`),
-        gap: fontSize.to(s => `${s/2}rem`),
-        marginTop: fontSize.to(s => `${s/2}rem`)
+        gap: fontSize.to(s => `${s / 2}rem`),
+        marginTop: fontSize.to(s => `${s / 2}rem`)
       }}
       className="flex flex-col justify-end min-h-full overflow-hidden"
     >
-      <animated.p className={`${role === "user" ? "ml-auto" : "mr-auto"} opacity-50`} style={{ fontSize: fontSize.to(s => `${s/1.5}rem`) }}>
+      <animated.p className={`${role === "user" ? "ml-auto" : "mr-auto"} opacity-50`} style={{ fontSize: fontSize.to(s => `${s / 1.5}rem`) }}>
         {role === "user" ? `${theme === "cai" ? characterData.userName || "Y/N" : ""}` : characterData.name || "Character"}
       </animated.p>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <Card
-            {...bind()}
-            className={`bg-blue-900/20 rounded-xl max-w-lg border-0 grow-0 shrink h-fit touch-none ${role === "user"
-              ? `${ theme == "cai" ? "bg-[#303136]/50" : ""} ${ theme == "palmirror" ? "bg-blue-950/20" : ""} ml-auto rounded-br-md text-end`
-              : `${ theme == "cai" ? "bg-[#26272b]/50" : ""} ${ theme == "palmirror" ? "bg-gray-900/10" : ""} mr-auto rounded-bl-md`
-              } ${isEditing ? "w-full" : ""}`}
-          >
-            <CardContent className="p-0">
-              <animated.div className="whitespace-pre-line break-words max-w-full markdown-content overflow-hidden" style={{
-                padding: fontSize.to(s => `${s/2}rem`),
-                paddingLeft: fontSize.to(s => `${s}rem`),
-                paddingRight: fontSize.to(s => `${s}rem`),
-              }}>
-                {renderContent()}
-              </animated.div>
-            </CardContent>
-          </Card>
-        </ContextMenuTrigger>
-        <ContextMenuContent className="w-64 font-sans font-semibold">
-          <ContextMenuItem onClick={() => rewindTo(index)} disabled={stillGenerating} asChild>
-            <span className="flex items-center gap-2">
-              <Rewind className="h-4 w-4" />
-              Rewind to here
-            </span>
-          </ContextMenuItem>
-          <ContextMenuItem onClick={startEditing} disabled={stillGenerating} asChild>
-            <span className="flex items-center gap-2">
-              <Pencil className="h-4 w-4" />
-              Edit
-            </span>
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-    </animated.div>
+      <Dialog> {/* Alternate messages dialog */}
+
+        <DialogContent className="w-auto max-h-[80vh] max-w-[100vw] min-w-[90vw] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="mb-8">Choose an alternate initial message</DialogTitle>
+            {/* <Select>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose an alternate initial message" />
+              </SelectTrigger>
+              <SelectContent> */}
+            {characterData.alternateInitialMessages && characterData.alternateInitialMessages.map((message, index) => {
+              return (
+                <Card key={message} className="mb-4 p-3 text-left">
+                  <CardContent>
+                    <ReactMarkdown>
+                      {message}
+                    </ReactMarkdown>
+                    <DialogClose asChild>
+                      <Button onClick={() => {
+                        editMessage(0, message);
+                        setIsEditing(false);
+                      }} className="mt-5 w-full">Use</Button>
+                    </DialogClose>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            {/* </SelectContent>
+            </Select> */}
+          </DialogHeader>
+        </DialogContent>
+
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <Card
+              {...bind()}
+              className={`bg-blue-900/20 rounded-xl max-w-lg border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
+                ? `${theme == "cai" ? "bg-[#303136]/50" : ""} ${theme == "palmirror" ? "bg-blue-950/20" : ""} ml-auto rounded-br-md text-end`
+                : `${theme == "cai" ? "bg-[#26272b]/50" : ""} ${theme == "palmirror" ? "bg-gray-900/10" : ""} mr-auto rounded-bl-md`
+                } ${isEditing ? "w-full" : ""}`}
+            >
+              <CardContent className="p-0">
+                <animated.div className="whitespace-pre-line break-words max-w-full markdown-content overflow-hidden" style={{
+                  padding: fontSize.to(s => `${s / 2}rem`),
+                  paddingLeft: fontSize.to(s => `${s}rem`),
+                  paddingRight: fontSize.to(s => `${s}rem`),
+                }}>
+                  {renderContent()}
+                </animated.div>
+              </CardContent>
+            </Card>
+          </ContextMenuTrigger>
+          <ContextMenuContent className="w-64 font-sans font-semibold">
+            {isGreetingMessage && characterData.alternateInitialMessages && (
+              <DialogTrigger asChild>
+                <ContextMenuItem asChild>
+                  <span className="flex items-center gap-2">
+                    <MessagesSquare className="h-4 w-4" />
+                    Choose an alternate initial message
+                  </span>
+                </ContextMenuItem>
+              </DialogTrigger>
+
+
+            )}
+            <ContextMenuItem onClick={() => rewindTo(index)} disabled={stillGenerating} asChild>
+              <span className="flex items-center gap-2">
+                <Rewind className="h-4 w-4" />
+                Rewind to here
+              </span>
+            </ContextMenuItem>
+            <ContextMenuItem onClick={startEditing} disabled={stillGenerating} asChild>
+              <span className="flex items-center gap-2">
+                <Pencil className="h-4 w-4" />
+                Edit
+              </span>
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      </Dialog>
+    </animated.div >
   );
 };
 

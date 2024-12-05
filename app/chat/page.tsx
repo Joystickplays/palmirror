@@ -20,7 +20,8 @@ const ChatPage = () => {
     initialMessage: "",
     scenario: "",
     userName: "",
-    userPersonality: ""
+    userPersonality: "",
+    alternateInitialMessages: [] as Array<string>
   });
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -374,6 +375,7 @@ const ChatPage = () => {
                     stillGenerating={message.stillGenerating}
                     regenerateFunction={regenerateMessage}
                     globalIsThinking={isThinking}
+                    isGreetingMessage={index === 0}
                     isLastMessage={index === messages.length - 1}
                     characterData={characterData}
                     editMessage={editMessage}

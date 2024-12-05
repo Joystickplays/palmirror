@@ -41,7 +41,8 @@ export default function Home() {
     initialMessage: "",
     scenario: "",
     userName: "",
-    userPersonality: ""
+    userPersonality: "",
+    alternateInitialMessages: [] as Array<string>
   });
   const [linkChar, setLinkChar] = useState('')
 
@@ -137,6 +138,7 @@ export default function Home() {
                 name: data.node.definition.name,
                 personality: data.node.definition.personality || data.node.definition.description,
                 initialMessage: data.node.definition.first_message,
+                alternateInitialMessages: data.node.definition.alternate_greetings || [],
                 scenario: data.node.definition.scenario,
             };
             localStorage.setItem('characterData', JSON.stringify(updatedData));
