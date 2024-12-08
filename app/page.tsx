@@ -138,7 +138,7 @@ export default function Home() {
                 name: data.node.definition.name,
                 personality: data.node.definition.personality || data.node.definition.description,
                 initialMessage: data.node.definition.first_message,
-                alternateInitialMessages: data.node.definition.alternate_greetings || [],
+                alternateInitialMessages: data.node.definition.alternate_greetings && [data.node.definition.first_message, ...data.node.definition.alternate_greetings] || [],
                 scenario: data.node.definition.scenario,
             };
             localStorage.setItem('characterData', JSON.stringify(updatedData));
@@ -168,7 +168,7 @@ export default function Home() {
       </h1>
 
       <div className="pb-7">
-        <div className="flex justify-items-center items-center gap-4">
+        <div className="flex justify-items-center items-center flex-col sm:flex-row gap-2 sm:gap-4">
           <Dialog>
             <DialogTrigger asChild>
               <Button>Get from a platform</Button>

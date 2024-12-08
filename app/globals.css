@@ -101,3 +101,21 @@ em::after {
   content: "\A"; 
   white-space: pre;
 }
+
+
+.palmirror-exc-text {
+  font-weight: bold;
+  background: linear-gradient(90deg, #ffb3c1, #f0d1f9, #b3e0f5, #f8e1d4, #d3f8e2);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 1s ease-in-out infinite;
+  
+  text-shadow: 
+    0 0 5px #ffb3c122, 
+    0 0 20px #f0d1f922, 
+    0 0 35px #b3e0f522, 
+    0 0 70px #f8e1d422, 
+    0 0 100px #d3f8e222;
+}

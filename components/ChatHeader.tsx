@@ -114,7 +114,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
           <DialogTrigger asChild>
             <Button variant="outline" className="p-3 size-8"><Settings /></Button>
           </DialogTrigger>
-          <DialogContent className="w-auto max-h-[80vh] min-w-96 overflow-y-auto">
+          <DialogContent className="w-auto max-h-[80vh] min-w-96 overflow-y-auto font-sans">
             <DialogHeader>
               <DialogTitle className="mb-8">Chat settings</DialogTitle>
               <h2 className="my-4 font-bold">AI Provider settings</h2>
