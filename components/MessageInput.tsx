@@ -74,7 +74,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     <div className="relative w-full">
       <Textarea
         id="Message"
-        className={`w-full p-2 ${userPromptThinking ? "text-white/50" : ""} ${ theme == "cai" ? "bg-[#26272b]" : ""}`}
+        className={`w-full p-2 ${userPromptThinking ? "text-white/50" : ""} ${ theme == "cai" ? "bg-[#26272b]" : ""} rounded-xl rounded-br-[30px] pr-16 pl-4`}
         value={localMessage}
         onChange={handleInputChange}
         onKeyDown={(e) => localHandleSendMessage(e)}
@@ -82,7 +82,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       />
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <Button className="absolute right-2 bottom-2 p-2" onClick={handleButtonClick}>
+          <Button className="absolute right-2 bottom-2 p-2 rounded-full" size="icon" onClick={handleButtonClick}>
             {isThinking || userPromptThinking ? (
               <OctagonX className="animate-pulse" />
             ) : (

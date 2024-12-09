@@ -102,15 +102,26 @@ em::after {
   white-space: pre;
 }
 
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
 
 .palmirror-exc-text {
   font-weight: bold;
   background: linear-gradient(90deg, #ffb3c1, #f0d1f9, #b3e0f5, #f8e1d4, #d3f8e2);
-  background-size: 300% 300%;
+  background-size: 300% 300% !important;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: gradientShift 1s ease-in-out infinite;
+  animation: gradientShift 10s ease-in-out infinite;
   
   text-shadow: 
     0 0 5px #ffb3c122, 
@@ -118,4 +129,16 @@ em::after {
     0 0 35px #b3e0f522, 
     0 0 70px #f8e1d422, 
     0 0 100px #d3f8e222;
+}
+
+.palmirror-exc {
+  /* background-size: 300% 300% !important;
+  background: linear-gradient(90deg, #ffb3c133, #f0d1f933, #b3e0f533, #f8e1d433, #d3f8e233);
+  animation: gradientShift 10s ease-in-out infinite; */
+  box-shadow: 
+    0 0 2px #ff779022, 
+    0 0 10px #e481ff22, 
+    0 0 25px #6dd1ff22, 
+    0 0 50px #ffa06922, 
+    0 0 70px #73ffab22;
 }
