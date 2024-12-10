@@ -25,10 +25,10 @@ import {
 } from "@/components/ui/accordion"
 
 import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card"
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 
 import { useRouter } from 'next/navigation';
@@ -193,7 +193,7 @@ export default function Home() {
             </DialogContent>
           </Dialog>
           <em >or</em>
-          <HoverCard>
+          <Popover>
             <Dialog>
               <DialogTrigger asChild>
                 <Button className="mx-auto">Setup character</Button>
@@ -202,18 +202,18 @@ export default function Home() {
                 <DialogHeader>
                   <DialogTitle>Setup character</DialogTitle>
                   <div className="palmirror-exc rounded-lg p-3 !my-4">
-                    <div className="flex justify-center items-center mb-3">
+                    <div className="flex justify-center items-center">
                       <h1 className="text-2xl !font-extrabold tracking-tight text-center w-full palmirror-exc-text text-center">
                         PalMirror Experience
                       </h1>
-                      <HoverCardTrigger asChild>
+                      <PopoverTrigger asChild>
                         <Button variant="ghost" size="icon">
                           <CircleHelp />
                         </Button>
-                      </HoverCardTrigger>
+                      </PopoverTrigger>
                     </div>
-                    <div className="flex justify-center items-center gap-2">
-                      <Button variant="palmirror">Create</Button>
+                    <div className="flex justify-center items-center gap-2 !mt-2">
+                      <Button variant="palmirror" onClick={() => {router.push("/palexp/create")}}>Create</Button>
                       <Button variant="palmirror">Import from file</Button>
                     </div>
                   </div>
@@ -264,10 +264,10 @@ export default function Home() {
                 </DialogHeader>
               </DialogContent>
             </Dialog>
-            <HoverCardContent asChild className="z-[999999] min-w-80">
+            <PopoverContent asChild className="z-[999999] min-w-80">
               <p>PalMirror-exclusive characters with customizable traits and reactions. Adjust their emotions and status in real-time as they react to your changes, triggering sounds and effects. More features are being worked out for PalMirror Experience characters.</p>
-            </HoverCardContent>
-          </HoverCard>
+            </PopoverContent>
+          </Popover>
 
         </div>
         {/* <hr className="my-4"></hr>

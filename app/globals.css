@@ -116,12 +116,12 @@ em::after {
 
 .palmirror-exc-text {
   font-weight: bold;
-  background: linear-gradient(90deg, #ffb3c1, #f0d1f9, #b3e0f5, #f8e1d4, #d3f8e2);
-  background-size: 300% 300% !important;
+  background: linear-gradient(90deg, #ffb3c1, #f0d1f9, #b3e0f5, #d3f8e2);
+  background-size: 500% 500% !important;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: gradientShift 10s ease-in-out infinite;
+  animation: gradientShift 20s ease-in-out infinite;
   
   text-shadow: 
     0 0 5px #ffb3c122, 
