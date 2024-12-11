@@ -275,6 +275,7 @@ export default function Home() {
           </div> */}
       </div>
       <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character. PalMirror does not store your chats.</p>
+      <p className="text-sm opacity-40 text-center">An <u><a href="https://github.com/Joystickplays/palmirror">open-source</a></u> project by GoTeam</p>
 
       <ToastContainer
         position="top-right"
