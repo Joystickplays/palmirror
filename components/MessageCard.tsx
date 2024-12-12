@@ -132,10 +132,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
   }, { axis: "x", bounds: { left: -350, right: 0 }, rubberband: true });
 
-  const charUserSubstitution = (content: string) => {
-    return content.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
-  }
-
   const renderContent = () => {
     if (isEditing) {
       return (
@@ -159,8 +155,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
 
     return (
-      <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95 leading-relaxed`}>
-        {charUserSubstitution(content)}
+      <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
+        {content?.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")}
       </ReactMarkdown>
     );
   };
@@ -194,10 +190,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
               <SelectContent> */}
             {characterData.alternateInitialMessages && characterData.alternateInitialMessages.map((message, index) => {
               return (
-                <Card key={index} className="mb-4 p-3 text-left">
-                  <CardContent className="p-2">
-                    <ReactMarkdown className="font-sans markdown-content leading-relaxed">
-                      {charUserSubstitution(message)}
+                <Card key={message} className="mb-4 p-3 text-left">
+                  <CardContent>
+                    <ReactMarkdown>
+                      {message}
                     </ReactMarkdown>
                     <DialogClose asChild>
                       <Button onClick={() => {

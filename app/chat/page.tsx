@@ -10,6 +10,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/components/systemMessageGeneration";
 import OpenAI from "openai";
 
+import { AnimatePresence, motion } from "motion/react"
+
 let openai: OpenAI;
 
 const ChatPage = () => {
@@ -101,7 +103,7 @@ const ChatPage = () => {
   const openFilePicker = () => {
     fileInputRef.current?.click();
   };
-  
+
   const loadSettingsFromLocalStorage = () => {
     const settings = localStorage.getItem('Proxy_settings');
     if (settings) {
@@ -137,10 +139,10 @@ const ChatPage = () => {
     if (e && e.key === "Enter") {
       try {
         e.preventDefault();
-      } catch {}
+      } catch { }
     }
     // Return early if not forced, and Enter key not pressed
-    if (!force && ((e && e.key !== "Enter"))) return; 
+    if (!force && ((e && e.key !== "Enter"))) return;
 
     loadSettingsFromLocalStorage();
     if (!baseURL.includes("https://")) {
@@ -167,7 +169,7 @@ const ChatPage = () => {
     if (userMessageContent) {
       // Add user message to the message list
       messagesList = [
-        ...messagesList, 
+        ...messagesList,
         { role: "user", content: userMessageContent, stillGenerating: false }
       ]
       // Update the messages state
@@ -195,7 +197,7 @@ const ChatPage = () => {
       let assistantMessage = "";
       // Add a placeholder message while waiting for the response
       setMessages(prevMessages => [
-        ...prevMessages, 
+        ...prevMessages,
         { role: "assistant", content: "...", stillGenerating: true }
       ]);
 
@@ -225,7 +227,7 @@ const ChatPage = () => {
     }
   };
 
-  const regenerateMessage = () => {    
+  const regenerateMessage = () => {
     const updatedMessages = [...messages];
 
     updatedMessages.pop();
@@ -330,7 +332,7 @@ const ChatPage = () => {
     setIsThinking(false);
   };
 
-  useEffect(() => {    
+  useEffect(() => {
     const storedData = localStorage.getItem("characterData");
     if (storedData) setCharacterData(JSON.parse(storedData));
   }, []);
@@ -364,26 +366,34 @@ const ChatPage = () => {
         <div className="overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col justify-end min-h-full">
             <div style={{ height: "60vh" }}></div>
-            {messages.map((message, index) => {
-              const isSecondLast = index === messages.length - 2;
-              return (
-                <div key={index} ref={isSecondLast ? secondLastMessageRef : null}>
-                  <MessageCard
-                    index={index}
-                    role={message.role}
-                    content={message.content}
-                    stillGenerating={message.stillGenerating}
-                    regenerateFunction={regenerateMessage}
-                    globalIsThinking={isThinking}
-                    isGreetingMessage={index === 0}
-                    isLastMessage={index === messages.length - 1}
-                    characterData={characterData}
-                    editMessage={editMessage}
-                    rewindTo={rewindTo}
-                  />
-                </div>
-              );
-            })}
+            <div>
+              <AnimatePresence>
+                {messages.map((message, index) => {
+                  const isSecondLast = index === messages.length - 2;
+                  return (
+                    <motion.div key={index} ref={isSecondLast ? secondLastMessageRef : null} className={message.role === "user" ? "origin-bottom-right" : "origin-bottom-left"}
+                      initial={{ scale: 0.8, opacity: 0, x: message.role === "user" ? 100 : -100 }}
+                      animate={{ scale: 1, opacity: 1, x: 0 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 215, damping: 30 }}>
+                      <MessageCard
+                        index={index}
+                        role={message.role}
+                        content={message.content}
+                        stillGenerating={message.stillGenerating}
+                        regenerateFunction={regenerateMessage}
+                        globalIsThinking={isThinking}
+                        isGreetingMessage={index === 0}
+                        isLastMessage={index === messages.length - 1}
+                        characterData={characterData}
+                        editMessage={editMessage}
+                        rewindTo={rewindTo}
+                      />
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
             <div ref={messageEndRef} />
           </div>
         </div>
