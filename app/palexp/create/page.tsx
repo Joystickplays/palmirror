@@ -55,23 +55,22 @@ export default function Home() {
     // const ButtonButMakeItMove = motion(Button);
     const { name, personality, scenario, initialMessage, alternateInitialMessages, plmex } = characterData;
 
-    const handleInputChange = (e: any) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setCharacterData({ ...characterData, [e.target.name]: e.target.value });
     };
 
-    const handleImageChange = (e: any) => {
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const target = e.target;
         const file = target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e: any) => {
-                const base64String = e.target.result;
+            reader.onload = (e: ProgressEvent<FileReader>) => {
+                const base64String = e.target?.result as string;
                 setCharacterData({ ...characterData, image: base64String });
             };
             reader.readAsDataURL(file);
         }
     };
-
     return (
         <div className="flex flex-col justify-center min-h-screen p-2 sm:p-8 gap-4 font-[family-name:var(--font-geist-sans)]">
             <div className="flex justify-around items-center w-full !h-fit">
