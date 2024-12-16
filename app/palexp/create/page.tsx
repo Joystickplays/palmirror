@@ -65,6 +65,7 @@ export default function Home() {
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const target = e.target;
         const file = target.files?.[0];
         if (file) {
