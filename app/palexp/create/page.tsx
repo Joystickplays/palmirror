@@ -60,7 +60,7 @@ export default function Home() {
 
     const requiredFields = [characterData.name, characterData.personality, characterData.initialMessage];
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setCharacterData({ ...characterData, [e.target.name]: e.target.value });
     };
 
@@ -70,8 +70,12 @@ export default function Home() {
         if (file) {
             const reader = new FileReader();
             reader.onload = (e: ProgressEvent<FileReader>) => {
-                const base64String = e.target.result;
-                setCharacterData({ ...characterData, image: base64String });
+                if (e.target) {
+                    const base64String = e.target.result as string;
+                    setCharacterData({ ...characterData, image: base64String ?? "" });
+                } else {
+                    console.error("FileReader target is null");
+                }
             };
             reader.readAsDataURL(file);
         }
