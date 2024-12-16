@@ -17,6 +17,7 @@ let openai: OpenAI;
 const ChatPage = () => {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>>([]);
   const [characterData, setCharacterData] = useState({
+    image: "",
     name: "",
     personality: "",
     initialMessage: "",
@@ -362,7 +363,7 @@ const ChatPage = () => {
         theme="dark"
       />
       <div className="grid max-w-[40rem] w-full h-dvh p-2 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
-        <ChatHeader characterName={characterData.name} getExportedMessages={encodeMessages} importMessages={openFilePicker} />
+        <ChatHeader characterData={characterData} getExportedMessages={encodeMessages} importMessages={openFilePicker} />
         <div className="overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col justify-end min-h-full">
             <div style={{ height: "60vh" }}></div>

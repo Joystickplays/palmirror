@@ -40,12 +40,19 @@ interface MessageCardProps {
   isGreetingMessage: boolean;
   isLastMessage: boolean;
   characterData: {
+    image: string | null;
     name: string;
     userName: string;
+    initialMessage: string;
     alternateInitialMessages: Array<string> | null | undefined
   };
   editMessage: (index: number, content: string) => void;
   rewindTo: (index: number) => void;
+}
+
+interface AlternateInitialMessage {
+  name: string;
+  initialMessage: string;
 }
 
 const vibrate = (duration: number) => {
@@ -132,6 +139,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
   }, { axis: "x", bounds: { left: -350, right: 0 }, rubberband: true });
 
+  const rpTextRender = (content: string) => {
+    return content.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
+  }
+
   const renderContent = () => {
     if (isEditing) {
       return (
@@ -156,7 +167,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
     return (
       <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
-        {content?.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")}
+        {rpTextRender(content)}
       </ReactMarkdown>
     );
   };
@@ -180,7 +191,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
       </animated.p>
       <Dialog> {/* Alternate messages dialog */}
 
-        <DialogContent className="w-auto max-h-[80vh] max-w-[100vw] min-w-[90vw] overflow-y-auto">
+        <DialogContent className="w-auto max-h-[80vh] max-w-[100vw] min-w-[90vw] overflow-y-auto font-sans">
           <DialogHeader>
             <DialogTitle className="mb-8">Choose an alternate initial message</DialogTitle>
             {/* <Select>
@@ -188,12 +199,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 <SelectValue placeholder="Choose an alternate initial message" />
               </SelectTrigger>
               <SelectContent> */}
-            {characterData.alternateInitialMessages && characterData.alternateInitialMessages.map((message, index) => {
+            {characterData.alternateInitialMessages && [characterData.initialMessage, ...(characterData.alternateInitialMessages)].map((message: AlternateInitialMessage | string, index) => {
+              message = typeof message == "string" ? message : message?.initialMessage ?? "";
               return (
                 <Card key={message} className="mb-4 p-3 text-left">
                   <CardContent>
-                    <ReactMarkdown>
-                      {message}
+                    <ReactMarkdown className="markdown-content">
+                      {rpTextRender(message)}
                     </ReactMarkdown>
                     <DialogClose asChild>
                       <Button onClick={() => {
@@ -209,7 +221,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
             </Select> */}
           </DialogHeader>
         </DialogContent>
-
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <Card

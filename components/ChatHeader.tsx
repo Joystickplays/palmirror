@@ -25,12 +25,15 @@ import { Slider } from "@/components/ui/slider"
 
 
 interface ChatHeaderProps {
-  characterName: string;
+  characterData: {
+    image: string,
+    name: string
+  };
   getExportedMessages: () => void;
   importMessages: () => void;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessages, importMessages }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessages, importMessages }) => {
   const [baseURL, setBaseURL] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [temperature, setTemperature] = useState(0.5);
@@ -108,8 +111,16 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterName, getExportedMessa
 
   return (
     <Card>
-      <CardContent className={`flex justify-between items-center p-5 w-full ${ theme == "cai" ? "bg-[#26272b]" : ""}`}>
-        <h2>PalMirror · <span className="font-bold">{characterName}</span></h2>
+      <CardContent className={`flex relative justify-between items-center p-5 w-full ${ theme == "cai" ? "bg-[#26272b]" : ""}`}>
+      
+      <img src={characterData.image !== "" ? characterData.image : undefined} 
+        style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 0.3), transparent)' }}
+        className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full object-cover rounded-lg" />
+      
+      
+
+        
+        <h2>PalMirror · <span className="font-bold">{characterData.name}</span></h2>
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" className="p-3 size-8"><Settings /></Button>

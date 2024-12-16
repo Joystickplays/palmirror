@@ -15,6 +15,9 @@ import { CirclePlus, Trash2 } from 'lucide-react';
 import { AnimatePresence, motion } from "motion/react"
 import NumberFlow from '@number-flow/react'
 
+import pako from 'pako';
+
+
 interface DynamicStatus {
     key: number;
     name: string;
@@ -55,6 +58,8 @@ export default function Home() {
     // const ButtonButMakeItMove = motion(Button);
     const { name, personality, scenario, initialMessage, alternateInitialMessages, plmex } = characterData;
 
+    const requiredFields = [characterData.name, characterData.personality, characterData.initialMessage];
+
     const handleInputChange = (e: any) => {
         setCharacterData({ ...characterData, [e.target.name]: e.target.value });
     };
@@ -72,6 +77,53 @@ export default function Home() {
         }
     };
 
+    // const CHUNK_SIZE = 65536;
+    // const toBase64Batch = (data: Uint8Array): string => {
+    //     let result = '';
+    //     for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+    //         const chunk = data.slice(i, i + CHUNK_SIZE); 
+    //         const binaryString = String.fromCharCode(...chunk);
+    //         result += btoa(binaryString);
+    //     }
+    //     return result;
+    // };
+    
+    
+    const exportCharacter = () => {
+        if (requiredFields.some(field => field.trim() === "")) {
+            toast.error("Please fill in all required fields marked with the asterisk.");
+            return;
+        }
+    
+        const timestamp = new Date().toLocaleString();
+        const credit = 
+                       `// Born from the Experience. A spark only found here.\n` +
+                       `// Handle with care. It remembers.\n\n` +
+                       `// ${timestamp} at https://palm.goteamst.com\n\n`;
+    
+        const characterJSON = JSON.stringify(characterData, null, 2);
+    
+        const compressedData = pako.gzip(characterJSON, { level: 2 });
+    
+        const fileContent = new Uint8Array([...new TextEncoder().encode(credit), ...compressedData]);
+        const blob = new Blob([fileContent], { type: 'application/octet-stream' });
+    
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${characterData.name || "character"}.plmc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    
+        URL.revokeObjectURL(url);
+    
+        toast.success("Character downloaded to file.");
+    };
+
+
+
+
     return (
         <div className="flex flex-col justify-center min-h-screen p-2 sm:p-8 gap-4 font-[family-name:var(--font-geist-sans)]">
             <div className="flex justify-around items-center w-full !h-fit">
@@ -88,7 +140,7 @@ export default function Home() {
                 <div className="flex flex-col gap-1">
                     <p>Character picture</p>
                     <div className="flex flex-col md:flex-row gap-2">
-                        <img src={characterData.image !== "" ? characterData.image : undefined} alt="Character Picture" width={250} height={250} className={`rounded-full ${characterData.image ? 'block' : 'hidden'}`} />
+                        <img src={characterData.image !== "" ? characterData.image : undefined} alt="Character Picture" width={250} height={250} className={`rounded-full ${characterData.image ? 'block' : 'hidden'} size-40`} />
                         <Input id="picture" type="file" accept=".png, .jpg, .jpeg" onChange={handleImageChange} />
                     </div>
                 </div>
@@ -134,56 +186,69 @@ export default function Home() {
                             </motion.div>
                         ))}
                     </AnimatePresence>
-                    <Button onClick={() => {
+                    <Button variant="outline" onClick={() => {
                         setCharacterData({ ...characterData, alternateInitialMessages: [...alternateInitialMessages, { name: `Greeting ${Math.floor(Math.random() * 27631337)}`, initialMessage: "" }] })
                     }}><CirclePlus />Add another</Button>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <div className="flex flex-col gap-1 border rounded-lg palmirror-exc p-8"> {/* all glowy because r u kidding?? this is palmirror experience!! */}
-                        <h1 className="palmirror-exc-text text-2xl">Dynamic Statuses</h1>
-                        <div className="grid grid-cols-2 gap-2">
-                            <AnimatePresence mode="popLayout">
-                                {plmex.dynamicStatuses.map((dynStat, index) => (
-                                    <motion.div layout key={dynStat.key}
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        exit={{ scale: 0.8, opacity: 0 }}
-                                        transition={{ type: "spring", stiffness: 225, damping: 30 }}>
-                                        <Card>
-                                            <CardContent className="p-4 flex flex-col xl:flex-row gap-2">
-                                                <div className="flex-1">
-                                                    <Input id={`dynStatName-${index}`} type="text" name="name" value={dynStat.name} onChange={(e) => {
-                                                        const newDynStatuses = [...plmex.dynamicStatuses];
-                                                        newDynStatuses[index] = { ...dynStat, name: e.target.value };
+                    <div className="flex flex-col gap-5 border rounded-lg palmirror-exc p-8"> {/* all glowy because r u kidding?? this is palmirror experience!! */}
+                        <div className="flex flex-col gap-1">
+                            <h1 className="palmirror-exc-text text-2xl">Dynamic Statuses</h1>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <AnimatePresence mode="popLayout">
+                                    {plmex.dynamicStatuses.map((dynStat, index) => (
+                                        <motion.div layout key={dynStat.key}
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0.8, opacity: 0 }}
+                                            transition={{ type: "spring", stiffness: 225, damping: 30 }}>
+                                            <Card>
+                                                <CardContent className="p-4 flex flex-col xl:flex-row gap-2">
+                                                    <div className="flex-1">
+                                                        <Input id={`dynStatName-${index}`} type="text" name="name" value={dynStat.name} onChange={(e) => {
+                                                            const newDynStatuses = [...plmex.dynamicStatuses];
+                                                            newDynStatuses[index] = { ...dynStat, name: e.target.value };
+                                                            setCharacterData({ ...characterData, plmex: { ...plmex, dynamicStatuses: newDynStatuses } });
+                                                        }} autoComplete="off" placeholder="Status Name" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <Input id={`dynStatDefaultValue-${index}`} type="text" name="defaultValue" value={dynStat.defaultValue} onChange={(e) => {
+                                                            const newDynStatuses = [...plmex.dynamicStatuses];
+                                                            newDynStatuses[index] = { ...dynStat, defaultValue: e.target.value };
+                                                            setCharacterData({ ...characterData, plmex: { ...plmex, dynamicStatuses: newDynStatuses } });
+                                                        }} autoComplete="off" placeholder="Default Value" />
+                                                    </div>
+                                                    <Button variant="ghost" size="icon" onClick={() => {
+                                                        const newDynStatuses = plmex.dynamicStatuses.filter((_, i) => i !== index);
                                                         setCharacterData({ ...characterData, plmex: { ...plmex, dynamicStatuses: newDynStatuses } });
-                                                    }} autoComplete="off" placeholder="Status Name" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <Input id={`dynStatDefaultValue-${index}`} type="text" name="defaultValue" value={dynStat.defaultValue} onChange={(e) => {
-                                                        const newDynStatuses = [...plmex.dynamicStatuses];
-                                                        newDynStatuses[index] = { ...dynStat, defaultValue: e.target.value };
-                                                        setCharacterData({ ...characterData, plmex: { ...plmex, dynamicStatuses: newDynStatuses } });
-                                                    }} autoComplete="off" placeholder="Default Value" />
-                                                </div>
-                                                <Button variant="ghost" size="icon" onClick={() => {
-                                                    const newDynStatuses = plmex.dynamicStatuses.filter((_, i) => i !== index);
-                                                    setCharacterData({ ...characterData, plmex: { ...plmex, dynamicStatuses: newDynStatuses } });
-                                                }}><Trash2 /></Button>
-                                            </CardContent>
-                                        </Card>
-                                    </motion.div>
-                                ))}
+                                                    }}><Trash2 /></Button>
+                                                </CardContent>
+                                            </Card>
+                                        </motion.div>
+                                    ))}
 
 
-                            </AnimatePresence>
+                                </AnimatePresence>
 
+                            </div>
+                            <Button key="ADDBUTTON" size="sm" variant="outline" onClick={() => {
+                                if (plmex.dynamicStatuses.length < 5) {
+                                    setCharacterData({ ...characterData, plmex: { ...plmex, dynamicStatuses: [...plmex.dynamicStatuses, { key: Math.floor(Math.random() * 69420), name: "", defaultValue: "" }] } })
+
+                                } else {
+                                    toast.error("Do you really need more than 5?")
+                                }
+                            }}><CirclePlus /> Add</Button>
                         </div>
-                        <Button key="ADDBUTTON" size="sm" variant="outline" onClick={() => {
-                            setCharacterData({ ...characterData, plmex: { ...plmex, dynamicStatuses: [...plmex.dynamicStatuses, { key: Math.floor(Math.random() * 69420), name: "", defaultValue: "" }] } })
+                        <div className="flex flex-col gap-1">
+                            <h1 className="palmirror-exc-text text-2xl">Invocations</h1>
+                            <Button key="ADDBUTTON" size="sm" variant="outline" onClick={() => {
 
-                        }}><CirclePlus /> Add</Button>
+                            }}><CirclePlus /> Add</Button>
+                        </div>
                     </div>
                 </div>
+                <Button onClick={exportCharacter} className="mt-5 transition-transform hover:scale-105 transform-gpu" variant="palmirror">Export character</Button>
             </div>
             <ToastContainer
                 position="top-right"

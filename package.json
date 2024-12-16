@@ -32,6 +32,7 @@
     "next": "15.0.2",
     "next-themes": "^0.4.3",
     "openai": "^4.71.1",
+    "pako": "^2.1.0",
     "react": "19.0.0-rc-02c0e824-20241028",
     "react-dom": "19.0.0-rc-02c0e824-20241028",
     "react-flip-toolkit": "^7.2.4",

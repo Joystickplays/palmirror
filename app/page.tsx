@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { ToastContainer, toast } from 'react-toastify';
 import { CircleHelp } from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
+
+import pako from 'pako';
+
 
 import {
   Dialog,
@@ -52,6 +55,8 @@ export default function Home() {
     userPersonality: "",
     alternateInitialMessages: [] as Array<string>
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [linkChar, setLinkChar] = useState('')
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof typeof characterData) => {
@@ -166,6 +171,91 @@ export default function Home() {
 
   }
 
+  // const CHUNK_SIZE = 65536;
+  // const fromBase64Batch = (base64: string): Uint8Array => {
+  //   let result = new Uint8Array(0);
+  //   let currentIndex = 0;
+
+  //   // Decode in chunks
+  //   while (currentIndex < base64.length) {
+  //     const chunk = base64.slice(currentIndex, currentIndex + CHUNK_SIZE * 4); // base64 length is 4 chars per 3 bytes
+  //     const binaryString = atob(chunk); // Decode the base64 chunk
+  //     const uintArray = new Uint8Array(binaryString.length);
+
+  //     for (let i = 0; i < binaryString.length; i++) {
+  //       uintArray[i] = binaryString.charCodeAt(i); // Convert to Uint8Array
+  //     }
+
+  //     // Append the chunk to result
+  //     result = concatUint8Arrays(result, uintArray);
+
+  //     currentIndex += chunk.length;
+  //   }
+
+  //   return result;
+  // };
+
+  // // Helper to concatenate Uint8Arrays
+  // const concatUint8Arrays = (arr1: Uint8Array, arr2: Uint8Array): Uint8Array => {
+  //   const result = new Uint8Array(arr1.length + arr2.length);
+  //   result.set(arr1);
+  //   result.set(arr2, arr1.length);
+  //   return result;
+  // };
+
+
+  const importCharacter = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files![0];
+    if (!file) {
+      toast.error("No file selected.");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    toast.promise(
+      new Promise<void>((resolve, reject) => {
+        reader.onload = async function (event) {
+          try {
+            const fileContent = event.target?.result as ArrayBuffer;
+
+            const text = new TextDecoder().decode(fileContent);
+            const firstDelimiterIndex = text.indexOf("\n\n");
+            const delimiterIndex = text.indexOf("\n\n", firstDelimiterIndex + 1);
+            if (delimiterIndex === -1) {
+              reject(new Error("Invalid file format: unable to find the data delimiter."));
+              return;
+            }
+
+            const compressedData = fileContent.slice(delimiterIndex + 2);
+            const decompressedData = pako.ungzip(new Uint8Array(compressedData), { to: "string" });
+            const characterData = JSON.parse(decompressedData);
+
+            setCharacterData((oldCharacterData) => {
+              const updatedData = {...oldCharacterData, ...characterData}
+              localStorage.setItem('characterData', JSON.stringify(updatedData));
+              return updatedData;
+            })
+
+            router.push("/chat")
+
+            resolve();
+          } catch (err) {
+            reject(new Error("Failed to import the character. Please check the file format."));
+            console.error("Error while importing character:", err);
+          }
+        };
+
+        reader.readAsArrayBuffer(file);
+      }),
+      {
+        pending: "Processing character file...",
+        success: "Character imported successfully.",
+        error: "Failed to import the character. Please check the file format.",
+      }
+    );
+  };
+
   return (
     <div className="grid items-center justify-items-center content-center min-h-screen p-8 pb-20 gap-4 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2">
@@ -213,8 +303,8 @@ export default function Home() {
                       </PopoverTrigger>
                     </div>
                     <div className="flex justify-center items-center gap-2 !mt-2">
-                      <Button variant="palmirror" onClick={() => {router.push("/palexp/create")}}>Create</Button>
-                      <Button variant="palmirror">Import from file</Button>
+                      <Button variant="palmirror" onClick={() => { router.push("/palexp/create") }}>Create</Button>
+                      <Button variant="palmirror" onClick={() => { fileInputRef.current?.click(); }}>Import from file</Button>
                     </div>
                   </div>
                   <div className="py-4">
@@ -286,6 +376,13 @@ export default function Home() {
         pauseOnFocusLoss
         draggable
         theme="dark"
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".plmc"
+        style={{ display: "none" }}
+        onChange={importCharacter}
       />
     </div>
   );
