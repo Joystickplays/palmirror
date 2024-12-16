@@ -60,16 +60,16 @@ export default function Home() {
 
     const requiredFields = [characterData.name, characterData.personality, characterData.initialMessage];
 
-    const handleInputChange = (e: any) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setCharacterData({ ...characterData, [e.target.name]: e.target.value });
     };
 
-    const handleImageChange = (e: any) => {
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const target = e.target;
         const file = target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e: any) => {
+            reader.onload = (e: ProgressEvent<FileReader>) => {
                 const base64String = e.target.result;
                 setCharacterData({ ...characterData, image: base64String });
             };
