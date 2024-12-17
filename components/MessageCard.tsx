@@ -239,7 +239,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                           <p>Have {characterData.name} react to the change?</p>
                         </div>
                     </div>
-                    <Button onClick={() => {toast.error("maybe later")}}>Save</Button>
+                    <Button>Save</Button>
                   </DialogHeader>
                 </DialogContent>
               </Dialog>
