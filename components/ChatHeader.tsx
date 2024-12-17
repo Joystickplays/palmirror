@@ -120,10 +120,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
       
 
         
-        <h2>PalMirror · <span className="font-bold">{characterData.name}</span></h2>
+        <h2 className="z-[2]">PalMirror · <span className="font-bold">{characterData.name}</span></h2>
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline" className="p-3 size-8"><Settings /></Button>
+            <Button variant="outline" className="p-3 size-8 z-[2]"><Settings /></Button>
           </DialogTrigger>
           <DialogContent className="w-auto max-h-[80vh] min-w-96 overflow-y-auto font-sans">
             <DialogHeader>

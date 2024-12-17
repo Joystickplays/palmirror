@@ -73,7 +73,7 @@ body {
 
 ::-webkit-scrollbar {
   width: 2px;
-  height: 10px;
+  height: 2px;
 }
 
 ::-webkit-scrollbar-track {

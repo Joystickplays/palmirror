@@ -1,11 +1,13 @@
 // components/MessageCard.tsx
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
 import { useSpring, animated } from '@react-spring/web';
 import { useDrag } from '@use-gesture/react';
 import { Pencil, Rewind, Check, MessagesSquare } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox"
 import { useTheme } from '@/components/PalMirrorThemeProvider';
 import {
   Dialog,
@@ -91,6 +93,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editingContent, setEditingContent] = useState('');
   const { theme, setTheme } = useTheme();
+  const [statuses, setStatuses] = useState<Array<{ key: string; value: string }>>([]);
+
 
   const triggerRegenerate = useCallback(() => {
     regenerateFunction();
@@ -139,9 +143,50 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
   }, { axis: "x", bounds: { left: -350, right: 0 }, rubberband: true });
 
+  const extractStatusData = (input: string): Array<{ key: string; value: string }> => {
+    const statusRegex = /---\s*STATUS:\s*((?:.+?\s*=\s*.+(?:\n|$))*)/i;
+    const match = input.match(statusRegex);
+
+    if (match && match[1]) {
+      const keyValuePairs = match[1]
+        .trim()
+        .split('\n')
+        .filter((line) => line.includes('='));
+
+      const data: Array<{ key: string; value: string }> = [];
+      keyValuePairs.forEach((pair) => {
+        const [key, ...valueParts] = pair.split('=');
+        const keyTrimmed = key.trim();
+        const value = valueParts.join('=').trim();
+        data.push({ key: keyTrimmed, value });
+      });
+
+      return data;
+    }
+
+    return [];
+  };
+
+  const removeStatusSection = (input: string): string => {
+    const statusRegex = /---\s*STATUS:\s*((?:.+?\s*=\s*.+(?:\n|$))*)/i;
+
+    return input.replace(statusRegex, '').trim();
+  };
+
+
   const rpTextRender = (content: string) => {
-    return content.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
+    let processedContent = content
+    processedContent = processedContent.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
+
+
+    processedContent = removeStatusSection(processedContent)
+
+    return processedContent
   }
+
+  useEffect(() => {
+    setStatuses(extractStatusData(content));
+  }, [content])
 
   const renderContent = () => {
     if (isEditing) {
@@ -166,9 +211,43 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
 
     return (
-      <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
-        {rpTextRender(content)}
-      </ReactMarkdown>
+      <div>
+        <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
+          {rpTextRender(content)}
+        </ReactMarkdown>
+
+        {statuses.length > 0 && (
+          <animated.div key="idkwhatyouwant" style={{ marginTop: fontSize.to(s => `${s}rem`) }} className="flex gap-2 overflow-x-auto">
+            {statuses.map((status) => (
+              <Dialog key={status.key}>
+                <DialogTrigger asChild>
+                  <Button disabled={!isLastMessage} size="sm" variant="outline" className="text-xs">
+                    {status.key}: <span className="opacity-50">{status.value}</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Change this dynamic status</DialogTitle>
+
+                    <div className="flex flex-col gap-2 !mt-4">
+                      <div className="flex flex-col gap-1">
+                        <p className="text-sm">{status.key}</p>
+                        <Input value={status.value} />
+                      </div>
+                        <div className="flex items-center gap-2">
+                          <Checkbox />
+                          <p>Have {characterData.name} react to the change?</p>
+                        </div>
+                    </div>
+                    <Button onClick={() => {toast.error("maybe later")}}>Save</Button>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            ))}
+
+          </animated.div>
+        )}
+      </div>
     );
   };
 
@@ -225,7 +304,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
           <ContextMenuTrigger asChild>
             <Card
               {...bind()}
-              className={`bg-blue-900/20 rounded-xl max-w-lg border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
+              className={`bg-blue-900/20 rounded-xl sm:max-w-lg max-w-full border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
                 ? `${theme == "cai" ? "bg-[#303136]/50" : ""} ${theme == "palmirror" ? "bg-blue-950/20" : ""} ml-auto rounded-br-md text-end`
                 : `${theme == "cai" ? "bg-[#26272b]/50" : ""} ${theme == "palmirror" ? "bg-gray-900/10" : ""} mr-auto rounded-bl-md`
                 } ${isEditing ? "w-full" : ""}`}

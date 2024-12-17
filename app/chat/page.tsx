@@ -14,6 +14,13 @@ import { AnimatePresence, motion } from "motion/react"
 
 let openai: OpenAI;
 
+interface DynamicStatus {
+  key: number;
+  name: string;
+  defaultValue: string;
+}
+
+
 const ChatPage = () => {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>>([]);
   const [characterData, setCharacterData] = useState({
@@ -24,7 +31,10 @@ const ChatPage = () => {
     scenario: "",
     userName: "",
     userPersonality: "",
-    alternateInitialMessages: [] as Array<string>
+    alternateInitialMessages: [] as Array<string>,
+    plmex: {
+      dynamicStatuses: [] as Array<DynamicStatus>
+    }
   });
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
