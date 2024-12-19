@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface MessageCardProps {
   index: number;
@@ -50,6 +50,7 @@ interface MessageCardProps {
   };
   editMessage: (index: number, content: string) => void;
   rewindTo: (index: number) => void;
+  changeStatus: (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => void;
 }
 
 interface AlternateInitialMessage {
@@ -57,11 +58,15 @@ interface AlternateInitialMessage {
   initialMessage: string;
 }
 
+type StatusData = Array<{ key: string; value: string }>;
+
+
 const vibrate = (duration: number) => {
   if ("vibrate" in navigator) {
     navigator.vibrate(duration);
   }
 };
+
 
 const MessageCard: React.FC<MessageCardProps> = ({
   index,
@@ -75,6 +80,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   characterData,
   editMessage,
   rewindTo,
+  changeStatus,
 }) => {
   const [{ scale }, apiScaleSpring] = useSpring(() => ({
     scale: 1,
@@ -93,7 +99,15 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editingContent, setEditingContent] = useState('');
   const { theme, setTheme } = useTheme();
-  const [statuses, setStatuses] = useState<Array<{ key: string; value: string }>>([]);
+  const [statuses, setStatuses] = useState<StatusData>([]);
+
+
+
+  const [changingStatus, setChangingStatus] = useState("");
+  const [changingStatusValue, setChangingStatusValue] = useState("");
+  const [changingStatusCharReacts, setChangingStatusCharReacts] = useState(false);
+  const [changingStatusReason, setChangingStatusReason] = useState("");
+
 
 
   const triggerRegenerate = useCallback(() => {
@@ -143,22 +157,22 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
   }, { axis: "x", bounds: { left: -350, right: 0 }, rubberband: true });
 
-  const extractStatusData = (input: string): Array<{ key: string; value: string }> => {
-    const statusRegex = /---\s*STATUS:\s*((?:.+?\s*=\s*.+(?:\n|$))*)/i;
+  const extractStatusData = (input: string): StatusData => {
+    const statusRegex = /---\s*STATUS:\s*((?:.+?\s*[=:]\s*.+(?:\n|$))*)/i;
     const match = input.match(statusRegex);
 
     if (match && match[1]) {
       const keyValuePairs = match[1]
         .trim()
         .split('\n')
-        .filter((line) => line.includes('='));
+        .filter((line) => line.includes('=') || line.includes(':'));
 
-      const data: Array<{ key: string; value: string }> = [];
-      keyValuePairs.forEach((pair) => {
-        const [key, ...valueParts] = pair.split('=');
-        const keyTrimmed = key.trim();
-        const value = valueParts.join('=').trim();
-        data.push({ key: keyTrimmed, value });
+      const data: StatusData = keyValuePairs.map((pair) => {
+        const [key, ...valueParts] = pair.split(/[:=]/);
+        return {
+          key: key.trim(),
+          value: valueParts.join('=').trim(),
+        };
       });
 
       return data;
@@ -168,10 +182,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
   };
 
   const removeStatusSection = (input: string): string => {
-    const statusRegex = /---\s*STATUS:\s*((?:.+?\s*=\s*.+(?:\n|$))*)/i;
+    const statusRegex = /---\s*STATUS:\s*((?:.+?\s*[=:]\s*.+(?:\n|$))*)/i;
 
     return input.replace(statusRegex, '').trim();
   };
+
 
 
   const rpTextRender = (content: string) => {
@@ -219,30 +234,55 @@ const MessageCard: React.FC<MessageCardProps> = ({
         {statuses.length > 0 && (
           <animated.div key="idkwhatyouwant" style={{ marginTop: fontSize.to(s => `${s}rem`) }} className="flex gap-2 overflow-x-auto">
             {statuses.map((status) => (
-              <Dialog key={status.key}>
-                <DialogTrigger asChild>
-                  <Button disabled={!isLastMessage} size="sm" variant="outline" className="text-xs">
-                    {status.key}: <span className="opacity-50">{status.value}</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Change this dynamic status</DialogTitle>
+              <AnimatePresence key={status.key} mode="popLayout">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button disabled={!isLastMessage} size="sm" variant="outline" className="text-xs" onClick={() => {
+                      setChangingStatus(status.key);
+                      setChangingStatusValue(status.value);
+                      setChangingStatusCharReacts(false);
+                      setChangingStatusReason("");
+                    }}>
+                      {status.key}: <span className="opacity-50">{status.value}</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Change this dynamic status</DialogTitle>
 
-                    <div className="flex flex-col gap-2 !mt-4">
-                      <div className="flex flex-col gap-1">
-                        <p className="text-sm">{status.key}</p>
-                        <Input value={status.value} />
-                      </div>
+                      <div className="flex flex-col gap-4 !mt-4">
+                        <div className="flex flex-col gap-1">
+                          <p className="text-sm">{changingStatus}</p>
+                          <Input onChange={(e) => setChangingStatusValue(e.target.value)} value={changingStatusValue} />
+                        </div>
                         <div className="flex items-center gap-2">
-                          <Checkbox />
+                          <Checkbox
+                            checked={changingStatusCharReacts}
+                            onCheckedChange={(checked) => setChangingStatusCharReacts(checked === true)}
+                          />
                           <p>Have {characterData.name} react to the change?</p>
                         </div>
-                    </div>
-                    <Button>Save</Button>
-                  </DialogHeader>
-                </DialogContent>
-              </Dialog>
+                        {changingStatusCharReacts && (
+                          <motion.textarea
+                            className="w-full bg-transparent resize-none border rounded-xl w-full h-20 p-3 mt-2"
+                            placeholder="Reason for change"
+                            value={changingStatusReason}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setChangingStatusReason(e.target.value)}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0 }}
+                          />
+                        )}
+                      </div>
+                      <DialogClose asChild>
+                        <Button onClick={() => {
+                          changeStatus(changingStatus, changingStatusValue, changingStatusCharReacts, changingStatusReason);
+                        }}>Save</Button>
+                      </DialogClose>
+                    </DialogHeader>
+                  </DialogContent>
+                </Dialog>
+              </AnimatePresence>
             ))}
 
           </animated.div>

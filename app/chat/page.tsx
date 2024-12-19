@@ -20,6 +20,7 @@ interface DynamicStatus {
   defaultValue: string;
 }
 
+type StatusData = Array<{ key: string; value: string }>;
 
 const ChatPage = () => {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>>([]);
@@ -144,7 +145,8 @@ const ChatPage = () => {
     e: React.KeyboardEvent<HTMLTextAreaElement> | null,
     force = false,
     regenerate = false,
-    optionalMessage = ""
+    optionalMessage = "",
+    userMSGaddOnList = true
   ) => {
     // Prevent default behavior if Enter key is pressed
     if (e && e.key === "Enter") {
@@ -177,7 +179,7 @@ const ChatPage = () => {
 
     const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
 
-    if (userMessageContent) {
+    if (userMessageContent && userMSGaddOnList) {
       // Add user message to the message list
       messagesList = [
         ...messagesList,
@@ -199,7 +201,8 @@ const ChatPage = () => {
         model: modelName,
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
-          ...messagesList.map((msg) => ({ ...msg, name: "-" })),
+          ...messagesList.map((msg) => ({ ...msg, name: "-", role: msg.role as "user" | "assistant" | "system" })),
+          ...(userMSGaddOnList ? [] : [{ role: "user", content: userMessageContent, name: "-" } as const]),
         ],
         stream: true,
         temperature: generationTemperature,
@@ -343,6 +346,69 @@ const ChatPage = () => {
     setIsThinking(false);
   };
 
+
+  const extractStatusData = (input: string): StatusData => {
+    const statusRegex = /---\s*STATUS:\s*((?:.+?\s*[=:]\s*.+(?:\n|$))*)/i;
+    const match = input.match(statusRegex);
+  
+    if (match && match[1]) {
+      const keyValuePairs = match[1]
+        .trim()
+        .split('\n')
+        .filter((line) => line.includes('=') || line.includes(':'));
+  
+      const data: StatusData = keyValuePairs.map((pair) => {
+        const [key, ...valueParts] = pair.split(/[:=]/);
+        return {
+          key: key.trim(),
+          value: valueParts.join('=').trim(),
+        };
+      });
+  
+      return data;
+    }
+  
+    return [];
+  };
+  
+  const removeStatusSection = (input: string): string => {
+    const statusRegex = /---\s*STATUS:\s*((?:.+?\s*[=:]\s*.+(?:\n|$))*)/i;
+    return input.replace(statusRegex, '').trim();
+  };
+  
+  const buildStatusSection = (data: StatusData): string => {
+    if (!data || data.length === 0) {
+      return '';
+    }
+  
+    const statusLines = data.map(({ key, value }) => `${key}=${value}`);
+    return `\n\n---\nSTATUS:\n${statusLines.join('\n')}`;
+  };
+  
+  const changeStatus = (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => {
+    if (!changingStatusCharReacts) {
+      setMessages(prevMessages => {
+        const updatedMessages = [...prevMessages];
+        const lastAssistantMessageIndex = updatedMessages.slice().reverse().findIndex(msg => msg.role === "assistant");
+        if (lastAssistantMessageIndex !== -1) {
+          const actualIndex = updatedMessages.length - 1 - lastAssistantMessageIndex;
+          const lastMessage = updatedMessages[actualIndex].content;
+          const statusData = extractStatusData(lastMessage);
+          const updatedStatusData = statusData.map(status => 
+            status.key === changingStatus ? { ...status, value: changingStatusValue } : status
+          );
+          updatedMessages[actualIndex].content = removeStatusSection(lastMessage) + buildStatusSection(updatedStatusData);
+        }
+        return updatedMessages;
+      });
+    } else {
+      // Trigger a reaction from the character
+      const reason = changingStatusReason || "Unspecified";
+      const systemNote = `[SYSTEM NOTE: All of a sudden, ${characterData.name}'s ${changingStatus} status is "${changingStatusValue}". Make ${characterData.name} have a "${changingStatus}" status of "${changingStatusValue}" and make it react accordingly. Reason: "${reason}"]`;
+      handleSendMessage(null, true, false, systemNote, false);
+    }
+  };
+
   useEffect(() => {
     const storedData = localStorage.getItem("characterData");
     if (storedData) setCharacterData(JSON.parse(storedData));
@@ -351,7 +417,11 @@ const ChatPage = () => {
   // Initial Assistant Message
   useEffect(() => {
     if (messages.length === 0 && characterData.initialMessage) {
-      setMessages([{ role: "assistant", content: characterData.initialMessage, stillGenerating: false }]);
+      const statusData: StatusData = characterData.plmex.dynamicStatuses.map(status => ({
+        key: status.name,
+        value: status.defaultValue
+      }));
+      setMessages([{ role: "assistant", content: characterData.initialMessage + buildStatusSection(statusData), stillGenerating: false }]);
     }
   }, [characterData.initialMessage]);
 
@@ -399,6 +469,7 @@ const ChatPage = () => {
                         characterData={characterData}
                         editMessage={editMessage}
                         rewindTo={rewindTo}
+                        changeStatus={changeStatus}
                       />
                     </motion.div>
                   );
