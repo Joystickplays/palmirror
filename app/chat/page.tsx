@@ -142,6 +142,15 @@ const ChatPage = () => {
     if ("vibrate" in navigator) navigator.vibrate(duration);
   };
 
+  const checkAndTrimMessages = (messagesList: Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>) => {
+    let totalLength = messagesList.reduce((acc, msg) => acc + msg.content.length, 0);
+    while (totalLength > 16000 && messagesList.length > 0) {
+      messagesList.shift();
+      totalLength = messagesList.reduce((acc, msg) => acc + msg.content.length, 0);
+    }
+    return messagesList;
+  };
+
   const handleSendMessage = async (
     e: React.KeyboardEvent<HTMLTextAreaElement> | null,
     force = false,
@@ -193,6 +202,9 @@ const ChatPage = () => {
       // Refocus the textarea
       textareaRef.current?.focus();
     }
+
+    messagesList = checkAndTrimMessages(messagesList);
+
     setIsThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
 
@@ -202,7 +214,7 @@ const ChatPage = () => {
         model: modelName,
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
-          ...messagesList.slice(exclusionCount).map((msg) => ({ ...msg, name: "-", role: msg.role as "user" | "assistant" | "system" })),
+          ...messagesList.map((msg) => ({ ...msg, name: "-", role: msg.role as "user" | "assistant" | "system" })),
           ...(userMSGaddOnList ? [] : [{ role: "user", content: userMessageContent, name: "-" } as const]),
         ],
         stream: true,
@@ -232,10 +244,10 @@ const ChatPage = () => {
     } catch (error) {
       if (!abortController.current?.signal.aborted) {
         if (error instanceof Error && error.message.includes("reduce the length")) {
-          setExclusionCount(prevCount => prevCount + 2);
           handleSendMessage(e, force, regenerate, optionalMessage, userMSGaddOnList);
         } else {
           toast.error("Error: " + (error instanceof Error ? error.message : String(error)));
+          setIsThinking(false);
         }
       }
     } finally {
@@ -243,7 +255,6 @@ const ChatPage = () => {
         ...prevMessages.slice(0, -1),
         { ...prevMessages[prevMessages.length - 1], stillGenerating: false },
       ]);
-      setIsThinking(false);
       abortController.current = null;
     }
   };
@@ -273,13 +284,15 @@ const ChatPage = () => {
     setUserPromptThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
 
+    let messagesList = checkAndTrimMessages([...messages]);
+
     try {
       abortController.current = new AbortController();
       const comp = await openai.chat.completions.create({
         model: modelName,
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
-          ...messages.slice(exclusionCount).map((msg) => ({ ...msg, name: "-" })),
+          ...messagesList.map((msg) => ({ ...msg, name: "-" })),
           { role: "user", content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a quick reply for ${characterData.userName} in accordance to ${characterData.userName}'s personality. Reply must be thoughtful and quick.`, name: "user" },
         ],
         stream: true,
@@ -301,16 +314,14 @@ const ChatPage = () => {
     } catch (error) {
       if (!abortController.current?.signal.aborted) {
         if (error instanceof Error && error.message.includes("reduce the length")) {
-          setExclusionCount(prevCount => prevCount + 2);
           suggestReply();
         } else {
           toast.error("Error: " + (error instanceof Error ? error.message : String(error)));
+          setUserPromptThinking(false);
         }
       }
-      setUserPromptThinking(false);
       abortController.current = null;
     } finally {
-      setUserPromptThinking(false);
       abortController.current = null;
     }
   };
@@ -319,13 +330,15 @@ const ChatPage = () => {
     setUserPromptThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
 
+    let messagesList = checkAndTrimMessages([...messages]);
+
     try {
       abortController.current = new AbortController();
       const comp = await openai.chat.completions.create({
         model: modelName,
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
-          ...messages.slice(exclusionCount).map((msg) => ({ ...msg, name: "-" })),
+          ...messagesList.map((msg) => ({ ...msg, name: "-" })),
           { role: "user", content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${base}\`\nYour enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`, name: "user" },
         ],
         stream: true,
@@ -347,16 +360,14 @@ const ChatPage = () => {
     } catch (error) {
       if (!abortController.current?.signal.aborted) {
         if (error instanceof Error && error.message.includes("reduce the length")) {
-          setExclusionCount(prevCount => prevCount + 2);
           rewriteMessage(base);
         } else {
           toast.error("Error: " + (error instanceof Error ? error.message : String(error)));
+          setUserPromptThinking(false);
         }
       }
-      setUserPromptThinking(false);
       abortController.current = null;
     } finally {
-      setUserPromptThinking(false);
       abortController.current = null;
     }
   };
