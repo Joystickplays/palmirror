@@ -45,6 +45,7 @@ const ChatPage = () => {
   const [generationTemperature, setTemperature] = useState(0.5);
   const [modelInstructions, setModelInstructions] = useState("");
   const [modelName, setModelName] = useState('gpt-3.5-turbo');
+  const [exclusionCount, setExclusionCount] = useState(0);
 
   const abortController = useRef<AbortController | null>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -201,7 +202,7 @@ const ChatPage = () => {
         model: modelName,
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
-          ...messagesList.map((msg) => ({ ...msg, name: "-", role: msg.role as "user" | "assistant" | "system" })),
+          ...messagesList.slice(exclusionCount).map((msg) => ({ ...msg, name: "-", role: msg.role as "user" | "assistant" | "system" })),
           ...(userMSGaddOnList ? [] : [{ role: "user", content: userMessageContent, name: "-" } as const]),
         ],
         stream: true,
@@ -229,8 +230,14 @@ const ChatPage = () => {
         vibrate(10);
       }
     } catch (error) {
-      if (!abortController.current?.signal.aborted) toast.error("Error: " + error);
-      //Remove the placeholder message if there is an error
+      if (!abortController.current?.signal.aborted) {
+        if (error instanceof Error && error.message.includes("reduce the length")) {
+          setExclusionCount(prevCount => prevCount + 2);
+          handleSendMessage(e, force, regenerate, optionalMessage, userMSGaddOnList);
+        } else {
+          toast.error("Error: " + (error instanceof Error ? error.message : String(error)));
+        }
+      }
     } finally {
       setMessages((prevMessages) => [
         ...prevMessages.slice(0, -1),
@@ -259,6 +266,7 @@ const ChatPage = () => {
 
   const rewindTo = (index: number) => {
     setMessages(messages.slice(0, index + 1));
+    setExclusionCount(0);
   };
 
   const suggestReply = async () => {
@@ -271,7 +279,7 @@ const ChatPage = () => {
         model: modelName,
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
-          ...messages.map((msg) => ({ ...msg, name: "-" })),
+          ...messages.slice(exclusionCount).map((msg) => ({ ...msg, name: "-" })),
           { role: "user", content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a quick reply for ${characterData.userName} in accordance to ${characterData.userName}'s personality. Reply must be thoughtful and quick.`, name: "user" },
         ],
         stream: true,
@@ -291,7 +299,14 @@ const ChatPage = () => {
         vibrate(10);
       }
     } catch (error) {
-      if (!abortController.current?.signal.aborted) toast.error("Error: " + error);
+      if (!abortController.current?.signal.aborted) {
+        if (error instanceof Error && error.message.includes("reduce the length")) {
+          setExclusionCount(prevCount => prevCount + 2);
+          suggestReply();
+        } else {
+          toast.error("Error: " + (error instanceof Error ? error.message : String(error)));
+        }
+      }
       setUserPromptThinking(false);
       abortController.current = null;
     } finally {
@@ -310,7 +325,7 @@ const ChatPage = () => {
         model: modelName,
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
-          ...messages.map((msg) => ({ ...msg, name: "-" })),
+          ...messages.slice(exclusionCount).map((msg) => ({ ...msg, name: "-" })),
           { role: "user", content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${base}\`\nYour enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`, name: "user" },
         ],
         stream: true,
@@ -330,7 +345,14 @@ const ChatPage = () => {
         vibrate(10);
       }
     } catch (error) {
-      if (!abortController.current?.signal.aborted) toast.error("Error: " + error);
+      if (!abortController.current?.signal.aborted) {
+        if (error instanceof Error && error.message.includes("reduce the length")) {
+          setExclusionCount(prevCount => prevCount + 2);
+          rewriteMessage(base);
+        } else {
+          toast.error("Error: " + (error instanceof Error ? error.message : String(error)));
+        }
+      }
       setUserPromptThinking(false);
       abortController.current = null;
     } finally {
