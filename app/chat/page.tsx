@@ -284,7 +284,7 @@ const ChatPage = () => {
     setUserPromptThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
 
-    let messagesList = checkAndTrimMessages([...messages]);
+    const messagesList = checkAndTrimMessages([...messages]);
 
     try {
       abortController.current = new AbortController();
@@ -330,7 +330,7 @@ const ChatPage = () => {
     setUserPromptThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
 
-    let messagesList = checkAndTrimMessages([...messages]);
+    const messagesList = checkAndTrimMessages([...messages]);
 
     try {
       abortController.current = new AbortController();
