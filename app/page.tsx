@@ -40,9 +40,14 @@ export default function Home() {
   const loadCharacterData = () => {
     const storedData = localStorage.getItem('characterData');
     if (storedData) {
-      setCharacterData(JSON.parse(storedData));
+      const parsedData = JSON.parse(storedData);
+      const { image, plmex, ...rest } = parsedData;
+      setCharacterData(prevData => ({
+        ...prevData,
+        ...rest
+      }));
     }
-  };
+  }; 
 
 
   const router = useRouter();
@@ -53,7 +58,11 @@ export default function Home() {
     scenario: "",
     userName: "",
     userPersonality: "",
-    alternateInitialMessages: [] as Array<string>
+    image: "",
+    alternateInitialMessages: [] as Array<string>,
+    plmex: {
+      dynamicStatuses: []
+    }
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +77,16 @@ export default function Home() {
     loadCharacterData();
   }, []);
 
+  const getImageBase64 = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
 
   const startChat = () => {
     if (!characterData.name || !characterData.personality || !characterData.initialMessage) {
@@ -75,12 +94,17 @@ export default function Home() {
       return;
     }
 
-    localStorage.setItem('characterData', JSON.stringify(characterData));
-    toast.success('Character data saved! Starting chat...');
+    
+    setCharacterData(prevData => {
+      const updatedData = { ...prevData, image: "", plmex: { dynamicStatuses: [] } };
+      localStorage.setItem('characterData', JSON.stringify(updatedData));
+      toast.success('Character data saved! Starting chat...');
+      return updatedData;
+    });
     router.push('/chat');
   };
 
-  const getCharacterId = (url: string): string | null => {
+  const getCharacterId: (url: string) => string | null = (url: string): string | null => {
     const match = url.match(/\/chat\/([^\/?]+)/);
     return match ? match[1] : null;
   };
@@ -97,79 +121,89 @@ export default function Home() {
 
 
   const getCaiInfo = () => {
-    toast("Getting character...")
-    const fetchCaiData = async () => {
-      try {
-        const response = await fetch(`/api/charai?char=${getCharacterId(linkChar)}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    toast.promise(
+      new Promise<void>(async (resolve, reject) => {
+        try {
+          const response = await fetch(`/api/charai?char=${getCharacterId(linkChar)}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+
+          const { name, personality, initialMessage, ...rest } = characterData;
+          
+          const imageUrl = `https://characterai.io/i/250/static/avatars/${data.character.avatar_file_name}`;
+          const imageBase64 = await getImageBase64(imageUrl);
+
+          setCharacterData(() => {
+            const updatedData = {
+              ...rest,
+              name: data.character.name,
+              personality: data.character.definition,
+              initialMessage: data.character.greeting,
+              image: imageBase64,
+            };
+            localStorage.setItem('characterData', JSON.stringify(updatedData));
+            return updatedData;
+          });
+
+          router.push("/chat");
+          resolve();
+        } catch (error) {
+          reject(new Error(`Failed to fetch character data from c.ai: ${error}`));
         }
-        const data = await response.json();
-
-        const { name, personality, initialMessage, ...rest } = characterData;
-
-        setCharacterData(() => {
-          const updatedData = {
-            ...rest,
-            name: data.character.name,
-            personality: data.character.definition,
-            initialMessage: data.character.greeting,
-          };
-          localStorage.setItem('characterData', JSON.stringify(updatedData));
-          toast.success(`${data.character.name} fetched from c.ai!`);
-          return updatedData;
-        });
-
-        router.push("/chat");
-      } catch (error) {
-        toast.error(`Failed to fetch character data from c.ai: ${error}`);
+      }),
+      {
+        pending: "Getting character...",
+        success: "Character fetched from c.ai!",
+        error: "Failed to fetch character data from c.ai.",
       }
-    };
-
-    if (linkChar) {
-      fetchCaiData();
-    }
-
-  }
+    );
+  };
 
   const getChubaiInfo = () => {
-    toast("Getting character...")
-    const fetchChubaiData = async () => {
-      try {
-        const authorName = getChubCharacterAuthor(linkChar)
-        const response = await fetch(`https://api.chub.ai/api/characters/${authorName}/${getChubCharacterId(linkChar, authorName || "")}?full=true`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    toast.promise(
+      new Promise<void>(async (resolve, reject) => {
+        try {
+          const authorName = getChubCharacterAuthor(linkChar);
+          const response = await fetch(`https://api.chub.ai/api/characters/${authorName}/${getChubCharacterId(linkChar, authorName || "")}?full=true`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+
+          const { name, personality, initialMessage, ...rest } = characterData;
+
+          const imageUrl = data.node.avatar_url;
+          const imageBase64 = await getImageBase64(imageUrl);
+
+          setCharacterData(() => {
+            const updatedData = {
+              ...rest,
+              name: data.node.definition.name,
+              personality: data.node.definition.personality || data.node.definition.description,
+              initialMessage: data.node.definition.first_message,
+              alternateInitialMessages: data.node.definition.alternate_greetings && [data.node.definition.first_message, ...data.node.definition.alternate_greetings] || [],
+              scenario: data.node.definition.scenario,
+              image: imageBase64,
+            };
+            localStorage.setItem('characterData', JSON.stringify(updatedData));
+            return updatedData;
+          });
+
+          router.push("/chat");
+          resolve();
+        } catch (error) {
+          reject(new Error(`Failed to fetch character data from chub.ai: ${error}`));
         }
-        const data = await response.json();
-
-        const { name, personality, initialMessage, ...rest } = characterData;
-
-        setCharacterData(() => {
-          const updatedData = {
-            ...rest,
-            name: data.node.definition.name,
-            personality: data.node.definition.personality || data.node.definition.description,
-            initialMessage: data.node.definition.first_message,
-            alternateInitialMessages: data.node.definition.alternate_greetings && [data.node.definition.first_message, ...data.node.definition.alternate_greetings] || [],
-            scenario: data.node.definition.scenario,
-          };
-          localStorage.setItem('characterData', JSON.stringify(updatedData));
-          toast.success(`${data.node.definition.name} fetched from chub.ai!`);
-          return updatedData;
-        });
-
-        router.push("/chat");
-      } catch (error) {
-        toast.error(`Failed to fetch character data from chub.ai: ${error}`);
+      }),
+      {
+        pending: "Getting character...",
+        success: "Character fetched from chub.ai!",
+        error: "Failed to fetch character data from chub.ai.",
       }
-    };
-
-    if (linkChar) {
-      fetchChubaiData();
-    }
-
-  }
+    );
+  };
 
   // const CHUNK_SIZE = 65536;
   // const fromBase64Batch = (base64: string): Uint8Array => {

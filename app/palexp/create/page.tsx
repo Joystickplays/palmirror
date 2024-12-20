@@ -54,6 +54,7 @@ export default function Home() {
             dynamicStatuses: []
         }
     });
+    const [isPrefillButtonVisible, setIsPrefillButtonVisible] = useState(true);
 
     // const ButtonButMakeItMove = motion(Button);
     const { name, personality, scenario, initialMessage, alternateInitialMessages, plmex } = characterData;
@@ -125,7 +126,23 @@ export default function Home() {
         toast.success("Character downloaded to file.");
     };
 
-
+    const loadCharacterData = () => {
+        const savedCharacterData = localStorage.getItem("characterData");
+        if (savedCharacterData) {
+            const parsedData = JSON.parse(savedCharacterData);
+            if (Array.isArray(parsedData.alternateInitialMessages)) {
+                parsedData.alternateInitialMessages = parsedData.alternateInitialMessages.map((message: string) => ({
+                    name: `Greeting ${Math.floor(Math.random() * 27631337)}`,
+                    initialMessage: message
+                }));
+            }
+            setCharacterData(parsedData);
+            toast.success("Character data loaded from previous save.");
+            setIsPrefillButtonVisible(false);
+        } else {
+            toast.error("No saved character data found.");
+        }
+    };
 
 
     return (
@@ -140,6 +157,9 @@ export default function Home() {
                 <i>Your</i> character, <span className="palmirror-exc-text">supercharged.</span>
             </h1>
             <div className="px-2 lg:px-48 flex flex-col gap-3">
+                {isPrefillButtonVisible && (
+                    <Button variant="outline" onClick={loadCharacterData}>Pre-fill character data from previous save</Button>
+                )}
                 <p className="text-sm text-red-500">* Fields marked with asterisks are required.</p>
                 <div className="flex flex-col gap-1">
                     <p>Character picture</p>
