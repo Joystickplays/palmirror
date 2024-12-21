@@ -190,10 +190,6 @@ const ChatPage = () => {
     let userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
 
     if (userMessageContent && userMSGaddOnList) {
-      // Add system note to the first user message
-      if (messages.length === 1 && messages[0].role === "assistant") {
-        userMessageContent += " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]";
-      }
       // Add user message to the message list
       messagesList = [
         ...messagesList,
@@ -218,7 +214,14 @@ const ChatPage = () => {
         model: modelName,
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
-          ...messagesList.map((msg) => ({ ...msg, name: "-", role: msg.role as "user" | "assistant" | "system" })),
+          ...messagesList.map((msg, index) => ({
+            ...msg,
+            name: "-",
+            role: msg.role as "user" | "assistant" | "system",
+            content: index === 1 && msg.role === "user" && characterData.plmex.dynamicStatuses.length > 0
+              ? msg.content + " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
+              : msg.content
+          })),
           ...(userMSGaddOnList ? [] : [{ role: "user", content: userMessageContent, name: "-" } as const]),
         ],
         stream: true,
