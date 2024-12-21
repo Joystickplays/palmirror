@@ -187,9 +187,13 @@ const ChatPage = () => {
       setMessages(messagesList);
     };
 
-    const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
+    let userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
 
     if (userMessageContent && userMSGaddOnList) {
+      // Add system note to the first user message
+      if (messages.length === 1 && messages[0].role === "assistant") {
+        userMessageContent += " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]";
+      }
       // Add user message to the message list
       messagesList = [
         ...messagesList,
@@ -245,9 +249,9 @@ const ChatPage = () => {
       if (!abortController.current?.signal.aborted) {
         if (error instanceof Error && error.message.includes("reduce the length")) {
           handleSendMessage(e, force, regenerate, optionalMessage, userMSGaddOnList);
+          return; // Exit early to avoid setting isThinking to false
         } else {
           toast.error("Error: " + (error instanceof Error ? error.message : String(error)));
-          setIsThinking(false);
         }
       }
     } finally {
@@ -256,6 +260,7 @@ const ChatPage = () => {
         { ...prevMessages[prevMessages.length - 1], stillGenerating: false },
       ]);
       abortController.current = null;
+      setIsThinking(false);
     }
   };
 
@@ -323,6 +328,7 @@ const ChatPage = () => {
       abortController.current = null;
     } finally {
       abortController.current = null;
+      setUserPromptThinking(false);
     }
   };
 
@@ -369,6 +375,7 @@ const ChatPage = () => {
       abortController.current = null;
     } finally {
       abortController.current = null;
+      setUserPromptThinking(false);
     }
   };
 
