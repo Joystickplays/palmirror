@@ -147,7 +147,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                     <CardContent className="flex flex-col gap-3 !p-4">
                       <p className="text-xs opacity-50">Recommendations</p>
                       <div className="flex gap-4">
-                        <PopoverTrigger asChild>
+                        {/* <PopoverTrigger asChild>
                         <Button variant="outline" size="sm">OpenAI</Button>
                         </PopoverTrigger>
                         <PopoverContent className="font-sans">
@@ -158,7 +158,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                               <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Uses industry-leading AI models</p>
                           </div>
                           <Button onClick={() => { setBaseURL("https://api.openai.com/v1"); saveSettingsToLocalStorage();  }}>Use this provider a base URL</Button>
-                        </PopoverContent>
+                        </PopoverContent> */}
                         <PopoverTrigger asChild>
                           <Button variant="outline" size="sm">CosmosRP</Button>
                         </PopoverTrigger>
