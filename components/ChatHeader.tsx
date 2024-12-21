@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTheme } from '@/components/PalMirrorThemeProvider';
-import { Settings } from 'lucide-react';
+import { Settings, Check, BadgeInfo } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 interface ChatHeaderProps {
   characterData: {
@@ -121,6 +125,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
 
         
         <h2 className="z-[2]">PalMirror · <span className="font-bold">{characterData.name}</span></h2>
+        <Popover>
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" className="p-3 size-8 z-[2]"><Settings /></Button>
@@ -138,6 +143,37 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                     value={baseURL}
                     onChange={handleBaseURLChange}
                   />
+                  <Card>
+                    <CardContent className="flex flex-col gap-3 !p-4">
+                      <p className="text-xs opacity-50">Recommendations</p>
+                      <div className="flex gap-4">
+                        <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">OpenAI</Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="font-sans">
+                          <p>OpenAI is a leading AI research lab. They provide a powerful API for text generation.</p>
+                          <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
+                              <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Great quality</p>
+                              <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Fast responses</p>
+                              <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Uses industry-leading AI models</p>
+                          </div>
+                          <Button onClick={() => { setBaseURL("https://api.openai.com/v1"); saveSettingsToLocalStorage();  }}>Use this provider a base URL</Button>
+                        </PopoverContent>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm">CosmosRP</Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="font-sans">
+                          <p>CosmosRP is a completely free and uncensored LLM AI made for roleplay.</p>
+                          <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
+                            <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Excellent quality</p>
+                            <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Lengthy responses</p>
+                            <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Made for roleplay</p>
+                          </div>
+                          <Button onClick={() => { setBaseURL("https://api.pawan.krd/cosmosrp/v1"); saveSettingsToLocalStorage(); }}>Use this provider as base URL</Button>
+                        </PopoverContent>
+                      </div>
+                    </CardContent>
+                    </Card>
                 </div>
                 <div className="grid w-full items-center gap-1.5 my-5">
                   <Label htmlFor="Proxy_apiKey">API key</Label>
@@ -206,6 +242,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
             </DialogHeader>
           </DialogContent>
         </Dialog>
+        </Popover>
       </CardContent>
     </Card>
   );
