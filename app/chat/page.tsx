@@ -187,7 +187,7 @@ const ChatPage = () => {
       setMessages(messagesList);
     };
 
-    let userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
+    const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
 
     if (userMessageContent && userMSGaddOnList) {
       // Add user message to the message list
