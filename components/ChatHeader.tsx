@@ -44,10 +44,18 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
   // const [importB64msgkCode, setImportB64msgCode] = useState('');
   const [modelName, setModelName] = useState('');
   const [modelInstructions, setModelInstructions] = useState('');
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
 
   const { theme, setTheme } = useTheme();
 
+  const handleToggleRecommendations = () => {
+    setShowRecommendations(!showRecommendations);
+  };
 
+  const handleProviderSelect = (provider: string) => {
+    setSelectedProvider(provider);
+  };
 
   // const handleImportChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
   //   setImportB64msgCode(event.target.value);
@@ -125,7 +133,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
 
         
         <h2 className="z-[2]">PalMirror · <span className="font-bold">{characterData.name}</span></h2>
-        <Popover>
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" className="p-3 size-8 z-[2]"><Settings /></Button>
@@ -143,37 +150,47 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                     value={baseURL}
                     onChange={handleBaseURLChange}
                   />
-                  <Card>
-                    <CardContent className="flex flex-col gap-3 !p-4">
-                      <p className="text-xs opacity-50">Recommendations</p>
-                      <div className="flex gap-4">
-                        {/* <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">OpenAI</Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="font-sans">
-                          <p>OpenAI is a leading AI research lab. They provide a powerful API for text generation.</p>
-                          <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
-                              <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Great quality</p>
-                              <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Fast responses</p>
-                              <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Uses industry-leading AI models</p>
-                          </div>
-                          <Button onClick={() => { setBaseURL("https://api.openai.com/v1"); saveSettingsToLocalStorage();  }}>Use this provider a base URL</Button>
-                        </PopoverContent> */}
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm">CosmosRP</Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="font-sans">
-                          <p>CosmosRP is a completely free and uncensored LLM AI made for roleplay.</p>
-                          <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
-                            <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Excellent quality</p>
-                            <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Lengthy responses</p>
-                            <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Made for roleplay</p>
-                          </div>
-                          <Button onClick={() => { setBaseURL("https://api.pawan.krd/cosmosrp/v1"); saveSettingsToLocalStorage(); }}>Use this provider as base URL</Button>
-                        </PopoverContent>
-                      </div>
-                    </CardContent>
+                  <Button variant="outline" size="sm" onClick={handleToggleRecommendations}>
+                    {showRecommendations ? "Hide Recommendations" : "Show Recommendations"}
+                  </Button>
+                  {showRecommendations && (
+                    <Card>
+                      <CardContent className="flex flex-col gap-3 !p-4">
+                        <p className="text-xs opacity-50">Recommendations</p>
+                        <div className="flex gap-4">
+                          <Button variant="outline" size="sm" onClick={() => handleProviderSelect("OpenAI")}>OpenAI</Button>
+                          <Button variant="outline" size="sm" onClick={() => handleProviderSelect("CosmosRP")}>CosmosRP</Button>
+                        </div>
+                      </CardContent>
                     </Card>
+                  )}
+                  {showRecommendations && selectedProvider === "OpenAI" && (
+                    <Card className="mt-4">
+                      <CardContent className="font-sans p-3">
+                        <p>OpenAI is a leading AI research lab. They provide a powerful API for text generation.</p>
+                        <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Excellent quality</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Fast responses</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Uses industry-leading AI models</p>
+                        </div>
+                        <Button onClick={() => { setBaseURL("https://api.openai.com/v1"); saveSettingsToLocalStorage(); handleProviderSelect(""); }}>Use this provider as base URL</Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {showRecommendations && selectedProvider === "CosmosRP" && (
+                    <Card className="mt-4">
+                      <CardContent className="font-sans p-3">
+                        <p>CosmosRP is a completely free and uncensored LLM AI made for roleplay.</p>
+                        <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Roleplay-excellent quality</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Lengthy responses</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Made for roleplay</p>
+                          <p className="flex gap-2 text-sm  font-bold"><Check className="opacity-50" /> Does <u>NOT</u> require an API key</p>
+                        </div>
+                        <Button onClick={() => { setBaseURL("https://api.pawan.krd/cosmosrp/v1"); saveSettingsToLocalStorage(); handleProviderSelect(""); }}>Use this provider as base URL</Button>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
                 <div className="grid w-full items-center gap-1.5 my-5">
                   <Label htmlFor="Proxy_apiKey">API key</Label>
@@ -242,7 +259,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
             </DialogHeader>
           </DialogContent>
         </Dialog>
-        </Popover>
       </CardContent>
     </Card>
   );

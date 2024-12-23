@@ -120,47 +120,6 @@ export default function Home() {
   };
 
 
-  const getCaiInfo = () => {
-    toast.promise(
-      new Promise<void>(async (resolve, reject) => {
-        try {
-          const response = await fetch(`/api/charai?char=${getCharacterId(linkChar)}`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
-
-          const { name, personality, initialMessage, ...rest } = characterData;
-          
-          const imageUrl = `https://characterai.io/i/250/static/avatars/${data.character.avatar_file_name}`;
-          const imageBase64 = await getImageBase64(imageUrl);
-
-          setCharacterData(() => {
-            const updatedData = {
-              ...rest,
-              name: data.character.name,
-              personality: data.character.definition,
-              initialMessage: data.character.greeting,
-              image: imageBase64,
-            };
-            localStorage.setItem('characterData', JSON.stringify(updatedData));
-            return updatedData;
-          });
-
-          router.push("/chat");
-          resolve();
-        } catch (error) {
-          reject(new Error(`Failed to fetch character data from c.ai: ${error}`));
-        }
-      }),
-      {
-        pending: "Getting character...",
-        success: "Character fetched from c.ai!",
-        error: "Failed to fetch character data from c.ai.",
-      }
-    );
-  };
-
   const getChubaiInfo = () => {
     toast.promise(
       new Promise<void>(async (resolve, reject) => {
@@ -311,7 +270,6 @@ export default function Home() {
               </DialogHeader>
               <Input value={linkChar} onChange={(e) => setLinkChar(e.target.value)} placeholder="Character link (Characters with public definitions are recommended)" />
               <div className="flex justify-items-center items-center gap-4">
-                <Button onClick={getCaiInfo}>Get from c.ai</Button>
                 <Button onClick={getChubaiInfo}>Get from chub.ai</Button>
               </div>
             </DialogContent>
