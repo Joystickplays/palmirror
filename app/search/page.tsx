@@ -22,7 +22,19 @@ export default function Search() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [characterData, setCharacterData] = useState<any>(null);
+  const [characterData, setCharacterData] = useState({
+    name: "",
+    personality: "",
+    initialMessage: "",
+    scenario: "",
+    userName: "",
+    userPersonality: "",
+    image: "",
+    alternateInitialMessages: [] as Array<string>,
+    plmex: {
+      dynamicStatuses: []
+    }
+  });
   const router = useRouter();
   
   useEffect(() => {
