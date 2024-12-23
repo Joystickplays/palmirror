@@ -120,12 +120,12 @@ export default function Home() {
   };
 
 
-  const getChubaiInfo = () => {
+  const getChubaiInfo = (url: string = linkChar) => {
     toast.promise(
       new Promise<void>(async (resolve, reject) => {
         try {
-          const authorName = getChubCharacterAuthor(linkChar);
-          const response = await fetch(`https://api.chub.ai/api/characters/${authorName}/${getChubCharacterId(linkChar, authorName || "")}?full=true`);
+          const authorName = getChubCharacterAuthor(url);
+          const response = await fetch(`https://api.chub.ai/api/characters/${authorName}/${getChubCharacterId(url, authorName || "")}?full=true`);
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -268,9 +268,11 @@ export default function Home() {
               <DialogHeader>
                 <DialogTitle>Get from a platform</DialogTitle>
               </DialogHeader>
-              <Input value={linkChar} onChange={(e) => setLinkChar(e.target.value)} placeholder="Character link (Characters with public definitions are recommended)" />
+                <Button className="w-full" onClick={() => router.push('/search')}>Search for a character</Button>
+              <hr />
+              <Input value={linkChar} onChange={(e) => setLinkChar(e.target.value)} placeholder="Character link..." />
               <div className="flex justify-items-center items-center gap-4">
-                <Button onClick={getChubaiInfo}>Get from chub.ai</Button>
+                <Button onClick={() => getChubaiInfo()}>Get from chub.ai</Button>
               </div>
             </DialogContent>
           </Dialog>
