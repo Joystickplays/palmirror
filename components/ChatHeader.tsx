@@ -83,42 +83,36 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
   }, []);
 
   useEffect(() => {
+    const settings = { baseURL, apiKey, modelName, temperature, modelInstructions };
+    localStorage.setItem('Proxy_settings', JSON.stringify(settings));
+  }, [baseURL, apiKey, modelName, temperature, modelInstructions]);
+
+  useEffect(() => {
     console.log(theme)
   }, [theme])
 
-  // Save values to localStorage whenever they change
   const handleBaseURLChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setBaseURL(value);
-    saveSettingsToLocalStorage();
   };
 
   const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setApiKey(value);
-    saveSettingsToLocalStorage();
   };
 
   const handleModelNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setModelName(value);
-    saveSettingsToLocalStorage();
   };
 
   const handleModelInstructionsChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = event.target.value;
     setModelInstructions(value);
-    saveSettingsToLocalStorage();
   };
 
   const handleTemperatureChange = (value: number[]) => {
     setTemperature(value[0]);
-    saveSettingsToLocalStorage();
-  }
-
-  const saveSettingsToLocalStorage = () => {
-    const settings = { baseURL, apiKey, modelName, temperature, modelInstructions };
-    localStorage.setItem('Proxy_settings', JSON.stringify(settings));
   }
 
   return (
@@ -173,7 +167,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                           <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Fast responses</p>
                           <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Uses industry-leading AI models</p>
                         </div>
-                        <Button onClick={() => { setBaseURL("https://api.openai.com/v1"); saveSettingsToLocalStorage(); handleProviderSelect(""); }}>Use this provider as base URL</Button>
+                        <Button onClick={() => { setBaseURL("https://api.openai.com/v1"); handleProviderSelect(""); }}>Use this provider as base URL</Button>
                       </CardContent>
                     </Card>
                   )}
@@ -187,7 +181,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                           <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Made for roleplay</p>
                           <p className="flex gap-2 text-sm  font-bold"><Check className="opacity-50" /> Does <u>NOT</u> require an API key</p>
                         </div>
-                        <Button onClick={() => { setBaseURL("https://api.pawan.krd/cosmosrp/v1"); saveSettingsToLocalStorage(); handleProviderSelect(""); }}>Use this provider as base URL</Button>
+                        <Button onClick={() => { setBaseURL("https://api.pawan.krd/cosmosrp/v1"); handleProviderSelect(""); }}>Use this provider as base URL</Button>
                       </CardContent>
                     </Card>
                   )}

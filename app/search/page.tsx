@@ -76,7 +76,7 @@ export default function Search() {
           }
           const data = await response.json();
   
-          const { name, personality, initialMessage, ...rest } = characterData;
+          const { name, personality, initialMessage, plmex, ...rest } = characterData;
   
           const imageUrl = data.node.avatar_url;
           const imageBase64 = await getImageBase64(imageUrl);
@@ -90,6 +90,9 @@ export default function Search() {
               alternateInitialMessages: data.node.definition.alternate_greetings && [data.node.definition.first_message, ...data.node.definition.alternate_greetings] || [],
               scenario: data.node.definition.scenario,
               image: imageBase64,
+              plmex: {
+                dynamicStatuses: []
+              }
             };
             localStorage.setItem('characterData', JSON.stringify(updatedData));
             return updatedData;
