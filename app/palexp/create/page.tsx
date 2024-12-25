@@ -327,9 +327,9 @@ export default function Home() {
                                                                                     <Card>
                                                                                         <CardContent className="p-3">
                                                                                             <div className="flex flex-col gap-1">
-                                                                                                <p className="flex gap-2 text-sm"><X className="opacity-50" /> "grunts"</p>
+                                                                                                <p className="flex gap-2 text-sm"><X className="opacity-50" /> &quot;grunts&quot;</p>
                                                                                                 <p className="flex gap-2 text-xs opacity-50"><X className="opacity-0" />Too generic</p>
-                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50" /> "=snd-grunt="</p>
+                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50" /> &quot;=snd-grunt=&quot;</p>
                                                                                                 <p className="flex gap-2 text-xs opacity-50"><Check className="opacity-0" /> More explicit</p>
                                                                                             </div>
                                                                                         </CardContent>
@@ -343,8 +343,8 @@ export default function Home() {
                                                                                     <Card>
                                                                                         <CardContent className="p-3">
                                                                                             <div className="flex flex-col gap-1">
-                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50 min-w-7 h-7" /> "I always come back."</p>
-                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50 min-w-7 h-7" /> "Let's be honest, it's better off in my hands."</p>
+                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50 min-w-7 h-7" /> &quot;I always come back.&quot;</p>
+                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50 min-w-7 h-7" /> &quot;Let&apos;s be honest, it&apos;s better off in my hands.&quot;</p>
                                                                                             </div>
                                                                                         </CardContent>
                                                                                     </Card>
