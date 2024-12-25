@@ -34,6 +34,7 @@ body {
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+
   .dark {
     --background: 20 14.3% 4.1%;
     --foreground: 60 9.1% 97.8%;
@@ -66,6 +67,7 @@ body {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -96,7 +98,7 @@ body {
 }
 
 em::after {
-  content: "\A"; 
+  content: "\A";
   white-space: pre;
 }
 
@@ -104,9 +106,11 @@ em::after {
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -120,26 +124,28 @@ em::after {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: gradientShift 20s ease-in-out infinite;
-  
-  text-shadow: 
-    0 0 5px #ffb3c122, 
-    0 0 20px #f0d1f922, 
-    0 0 35px #b3e0f522, 
-    0 0 70px #f8e1d422, 
-    0 0 100px #d3f8e222;
+
+  text-shadow:
+    0 0 2px #ffb3c133,
+    0 0 10px #f0d1f933,
+    0 0 20px #b3e0f533;
 }
+
+/* 0 0 40px #f8e1d477, 
+  0 0 50px #d3f8e772; */
 
 .palmirror-exc {
   /* background-size: 300% 300% !important;
   background: linear-gradient(90deg, #ffb3c133, #f0d1f933, #b3e0f533, #f8e1d433, #d3f8e233);
   animation: gradientShift 10s ease-in-out infinite; */
-  box-shadow: 
-    0 0 2px #ff779022, 
-    0 0 10px #e481ff22, 
-    0 0 25px #6dd1ff22, 
-    0 0 50px #ffa06922, 
-    0 0 70px #73ffab22;
+  box-shadow:
+    0 0 1px #ff779033,
+    0 0 5px #e481ff33,
+    0 0 15px #6dd1ff33;
 }
+
+/* 0 0 30px #ffa06977, 
+  0 0 40px #73ffab77; */
 
 .ellipsis-loader {
   display: inline-block;
@@ -182,6 +188,7 @@ em::after {
   0% {
     transform: scale(0);
   }
+
   100% {
     transform: scale(1);
   }
@@ -191,6 +198,7 @@ em::after {
   0% {
     transform: translate(0, 0);
   }
+
   100% {
     transform: translate(24px, 0);
   }
@@ -200,6 +208,7 @@ em::after {
   0% {
     transform: scale(1);
   }
+
   100% {
     transform: scale(0);
   }

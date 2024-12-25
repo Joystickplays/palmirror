@@ -9,34 +9,17 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/components/systemMessageGeneration";
 import OpenAI from "openai";
+import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
 import { AnimatePresence, motion } from "motion/react"
 
 let openai: OpenAI;
 
-interface DynamicStatus {
-  key: number;
-  name: string;
-  defaultValue: string;
-}
-
 type StatusData = Array<{ key: string; value: string }>;
 
 const ChatPage = () => {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>>([]);
-  const [characterData, setCharacterData] = useState({
-    image: "",
-    name: "",
-    personality: "",
-    initialMessage: "",
-    scenario: "",
-    userName: "",
-    userPersonality: "",
-    alternateInitialMessages: [] as Array<string>,
-    plmex: {
-      dynamicStatuses: [] as Array<DynamicStatus>
-    }
-  });
+  const [characterData, setCharacterData] = useState<CharacterData>(defaultCharacterData);
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [userPromptThinking, setUserPromptThinking] = useState(false);
@@ -301,7 +284,7 @@ const ChatPage = () => {
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
           ...messagesList.map((msg) => ({ ...msg, name: "-" })),
-          { role: "user", content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a quick reply for ${characterData.userName} in accordance to ${characterData.userName}'s personality. Reply must be thoughtful and quick.`, name: "user" },
+          { role: "user", content: `[SYSTEM NOTE]: Detach from the character personality, and create a quick answer for {{user}} in accordance to ${characterData.userName}'s personality. Answer must be thoughtful and quick.`, name: "user" },
         ],
         stream: true,
         temperature: generationTemperature,

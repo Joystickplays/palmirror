@@ -22,17 +22,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+
+import { CharacterData } from "@/types/CharacterData";
 
 interface ChatHeaderProps {
-  characterData: {
-    image: string,
-    name: string
-  };
+  characterData: CharacterData;
   getExportedMessages: () => void;
   importMessages: () => void;
 }
@@ -46,6 +40,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
   const [modelInstructions, setModelInstructions] = useState('');
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [inputChangedYet, setInputChangedYet] = useState(false);
 
   const { theme, setTheme } = useTheme();
 
@@ -83,8 +78,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
   }, []);
 
   useEffect(() => {
-    const settings = { baseURL, apiKey, modelName, temperature, modelInstructions };
-    localStorage.setItem('Proxy_settings', JSON.stringify(settings));
+    if (inputChangedYet) {
+      const settings = { baseURL, apiKey, modelName, temperature, modelInstructions };
+      localStorage.setItem('Proxy_settings', JSON.stringify(settings));
+    }
   }, [baseURL, apiKey, modelName, temperature, modelInstructions]);
 
   useEffect(() => {
@@ -94,25 +91,30 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
   const handleBaseURLChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setBaseURL(value);
+    setInputChangedYet(true);
   };
 
   const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setApiKey(value);
+    setInputChangedYet(true);
   };
 
   const handleModelNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setModelName(value);
+    setInputChangedYet(true);
   };
 
   const handleModelInstructionsChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = event.target.value;
     setModelInstructions(value);
+    setInputChangedYet(true);
   };
 
   const handleTemperatureChange = (value: number[]) => {
     setTemperature(value[0]);
+    setInputChangedYet(true);
   }
 
   return (

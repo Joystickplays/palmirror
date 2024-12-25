@@ -9,6 +9,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useTheme } from '@/components/PalMirrorThemeProvider';
+import { CharacterData, defaultCharacterData } from '@/types/CharacterData';
 
 interface MessageInputProps {
   newMessage: string;

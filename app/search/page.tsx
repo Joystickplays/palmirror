@@ -91,7 +91,8 @@ export default function Search() {
               scenario: data.node.definition.scenario,
               image: imageBase64,
               plmex: {
-                dynamicStatuses: []
+                dynamicStatuses: [],
+                invocations: [],
               }
             };
             localStorage.setItem('characterData', JSON.stringify(updatedData));

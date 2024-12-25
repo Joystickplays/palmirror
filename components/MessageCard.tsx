@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { AnimatePresence, motion } from 'framer-motion';
+import { CharacterData } from "@/types/CharacterData";
 
 interface MessageCardProps {
   index: number;
@@ -41,13 +42,7 @@ interface MessageCardProps {
   globalIsThinking: boolean;
   isGreetingMessage: boolean;
   isLastMessage: boolean;
-  characterData: {
-    image: string | null;
-    name: string;
-    userName: string;
-    initialMessage: string;
-    alternateInitialMessages: Array<string> | null | undefined
-  };
+  characterData: CharacterData;
   editMessage: (index: number, content: string) => void;
   rewindTo: (index: number) => void;
   changeStatus: (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => void;
@@ -100,15 +95,14 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [editingContent, setEditingContent] = useState('');
   const { theme, setTheme } = useTheme();
   const [statuses, setStatuses] = useState<StatusData>([]);
-
-
+  const [invocationHolder, setInvocationHolder] = useState("");
+  const [seenInvocations, setSeenInvocations] = useState<string[]>([]);
+  const [imageInvocations, setImageInvocations] = useState<string[]>([]);
 
   const [changingStatus, setChangingStatus] = useState("");
   const [changingStatusValue, setChangingStatusValue] = useState("");
   const [changingStatusCharReacts, setChangingStatusCharReacts] = useState(false);
   const [changingStatusReason, setChangingStatusReason] = useState("");
-
-
 
   const triggerRegenerate = useCallback(() => {
     regenerateFunction();
@@ -187,20 +181,78 @@ const MessageCard: React.FC<MessageCardProps> = ({
     return input.replace(statusRegex, '').trim();
   };
 
+  const invocationTagsDetection = (input: string): { foundStrings: string[], modifiedString: string } => {
+    const regex = /=([^=]+)=/g;
+    const foundStrings: string[] = [];
+    let match;
 
+    while ((match = regex.exec(input)) !== null) {
+      foundStrings.push(match[1]);
+    }
+
+    const modifiedString = input.replace(regex, '').trim();
+
+    return { foundStrings, modifiedString };
+  };
+
+  const phraseDetection = (input: string, phrases: string[]): { foundPhrases: string[], modifiedString2: string } => {
+    const foundPhrases: string[] = [];
+    let modifiedString2 = input;
+
+    phrases.forEach(phrase => {
+      const regex = new RegExp(`\\b${phrase}\\b`, 'gi');
+      if (regex.test(input)) {
+        foundPhrases.push(`=${phrase}=`);
+        modifiedString2 = modifiedString2.replace(regex, '').trim();
+      }
+    });
+
+    return { foundPhrases, modifiedString2 };
+  };
+
+  const invocationProcessor = (triggers: Array<string>) => {
+    const newTriggers = triggers.filter(trigger => !seenInvocations.includes(trigger));
+    setSeenInvocations(prev => [...prev, ...newTriggers]);
+
+    newTriggers.forEach((trigger) => {
+      const foundInvocation = characterData.plmex.invocations.find((invocation) => invocation.trigger === trigger || invocation.trigger === `=${trigger}=`);
+      if (foundInvocation) {
+        if (foundInvocation.type === "sound") {
+          const audio = new Audio(foundInvocation.data);
+          audio.play();
+        } else if (foundInvocation.type === "image") {
+          setImageInvocations(prev => [...prev, foundInvocation.data]);
+        }
+      }
+    });
+  };
 
   const rpTextRender = (content: string) => {
     let processedContent = content
     processedContent = processedContent.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
 
 
+    if (characterData.plmex.invocations.length > 0) {
+      processedContent = invocationHolder
+    }
     processedContent = removeStatusSection(processedContent)
+
 
     return processedContent
   }
 
   useEffect(() => {
     setStatuses(extractStatusData(content));
+    if (characterData.plmex.invocations.length > 0) {
+      const { foundStrings, modifiedString } = invocationTagsDetection(content);
+      const { foundPhrases, modifiedString2 } = phraseDetection(modifiedString, characterData.plmex.invocations.map(invocation => invocation.trigger));
+      setInvocationHolder(prev => {
+        const newInvocationHolder = prev === "" ? modifiedString2 : prev;
+        const newInvocations = [...foundStrings, ...foundPhrases].filter(trigger => !prev.includes(trigger));
+        invocationProcessor(newInvocations);
+        return newInvocationHolder;
+      });
+    }
   }, [content])
 
   const renderContent = () => {
@@ -230,6 +282,14 @@ const MessageCard: React.FC<MessageCardProps> = ({
         <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
           {rpTextRender(content)}
         </ReactMarkdown>
+
+        {imageInvocations.length > 0 && (
+          <div className="flex gap-4">
+            {imageInvocations.map((src, idx) => (
+              <img key={idx} src={src} alt={`Invocation ${idx}`} className="rounded-lg w-48 h-48 object-cover" />
+            ))}
+          </div>
+        )}
 
         {statuses.length > 0 && (
           <animated.div key="idkwhatyouwant" style={{ marginTop: fontSize.to(s => `${s}rem`) }} className="flex gap-2 overflow-x-auto">

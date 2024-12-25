@@ -6,28 +6,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { useRouter } from 'next/navigation';
-import { CirclePlus, Trash2 } from 'lucide-react';
+import { CirclePlus, Trash2, BadgeInfo, Check, X } from 'lucide-react';
 
 import { AnimatePresence, motion } from "motion/react"
 import NumberFlow from '@number-flow/react'
 
 import pako from 'pako';
-
-
-interface DynamicStatus {
-    key: number;
-    name: string;
-    defaultValue: string;
-}
-
-interface AlternateInitialMessage {
-    name: string;
-    initialMessage: string;
-}
+import { DynamicStatus, Invocation, AlternateInitialMessage } from '@/types/CharacterData';
 
 interface CharacterData {
     image: string;
@@ -38,6 +40,7 @@ interface CharacterData {
     alternateInitialMessages: AlternateInitialMessage[];
     plmex: {
         dynamicStatuses: DynamicStatus[];
+        invocations: Invocation[];
     };
 }
 
@@ -51,7 +54,8 @@ export default function Home() {
         initialMessage: "",
         alternateInitialMessages: [],
         plmex: {
-            dynamicStatuses: []
+            dynamicStatuses: [],
+            invocations: []
         }
     });
     const [isPrefillButtonVisible, setIsPrefillButtonVisible] = useState(true);
@@ -92,27 +96,32 @@ export default function Home() {
     //     }
     //     return result;
     // };
-    
-    
+
+
     const exportCharacter = () => {
         if (requiredFields.some(field => field.trim() === "")) {
             toast.error("Please fill in all required fields marked with the asterisk.");
             return;
         }
-    
+
+        const simplifiedCharacterData = {
+            ...characterData,
+            alternateInitialMessages: alternateInitialMessages.map(msg => msg.initialMessage)
+        };
+
         const timestamp = new Date().toLocaleString();
-        const credit = 
-                       `// Born from the Experience. A spark only found here.\n` +
-                       `// Handle with care. It remembers.\n\n` +
-                       `// ${timestamp} at https://palm.goteamst.com\n\n`;
-    
-        const characterJSON = JSON.stringify(characterData, null, 2);
-    
+        const credit =
+            `// Born from the Experience. A spark only found here.\n` +
+            `// Handle with care. It remembers.\n\n` +
+            `// ${timestamp} at https://palm.goteamst.com\n\n`;
+
+        const characterJSON = JSON.stringify(simplifiedCharacterData, null, 2);
+
         const compressedData = pako.gzip(characterJSON, { level: 2 });
-    
+
         const fileContent = new Uint8Array([...new TextEncoder().encode(credit), ...compressedData]);
         const blob = new Blob([fileContent], { type: 'application/octet-stream' });
-    
+
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -120,9 +129,9 @@ export default function Home() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-    
+
         URL.revokeObjectURL(url);
-    
+
         toast.success("Character downloaded to file.");
     };
 
@@ -266,8 +275,165 @@ export default function Home() {
                         </div>
                         <div className="flex flex-col gap-1">
                             <h1 className="palmirror-exc-text text-2xl">Invocations</h1>
-                            <Button key="ADDBUTTON" size="sm" variant="outline" onClick={() => {
+                            <div className="grid grid-cols-1 gap-2">
+                                <AnimatePresence mode="popLayout">
+                                    {plmex.invocations.map((invocation, index) => (
+                                        <motion.div layout key={invocation.key}
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0.8, opacity: 0 }}
+                                            transition={{ type: "spring", stiffness: 225, damping: 30 }}>
+                                            <Card>
+                                                <CardContent className="p-4 flex flex-col  gap-4">
 
+                                                    <div className="flex gap-2">
+                                                        <Button variant="ghost" size="icon" onClick={() => {
+                                                            const newInvocations = plmex.invocations.filter((_, i) => i !== index);
+                                                            setCharacterData({ ...characterData, plmex: { ...plmex, invocations: newInvocations } });
+                                                        }}><Trash2 /></Button>
+                                                        <Select value={invocation.type} onValueChange={(value: "sound" | "image") => {
+                                                            const newInvocations = [...plmex.invocations];
+                                                            newInvocations[index] = { ...invocation, type: value, data: "" };
+                                                            setCharacterData({ ...characterData, plmex: { ...plmex, invocations: newInvocations } });
+                                                        }}>
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Invocation type" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="sound">Play a sound</SelectItem>
+                                                                <SelectItem value="image">Show an image</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    <div className="flex flex-col md:flex-row gap-4">
+                                                        <div className="flex flex-col gap-1 w-full">
+                                                            <div className="flex gap-2 items-center">
+                                                                <p className="text-sm">Trigger</p>
+                                                                <Popover>
+                                                                    <PopoverTrigger asChild>
+                                                                        <Button variant="outline" size="smIcon"><BadgeInfo /></Button>
+                                                                    </PopoverTrigger>
+                                                                    <PopoverContent className="p-3 font-sans">
+                                                                        <p>Trigger is the keyword PalMirror will look to activate this invocation.</p>
+                                                                        <br />
+                                                                        <h1 className="font-bold text-lg">Best Practices</h1>
+                                                                        <p className="text-xs opacity-50">These largely apply to sound invocation, but other invocations is applicable.</p>
+                                                                        <br />
+                                                                        <div className="flex flex-col gap-2">
+                                                                            <Card>
+                                                                                <CardContent className="p-3 flex flex-col gap-2">
+                                                                                    <h1 className="font-bold text-lg">Paralanguage</h1>
+                                                                                    <p className="text-sm">If you have paralanguage audio (such as grunting, sighing, laughing or any other non-verbal sound), use a special formatting.</p>
+                                                                                    <Card>
+                                                                                        <CardContent className="p-3">
+                                                                                            <div className="flex flex-col gap-1">
+                                                                                                <p className="flex gap-2 text-sm"><X className="opacity-50" /> "grunts"</p>
+                                                                                                <p className="flex gap-2 text-xs opacity-50"><X className="opacity-0" />Too generic</p>
+                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50" /> "=snd-grunt="</p>
+                                                                                                <p className="flex gap-2 text-xs opacity-50"><Check className="opacity-0" /> More explicit</p>
+                                                                                            </div>
+                                                                                        </CardContent>
+                                                                                    </Card>
+                                                                                </CardContent>
+                                                                            </Card>
+                                                                            <Card>
+                                                                                <CardContent className="p-3 flex flex-col gap-2">
+                                                                                    <h1 className="font-bold text-lg">Soundbite</h1>
+                                                                                    <p className="text-sm">Soundbites are short snippets of a speech, like catchphrases from the character. You can use the phrases as-is.</p>
+                                                                                    <Card>
+                                                                                        <CardContent className="p-3">
+                                                                                            <div className="flex flex-col gap-1">
+                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50 min-w-7 h-7" /> "I always come back."</p>
+                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50 min-w-7 h-7" /> "Let's be honest, it's better off in my hands."</p>
+                                                                                            </div>
+                                                                                        </CardContent>
+                                                                                    </Card>
+                                                                                </CardContent>
+                                                                            </Card>
+                                                                        </div>
+                                                                    </PopoverContent>
+                                                                </Popover>
+                                                            </div>
+                                                            <Input placeholder="=snd-grunt=" value={invocation.trigger} onChange={(e) => {
+                                                                const newInvocations = [...plmex.invocations];
+                                                                newInvocations[index] = { ...invocation, trigger: e.target.value };
+                                                                setCharacterData({ ...characterData, plmex: { ...plmex, invocations: newInvocations } });
+                                                            }} autoComplete="off" />
+
+                                                        </div>
+                                                        <div className="flex flex-col gap-1 w-full">
+                                                            <div className="flex gap-2 items-center">
+                                                                <p className="text-sm">Condition</p>
+                                                                <Popover>
+                                                                    <PopoverTrigger asChild>
+                                                                        <Button variant="outline" size="smIcon"><BadgeInfo /></Button>
+                                                                    </PopoverTrigger>
+                                                                    <PopoverContent className="p-3 font-sans">
+                                                                        <p>Guides the LLM on when to generate the trigger.</p>
+                                                                    </PopoverContent>
+                                                                </Popover>
+                                                            </div>
+                                                            <Input placeholder="Add this when {{char}} grunts." value={invocation.condition} onChange={(e) => {
+                                                                const newInvocations = [...plmex.invocations];
+                                                                newInvocations[index] = { ...invocation, condition: e.target.value };
+                                                                setCharacterData({ ...characterData, plmex: { ...plmex, invocations: newInvocations } });
+                                                            }} autoComplete="off" />
+
+                                                        </div>
+                                                    </div>
+                                                    <Button onClick={() => {
+                                                        const input = document.createElement('input');
+                                                        input.type = 'file';
+                                                        input.accept = invocation.type === 'sound' ? 'audio/*' : 'image/*';
+                                                        input.onchange = (e) => {
+                                                            const file = (e.target as HTMLInputElement).files?.[0];
+                                                            if (file) {
+                                                                const reader = new FileReader();
+                                                                reader.onload = (e: ProgressEvent<FileReader>) => {
+                                                                    if (e.target) {
+                                                                        const base64String = e.target.result as string;
+                                                                        const newInvocations = [...plmex.invocations];
+                                                                        newInvocations[index] = { ...invocation, data: base64String };
+                                                                        setCharacterData({ ...characterData, plmex: { ...plmex, invocations: newInvocations } });
+                                                                        toast.success(`${invocation.type.charAt(0).toUpperCase() + invocation.type.slice(1)} uploaded successfully.`);
+                                                                    } else {
+                                                                        console.error("FileReader target is null");
+                                                                    }
+                                                                };
+                                                                reader.readAsDataURL(file);
+                                                            }
+                                                        };
+                                                        input.click();
+                                                    }}>Upload {invocation.type}</Button>
+                                                    {invocation.data && (
+                                                        <div className="flex flex-col gap-2" key={invocation.data}>
+                                                            <p className="text-sm">Uploaded {invocation.type}:</p>
+                                                            {invocation.type === 'sound' ? (
+                                                                <audio controls>
+                                                                    <source src={invocation.data} type="audio/mpeg" />
+                                                                    Your browser does not support the audio element.
+                                                                </audio>
+                                                            ) : (
+                                                                <img src={invocation.data} alt="Uploaded image" className="max-w-full h-auto" />
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        </motion.div>
+                                    ))}
+
+
+                                </AnimatePresence>
+
+                            </div>
+                            <Button key="ADDBUTTON" size="sm" variant="outline" onClick={() => {
+                                if (plmex.invocations.length < 10) {
+                                    setCharacterData({ ...characterData, plmex: { ...plmex, invocations: [...plmex.invocations, { key: Math.floor(Math.random() * 69420), type: "sound", trigger: "", condition: "", data: "" }] } })
+
+                                } else {
+                                    toast.error("Anything above 10 will explode your file (in terms of size).")
+                                }
                             }}><CirclePlus /> Add</Button>
                         </div>
                     </div>

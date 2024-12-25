@@ -11,6 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import pako from 'pako';
 
+import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
 import {
   Dialog,
@@ -51,24 +52,12 @@ export default function Home() {
 
 
   const router = useRouter();
-  const [characterData, setCharacterData] = useState({
-    name: "",
-    personality: "",
-    initialMessage: "",
-    scenario: "",
-    userName: "",
-    userPersonality: "",
-    image: "",
-    alternateInitialMessages: [] as Array<string>,
-    plmex: {
-      dynamicStatuses: []
-    }
-  });
+  const [characterData, setCharacterData] = useState<CharacterData>(defaultCharacterData);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [linkChar, setLinkChar] = useState('')
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof typeof characterData) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof CharacterData) => {
     const value = event.target.value;
     setCharacterData({ ...characterData, [field]: value });
   };
@@ -96,7 +85,7 @@ export default function Home() {
 
     
     setCharacterData(prevData => {
-      const updatedData = { ...prevData, image: "", plmex: { dynamicStatuses: [] } };
+      const updatedData = { ...prevData, image: "", plmex: { dynamicStatuses: [], invocations: [] } };
       localStorage.setItem('characterData', JSON.stringify(updatedData));
       toast.success('Character data saved! Starting chat...');
       return updatedData;
@@ -137,7 +126,7 @@ export default function Home() {
           const imageBase64 = await getImageBase64(imageUrl);
 
           setCharacterData(() => {
-            const updatedData = {
+            const updatedData: CharacterData = {
               ...rest,
               name: data.node.definition.name,
               personality: data.node.definition.personality || data.node.definition.description,
@@ -146,7 +135,8 @@ export default function Home() {
               scenario: data.node.definition.scenario,
               image: imageBase64,
               plmex: {
-                dynamicStatuses: []
+                dynamicStatuses: [],
+                invocations: []
               }
             };
             localStorage.setItem('characterData', JSON.stringify(updatedData));
@@ -225,7 +215,7 @@ export default function Home() {
 
             const compressedData = fileContent.slice(delimiterIndex + 2);
             const decompressedData = pako.ungzip(new Uint8Array(compressedData), { to: "string" });
-            const characterData = JSON.parse(decompressedData);
+            const characterData: CharacterData = JSON.parse(decompressedData);
 
             setCharacterData((oldCharacterData) => {
               const updatedData = {...oldCharacterData, ...characterData}
