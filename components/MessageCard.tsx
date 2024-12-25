@@ -227,12 +227,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
     });
   };
 
-  const rpTextRender = (content: string) => {
+  const rpTextRender = (content: string, usingInvocationHolder: boolean = true) => {
     let processedContent = content
     processedContent = processedContent.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
 
 
-    if (characterData.plmex.invocations.length > 0) {
+    if (usingInvocationHolder && characterData.plmex.invocations.length > 0) {
       processedContent = invocationHolder
     }
     processedContent = removeStatusSection(processedContent)
@@ -384,11 +384,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 <Card key={message} className="mb-4 p-3 text-left">
                   <CardContent>
                     <ReactMarkdown className="markdown-content">
-                      {rpTextRender(message)}
+                      {rpTextRender(message, false)}
                     </ReactMarkdown>
                     <DialogClose asChild>
                       <Button onClick={() => {
                         editMessage(0, message);
+                        setInvocationHolder("");
                         setIsEditing(false);
                       }} className="mt-5 w-full">Use</Button>
                     </DialogClose>
