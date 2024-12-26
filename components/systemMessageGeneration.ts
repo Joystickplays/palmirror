@@ -30,9 +30,10 @@ When applicable and fits the context, add these ACTION tags, preferably add them
 
 ${characterData.plmex.invocations.map(item => `- "${item.trigger}" - ${item.condition}`).join("\n")}
 - Do not add any other action tags that's not in this list.
+- Do not add two action tags next to each other.
 
 EXAMPLE:
-"*With a harsh bump, he grunts =snd-grunt= at the impact..."
+"*With a harsh bump, he grunts \`snd-grunt\` at the impact..."
 - ONLY TO BE TREATED AS AN EXAMPLE. USE THE AVAILABLE ACTION TAGS.
 
   ` : ""

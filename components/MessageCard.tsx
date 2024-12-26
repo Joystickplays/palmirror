@@ -182,16 +182,17 @@ const MessageCard: React.FC<MessageCardProps> = ({
   };
 
   const invocationTagsDetection = (input: string): { foundStrings: string[], modifiedString: string } => {
-    const regex = /=([^=]+)=/g;
+    const regex = /`([^`]+)`/g;
     const foundStrings: string[] = [];
     let match;
-
+    
+    
     while ((match = regex.exec(input)) !== null) {
-      foundStrings.push(match[1]);
+      foundStrings.push(`\`${match[1]}\``);
     }
 
     const modifiedString = input.replace(regex, '').trim();
-
+    console.log(foundStrings);
     return { foundStrings, modifiedString };
   };
 
@@ -202,7 +203,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     phrases.forEach(phrase => {
       const regex = new RegExp(`\\b${phrase}\\b`, 'gi');
       if (regex.test(input)) {
-        foundPhrases.push(`=${phrase}=`);
+        foundPhrases.push(`${phrase}`);
         modifiedString2 = modifiedString2.replace(regex, '').trim();
       }
     });
@@ -220,26 +221,32 @@ const MessageCard: React.FC<MessageCardProps> = ({
         if (foundInvocation.type === "sound") {
           const audio = new Audio(foundInvocation.data);
           audio.play();
-        } else if (foundInvocation.type === "image") {
-          setImageInvocations(prev => [...prev, foundInvocation.data]);
+        } else if (foundInvocation.type === "image" && !imageInvocations.includes(foundInvocation.data)) {
+          setImageInvocations(prev => { return Array.from(new Set([...prev, foundInvocation.data]))});
         }
       }
     });
   };
 
+  const filterInvocationTags = (content: string) => {
+    const { foundStrings, modifiedString } = invocationTagsDetection(content);
+    return modifiedString
+  }
+
   const rpTextRender = (content: string, usingInvocationHolder: boolean = true) => {
     let processedContent = content
-    processedContent = processedContent.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
 
 
     if (usingInvocationHolder && characterData.plmex.invocations.length > 0) {
-      processedContent = invocationHolder
+      processedContent = filterInvocationTags(content)
     }
-    processedContent = removeStatusSection(processedContent)
+    processedContent = processedContent.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
 
+    processedContent = removeStatusSection(processedContent)
 
     return processedContent
   }
+
 
   useEffect(() => {
     setStatuses(extractStatusData(content));
@@ -262,7 +269,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
           <Button onClick={() => {
             editMessage(index, editingContent);
             setInvocationHolder("");
-            setImageInvocations([]);
             setIsEditing(false);
           }}>
             <span className="flex items-center gap-2">
@@ -288,7 +294,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
         {imageInvocations.length > 0 && (
           <div className="flex gap-4">
             {imageInvocations.map((src, idx) => (
-              <img key={idx} src={src} alt={`Invocation ${idx}`} className="rounded-lg w-48 h-48 object-cover" />
+              <img key={idx} src={src} alt={`Invocation ${idx}`} className="rounded-lg w-48 h-48 object-cover saturate-0 blur-md scale-90 hover:saturate-100 hover:blur-none hover:scale-100 transition-all" />
             ))}
           </div>
         )}
@@ -380,19 +386,20 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 <SelectValue placeholder="Choose an alternate initial message" />
               </SelectTrigger>
               <SelectContent> */}
-            {characterData.alternateInitialMessages && [characterData.initialMessage, ...(characterData.alternateInitialMessages)].map((message: AlternateInitialMessage | string, index) => {
+            {characterData.alternateInitialMessages && [...(characterData.alternateInitialMessages)].map((message: AlternateInitialMessage | string, index) => {
               message = typeof message == "string" ? message : message?.initialMessage ?? "";
               return (
                 <Card key={message} className="mb-4 p-3 text-left">
                   <CardContent>
                     <ReactMarkdown className="markdown-content">
-                      {rpTextRender(message, false)}
+                      {rpTextRender(message)}
                     </ReactMarkdown>
                     <DialogClose asChild>
                       <Button onClick={() => {
                         editMessage(0, message);
                         setInvocationHolder("");
                         setImageInvocations([]);
+                        setSeenInvocations([]);
                         setIsEditing(false);
                       }} className="mt-5 w-full">Use</Button>
                     </DialogClose>

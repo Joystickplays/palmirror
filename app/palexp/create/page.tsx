@@ -323,13 +323,13 @@ export default function Home() {
                                                                             <Card>
                                                                                 <CardContent className="p-3 flex flex-col gap-2">
                                                                                     <h1 className="font-bold text-lg">Paralanguage</h1>
-                                                                                    <p className="text-sm">If you have paralanguage audio (such as grunting, sighing, laughing or any other non-verbal sound), use a special formatting.</p>
+                                                                                    <p className="text-sm">If you have paralanguage audio (such as grunting, sighing, laughing or any other non-verbal sound), use secial formatting using backticks (`) like the example below:</p>
                                                                                     <Card>
                                                                                         <CardContent className="p-3">
                                                                                             <div className="flex flex-col gap-1">
                                                                                                 <p className="flex gap-2 text-sm"><X className="opacity-50" /> &quot;grunts&quot;</p>
                                                                                                 <p className="flex gap-2 text-xs opacity-50"><X className="opacity-0" />Too generic</p>
-                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50" /> &quot;=snd-grunt=&quot;</p>
+                                                                                                <p className="flex gap-2 text-sm"><Check className="opacity-50" /> &quot;`snd-grunt`&quot;</p>
                                                                                                 <p className="flex gap-2 text-xs opacity-50"><Check className="opacity-0" /> More explicit</p>
                                                                                             </div>
                                                                                         </CardContent>

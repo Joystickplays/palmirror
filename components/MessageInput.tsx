@@ -75,7 +75,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     <div className="relative w-full">
       <Textarea
         id="Message"
-        className={`w-full p-2 ${userPromptThinking ? "text-white/50" : ""} ${ theme == "cai" ? "bg-[#26272b]" : ""} rounded-xl rounded-br-[30px] pr-16 pl-4`}
+        className={`w-full p-2 ${userPromptThinking ? "text-white/50" : ""} ${ theme == "cai" ? "bg-[#26272b]" : ""} rounded-xl rounded-[27px] rounded-t-2xl pr-16 pl-4`}
         value={localMessage}
         onChange={handleInputChange}
         onKeyDown={(e) => localHandleSendMessage(e)}

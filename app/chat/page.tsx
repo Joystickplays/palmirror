@@ -468,7 +468,7 @@ const ChatPage = () => {
         draggable
         theme="dark"
       />
-      <div className="grid max-w-[40rem] w-full h-dvh p-2 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
+      <div className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
         <ChatHeader characterData={characterData} getExportedMessages={encodeMessages} importMessages={openFilePicker} />
         <div className="overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col justify-end min-h-full">
