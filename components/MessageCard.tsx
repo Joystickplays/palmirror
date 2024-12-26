@@ -261,6 +261,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
         <div className="flex flex-col gap-2 items-end">
           <Button onClick={() => {
             editMessage(index, editingContent);
+            setInvocationHolder("");
+            setImageInvocations([]);
             setIsEditing(false);
           }}>
             <span className="flex items-center gap-2">
@@ -390,6 +392,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                       <Button onClick={() => {
                         editMessage(0, message);
                         setInvocationHolder("");
+                        setImageInvocations([]);
                         setIsEditing(false);
                       }} className="mt-5 w-full">Use</Button>
                     </DialogClose>
