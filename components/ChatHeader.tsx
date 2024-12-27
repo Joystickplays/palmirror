@@ -221,7 +221,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                   <Label>Temperature</Label>
                   <Label className="font-bold">{temperature}</ Label>
                 </div>
-                <Slider defaultValue={[0.5]} min={0} max={1} step={0.01} onValueChange={(val: number[]) => { handleTemperatureChange(val) }} />
+                <Slider defaultValue={[0.5]} min={0} max={1.5} step={0.01} onValueChange={(val: number[]) => { handleTemperatureChange(val) }} />
               </div>
               <div className="flex gap-2 pt-8">
                 <Button onClick={getExportedMessages}>Export chat</Button>

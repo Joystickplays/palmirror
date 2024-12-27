@@ -163,12 +163,12 @@ const ChatPage = () => {
     }
 
     let messagesList = [...messages]; // Create a copy to avoid direct mutation, and because how React states work
-    if (regenerate) {
-      messagesList = [
-        ...messagesList.slice(0, -2),
-      ]
-      setMessages(messagesList);
-    };
+    // if (regenerate) {
+    //   messagesList = [
+    //     ...messagesList.slice(0, -2),
+    //   ]
+    //   setMessages(messagesList);
+    // };
 
     const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
 
@@ -256,7 +256,7 @@ const ChatPage = () => {
     updatedMessages.pop();
 
     setMessages(updatedMessages);
-    handleSendMessage(null, true, true);
+    handleSendMessage(null, true, true, "", false);
     secondLastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
