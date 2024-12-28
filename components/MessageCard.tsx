@@ -192,7 +192,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
 
     const modifiedString = input.replace(regex, '').trim();
-    console.log(foundStrings);
+    //console.log(foundStrings);
     return { foundStrings, modifiedString };
   };
 

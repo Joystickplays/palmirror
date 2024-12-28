@@ -163,14 +163,15 @@ const ChatPage = () => {
     }
 
     let messagesList = [...messages]; // Create a copy to avoid direct mutation, and because how React states work
-    // if (regenerate) {
-    //   messagesList = [
-    //     ...messagesList.slice(0, -2),
-    //   ]
-    //   setMessages(messagesList);
-    // };
+     if (regenerate) {
+       messagesList = [
+         ...messagesList.slice(0, -1),
+       ]
+       setMessages(messagesList);
+     };
 
     const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
+    console.log(`User message used: ${userMessageContent}`)
 
     if (userMessageContent && userMSGaddOnList) {
       // Add user message to the message list
@@ -190,12 +191,7 @@ const ChatPage = () => {
 
     setIsThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
-
-    try {
-      abortController.current = new AbortController();
-      const comp = await openai.chat.completions.create({
-        model: modelName,
-        messages: [
+    const finalStructuredMessages = [
           { role: "system", content: systemMessageContent, name: "system" },
           ...messagesList.map((msg, index) => ({
             ...msg,
@@ -205,8 +201,16 @@ const ChatPage = () => {
               ? msg.content + " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
               : msg.content
           })),
-          ...(userMSGaddOnList ? [] : [{ role: "user", content: userMessageContent, name: "-" } as const]),
-        ],
+          ...(userMSGaddOnList || regenerate ? [] : [{ role: "user", content: userMessageContent, name: "-" } as const]),
+        ]
+
+    console.log("Messages list used: ")
+    console.log(finalStructuredMessages)
+    try {
+      abortController.current = new AbortController();
+      const comp = await openai.chat.completions.create({
+        model: modelName,
+        messages: finalStructuredMessages,
         stream: true,
         temperature: generationTemperature,
       });
