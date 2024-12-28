@@ -16,6 +16,11 @@ import { AnimatePresence, motion } from "motion/react"
 let openai: OpenAI;
 
 type StatusData = Array<{ key: string; value: string }>;
+interface ChatCompletionMessageParam {
+  role: "user" | "assistant" | "system";
+  content: string;
+  name?: string;
+}
 
 const ChatPage = () => {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>>([]);
@@ -192,17 +197,20 @@ const ChatPage = () => {
     setIsThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
     const finalStructuredMessages: ChatCompletionMessageParam[] = [
-      { role: "system", content: systemMessageContent, name: "system" },
-        ...messagesList.map((msg, index) => ({
-        ...msg,
-        name: "-",
-        role: msg.role as "user" | "assistant" | "system",  // Ensuring proper type
-        content: index === 1 && msg.role === "user" && characterData.plmex.dynamicStatuses.length > 0
-        ? msg.content + " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
-        : msg.content
-      })),
-      ...(userMSGaddOnList || regenerate ? [] : [{ role: "user", content: userMessageContent, name: "-" }] as const), // Ensuring proper type
-    ];
+	  { role: "system", content: systemMessageContent, name: "system" },
+	  ...messagesList.map((msg, index) => {
+	    const { stillGenerating, ...messageWithoutStillGenerating } = msg;
+	    return {
+	      ...messageWithoutStillGenerating,
+	      name: "-",
+	      role: msg.role as "user" | "assistant" | "system",
+	      content: index === 1 && msg.role === "user" && characterData.plmex.dynamicStatuses.length > 0
+	        ? msg.content + " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
+	        : msg.content
+	    };
+	  }),
+	  ...(userMSGaddOnList || regenerate ? [] : [{ role: "user", content: userMessageContent, name: "-" }] as const),
+	];
 
     console.log("Messages list used: ")
     console.log(finalStructuredMessages)
