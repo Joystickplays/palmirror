@@ -191,18 +191,18 @@ const ChatPage = () => {
 
     setIsThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
-    const finalStructuredMessages = [
-          { role: "system", content: systemMessageContent, name: "system" },
-          ...messagesList.map((msg, index) => ({
-            ...msg,
-            name: "-",
-            role: msg.role as "user" | "assistant" | "system",
-            content: index === 1 && msg.role === "user" && characterData.plmex.dynamicStatuses.length > 0
-              ? msg.content + " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
-              : msg.content
-          })),
-          ...(userMSGaddOnList || regenerate ? [] : [{ role: "user", content: userMessageContent, name: "-" } as const]),
-        ]
+    const finalStructuredMessages: ChatCompletionMessageParam[] = [
+      { role: "system", content: systemMessageContent, name: "system" },
+        ...messagesList.map((msg, index) => ({
+        ...msg,
+        name: "-",
+        role: msg.role as "user" | "assistant" | "system",  // Ensuring proper type
+        content: index === 1 && msg.role === "user" && characterData.plmex.dynamicStatuses.length > 0
+        ? msg.content + " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
+        : msg.content
+      })),
+      ...(userMSGaddOnList || regenerate ? [] : [{ role: "user", content: userMessageContent, name: "-" }] as const), // Ensuring proper type
+    ];
 
     console.log("Messages list used: ")
     console.log(finalStructuredMessages)
