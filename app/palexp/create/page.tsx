@@ -145,7 +145,8 @@ export default function Home() {
                     initialMessage: message
                 }));
             }
-            setCharacterData(parsedData);
+            const {userName, userPersonality, ...rest} = parsedData
+            setCharacterData(rest);
             toast.success("Character data loaded from previous save.");
             setIsPrefillButtonVisible(false);
         } else {
