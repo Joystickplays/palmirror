@@ -192,7 +192,7 @@ const ChatPage = () => {
       textareaRef.current?.focus();
     }
 
-    messagesList = checkAndTrimMessages(messagesList);
+    // messagesList = checkAndTrimMessages(messagesList);
 
     setIsThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
