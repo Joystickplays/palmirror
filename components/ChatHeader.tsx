@@ -1,5 +1,5 @@
 // components/ChatHeader.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
+  InnerDialog,
+  InnerDialogContent,
+  InnerDialogHeader,
+  InnerDialogTitle,
+  InnerDialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -24,6 +30,9 @@ import {
 import { Slider } from "@/components/ui/slider"
 
 import { CharacterData } from "@/types/CharacterData";
+import { useRouter } from 'next/navigation';
+import { isPalMirrorSecureActivated, PLMSecureGeneralSettings } from '@/utils/palMirrorSecureUtils';
+import { PLMSecureContext } from '@/context/PLMSecureContext';
 
 interface ChatHeaderProps {
   characterData: CharacterData;
@@ -35,14 +44,18 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
   const [baseURL, setBaseURL] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [temperature, setTemperature] = useState(0.5);
-  // const [importB64msgkCode, setImportB64msgCode] = useState('');
   const [modelName, setModelName] = useState('');
   const [modelInstructions, setModelInstructions] = useState('');
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [inputChangedYet, setInputChangedYet] = useState(false);
+  const [showSecureDialog, setShowSecureDialog] = useState(false);
+  const [alreadyEncrypted, setAlreadyEncrypted] = useState(false);
+
+  const PLMSecContext = useContext(PLMSecureContext);
 
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
 
   const handleToggleRecommendations = () => {
     setShowRecommendations(!showRecommendations);
@@ -52,53 +65,95 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
     setSelectedProvider(provider);
   };
 
-  // const handleImportChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-  //   setImportB64msgCode(event.target.value);
-  // };
-
   const handleImport = () => {
     importMessages();
   };
 
-
-  // Load values from localStorage on mount
   const loadSettingsFromLocalStorage = () => {
     const settings = localStorage.getItem('Proxy_settings');
     if (settings) {
       const parsedSettings = JSON.parse(settings);
       setBaseURL(parsedSettings.baseURL || '');
-      setApiKey(parsedSettings.apiKey || '');
       setModelName(parsedSettings.modelName || '');
       setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
       setModelInstructions(parsedSettings.modelInstructions || '')
     }
   }
+  // load normal localstorage thing
   useEffect(() => {
     loadSettingsFromLocalStorage();
   }, []);
 
+  // load secure thing
+  useEffect(() => {
+    const loadSecureSettings = async () => {
+      if (PLMSecContext) {
+        const proxySettings = await PLMSecContext.getSecureData('generalSettings') as PLMSecureGeneralSettings;
+        setApiKey(proxySettings.proxy.api_key);
+      }
+    };
+    loadSecureSettings();
+  }, [])
+
   useEffect(() => {
     if (inputChangedYet) {
-      const settings = { baseURL, apiKey, modelName, temperature, modelInstructions };
+      const settings = { baseURL, modelName, temperature, modelInstructions };
       localStorage.setItem('Proxy_settings', JSON.stringify(settings));
     }
-  }, [baseURL, apiKey, modelName, temperature, modelInstructions]);
+  }, [baseURL, modelName, temperature, modelInstructions]);
 
   useEffect(() => {
     console.log(theme)
   }, [theme])
+
+  useEffect(() => {
+    const checkEncryptionStatus = async () => {
+      try {
+        const activated = await isPalMirrorSecureActivated();
+        setAlreadyEncrypted(activated);
+      } catch (error) {
+        console.error('Failed to check encryption status:', error);
+      }
+    };
+
+    checkEncryptionStatus();
+  }, []);
 
   const handleBaseURLChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setBaseURL(value);
     setInputChangedYet(true);
   };
+  
+  const secureAPIKeySave = async () => {
+    // debugger;
+    if (PLMSecContext) {
+      const proxySettings = await PLMSecContext.getSecureData('generalSettings') as PLMSecureGeneralSettings;
+      proxySettings.proxy.api_key = apiKey;
+      await PLMSecContext.setSecureData('generalSettings', proxySettings);
+      console.log("saved")
+    }
+  }
 
   const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
+    if (!alreadyEncrypted) {
+      setShowSecureDialog(true);
+      return;
+    }
     setApiKey(value);
+    
     setInputChangedYet(true);
   };
+  
+  useEffect(() => {
+    if (alreadyEncrypted) {
+      const saveAsync = async () => {
+        await secureAPIKeySave();
+      }
+      saveAsync();
+    }
+  }, [apiKey])
 
   const handleModelNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -119,21 +174,18 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
 
   return (
     <Card>
-      <CardContent className={`flex relative justify-between items-center p-5 w-full ${ theme == "cai" ? "bg-[#26272b]" : ""}`}>
-      
-      <img src={characterData.image !== "" ? characterData.image : undefined} 
-        style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 0.3), transparent)' }}
-        className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full object-cover rounded-lg" />
-      
-      
+      <CardContent className={`flex relative justify-between items-center p-5 w-full ${theme == "cai" ? "bg-[#26272b]" : ""}`}>
 
-        
+        <img src={characterData.image !== "" ? characterData.image : undefined}
+          style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 0.3), transparent)' }}
+          className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full object-cover rounded-lg" />
+
         <h2 className="z-[2]">PalMirror · <span className="font-bold">{characterData.name}</span></h2>
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" className="p-3 size-8 z-[2]"><Settings /></Button>
           </DialogTrigger>
-          <DialogContent className="w-auto max-h-[80vh] min-w-96 overflow-y-auto font-sans">
+          <DialogContent className={`w-auto max-h-[80vh] min-w-96 overflow-y-auto font-sans ${showSecureDialog && "blur-sm"}`}>
             <DialogHeader>
               <DialogTitle className="mb-8">Chat settings</DialogTitle>
               <h2 className="my-4 font-bold">AI Provider settings</h2>
@@ -194,7 +246,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                     id="Proxy_apiKey"
                     value={apiKey}
                     onChange={handleApiKeyChange}
+                    type="password"
                   />
+                  <InnerDialog open={showSecureDialog} onOpenChange={setShowSecureDialog}>
+                    <InnerDialogContent className="font-sans">
+                      <InnerDialogHeader>
+                        <InnerDialogTitle>Use PalMirror Secure</InnerDialogTitle>
+                      </InnerDialogHeader>
+                      <p>We value your privacy and security in PalMirror. If your API needs an API Key, setup PalMirror Secure so we can encrypt it for you.</p>
+                      <div className="flex gap-2 mt-2 justify-content-center">
+                        <Button className="w-full" onClick={() => router.push('/secure')}>Setup PalMirror Secure</Button>
+                      </div>
+                    </InnerDialogContent>
+                  </InnerDialog>
                 </div>
                 <div className="grid w-full items-center gap-1.5">
                   <Label htmlFor="Proxy_modelName">Model Name</Label>
@@ -226,21 +290,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
               <div className="flex gap-2 pt-8">
                 <Button onClick={getExportedMessages}>Export chat</Button>
                 <Button onClick={handleImport}>Import chat</Button>
-                  {/* <DialogTrigger asChild></DialogTrigger>
-                <Dialog>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle className="mb-4">Import chat</DialogTitle>
-                      <Textarea placeholder="Enter your Base64-encoded chat..."
-                        value={importB64msgCode}
-                        onChange={handleImportChange}
-                      ></Textarea>
-                      <DialogClose asChild>
-                        <Button onClick={handleImport}>Import</Button>
-                      </DialogClose>
-                    </DialogHeader>
-                  </DialogContent>
-                </Dialog> */}
               </div>
               <Select onValueChange={setTheme}>
                 <SelectTrigger className="w-full mt-5">
@@ -251,7 +300,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                   <SelectItem value="cai">c.ai</SelectItem>
                 </SelectContent>
               </Select>
-
             </DialogHeader>
           </DialogContent>
         </Dialog>

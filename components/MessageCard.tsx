@@ -90,7 +90,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     blur: 0,
   }));
 
-  const [aboutToRegenerate, setAboutToRegenerate] = useState(false);
+  let aboutToRegenerate = false;
   const [isEditing, setIsEditing] = useState(false);
   const [editingContent, setEditingContent] = useState('');
   const { theme, setTheme } = useTheme();
@@ -119,17 +119,21 @@ const MessageCard: React.FC<MessageCardProps> = ({
     const isRegenerateAction = mx < dragThreshold && isEligibleForRegenerate;
 
     if (isRegenerateAction && !aboutToRegenerate) {
-      setAboutToRegenerate(true);
+      aboutToRegenerate = true;
       vibrate(50);
+      console.log("Message card - regen vibrate...")
+      //debugger;
+    } else if (!isRegenerateAction) {
+      aboutToRegenerate = false;
     }
 
     apiSpring.start({
       x: down
-        ? (0.75 * mx) / (role === "user" || stillGenerating || !isLastMessage || globalIsThinking || isEditing ? 10 : 1) + (isRegenerateAction ? -50 : 0)
+        ? (0.75 * mx) / (role === "user" || stillGenerating || !isLastMessage || globalIsThinking || isEditing || mx > 0 ? 10 : 1) + (isRegenerateAction ? -50 : 0)
         : 0,
       y: 0,
       height: 100,
-      blur: isRegenerateAction ? 5 : 0,
+      blur: isRegenerateAction ? 2 : 0,
       fontSize: 1,
       config: { tension: 190, friction: 18 },
     });
@@ -149,7 +153,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
       });
       setTimeout(triggerRegenerate, 250);
     }
-  }, { axis: "x", bounds: { left: -350, right: 0 }, rubberband: true });
+  }, { axis: "x" });
 
   const extractStatusData = (input: string): StatusData => {
     const statusRegex = /---\s*STATUS:\s*((?:.+?\s*[=:]\s*.+(?:\n|$))*)/i;

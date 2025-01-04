@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import MessageCard from "@/components/MessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
@@ -11,7 +11,12 @@ import { getSystemMessage } from "@/components/systemMessageGeneration";
 import OpenAI from "openai";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
+import { PLMSecureContext } from '@/context/PLMSecureContext';
+import { isPalMirrorSecureActivated, PLMSecureGeneralSettings } from '@/utils/palMirrorSecureUtils';
+
 import { AnimatePresence, motion } from "motion/react"
+import { useRouter } from "next/navigation";
+import React from "react";
 
 let openai: OpenAI;
 
@@ -25,14 +30,18 @@ interface ChatCompletionMessageParam {
 const ChatPage = () => {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>>([]);
   const [characterData, setCharacterData] = useState<CharacterData>(defaultCharacterData);
+  const [chatId, setChatId] = useState('');
+
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [userPromptThinking, setUserPromptThinking] = useState(false);
+
   const [baseURL, setBaseURL] = useState("");
-  const [apiKey, setApiKey] = useState("none");
+  const [apiKey, setApiKey] = useState("");
   const [generationTemperature, setTemperature] = useState(0.5);
   const [modelInstructions, setModelInstructions] = useState("");
   const [modelName, setModelName] = useState('gpt-3.5-turbo');
+
   const [exclusionCount, setExclusionCount] = useState(0);
 
   const abortController = useRef<AbortController | null>(null);
@@ -42,6 +51,9 @@ const ChatPage = () => {
 
   const { theme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const router = useRouter();
+  const PLMSecContext = useContext(PLMSecureContext);
 
   // Function to download a file
   const downloadFile = (content: string, fileName: string, contentType: string) => {
@@ -60,13 +72,13 @@ const ChatPage = () => {
     return `Chat-with-${characterData.name}-${date}-${time}.plm`;
   };
 
-  const encodeMessages = () => {
+  const encodeMessages = (textOnly: boolean = false) => {
     try {
       const json = JSON.stringify(messages);
       const encoder = new TextEncoder();
       const encodedArray = encoder.encode(json);
       const base64String = btoa(String.fromCharCode(...encodedArray));
-
+      if (textOnly) { return base64String }
       // Use the formatted file name
       const fileName = getFormattedFileName();
       downloadFile(base64String, fileName, "application/octet-stream");
@@ -76,8 +88,18 @@ const ChatPage = () => {
     }
   };
 
-  const decodeMessages = async (file: File) => {
+  const decodeMessages = async (file: File | string) => {
     try {
+      if (typeof file === "string") {
+        const decodedString = atob(file);
+        const decodedArray = new Uint8Array(decodedString.split("").map(char => char.charCodeAt(0)));
+        const decoder = new TextDecoder();
+        const json = decoder.decode(decodedArray);
+        const parsedMessages = JSON.parse(json);
+        setMessages(parsedMessages);
+        // toast.success("Chat imported successfully!");
+        return;
+      }
       const fileContent = await file.text(); // Read the file content
       const decodedString = atob(fileContent);
       const decodedArray = new Uint8Array(decodedString.split("").map(char => char.charCodeAt(0)));
@@ -110,7 +132,6 @@ const ChatPage = () => {
     if (settings) {
       const parsedSettings = JSON.parse(settings);
       setBaseURL(parsedSettings.baseURL || '');
-      setApiKey(parsedSettings.apiKey || '');
       setModelName(parsedSettings.modelName || '');
       setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
       setModelInstructions(parsedSettings.modelInstructions || '')
@@ -125,6 +146,17 @@ const ChatPage = () => {
       dangerouslyAllowBrowser: true,
     });
   }, [apiKey, baseURL]);
+
+  useEffect(() => {
+    const loadSecureSettings = async () => {
+      if (PLMSecContext && await isPalMirrorSecureActivated() && PLMSecContext.isSecureReady()) {
+        const proxySettings = await PLMSecContext.getSecureData('generalSettings') as PLMSecureGeneralSettings;
+        setApiKey(proxySettings.proxy.api_key);
+      }
+    };
+    loadSecureSettings();
+    
+  }, [])
 
   const vibrate = (duration: number) => {
     if ("vibrate" in navigator) navigator.vibrate(duration);
@@ -176,7 +208,6 @@ const ChatPage = () => {
      };
 
     const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
-    console.log(`User message used: ${userMessageContent}`)
 
     if (userMessageContent && userMSGaddOnList) {
       // Add user message to the message list
@@ -192,7 +223,7 @@ const ChatPage = () => {
       textareaRef.current?.focus();
     }
 
-    messagesList = checkAndTrimMessages(messagesList);
+    //messagesList = checkAndTrimMessages(messagesList);
 
     setIsThinking(true);
     const systemMessageContent = getSystemMessage(characterData, modelInstructions);
@@ -212,8 +243,6 @@ const ChatPage = () => {
 	  ...(userMSGaddOnList || regenerate ? [] : [{ role: "user", content: userMessageContent, name: "-" }] as const),
 	];
 
-    console.log("Messages list used: ")
-    console.log(finalStructuredMessages)
     try {
       abortController.current = new AbortController();
       const comp = await openai.chat.completions.create({
@@ -452,6 +481,15 @@ const ChatPage = () => {
     if (storedData) setCharacterData(JSON.parse(storedData));
   }, []);
 
+  useEffect(() => {
+    isPalMirrorSecureActivated().then((activated) => {
+      if (PLMSecContext && !PLMSecContext.isSecureReady() && activated) {
+        router.push("/");
+      }
+    });
+  }, []);
+
+
   // Initial Assistant Message
   useEffect(() => {
     if (messages.length === 0 && characterData.initialMessage) {
@@ -468,6 +506,50 @@ const ChatPage = () => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+
+  // Load from chat ID if any (and if PalMirror Secure active)
+  useEffect(() => {
+    const load = async () => {
+      if (await isPalMirrorSecureActivated() && PLMSecContext && PLMSecContext.isSecureReady()) {
+        const chatId = sessionStorage.getItem("chatSelect")
+        if (chatId) {
+          setChatId(chatId);
+
+          const chatMetadata = await PLMSecContext.getSecureData(`METADATA${chatId}`);
+          if (chatMetadata) {
+            const {id, lastUpdated, ...charData} = chatMetadata
+            setCharacterData(charData);
+          }
+
+          const chatData = await PLMSecContext.getSecureData(chatId);
+          if (chatData) {
+            decodeMessages(chatData);
+            console.log("loaded chat")
+          }
+        } else {
+          setChatId(crypto.randomUUID())
+        }
+      }
+    }
+    load();
+  }, [])
+
+  // Save chat to chat ID if any (and if PalMirror Secure active)
+  useEffect(() => {
+    const save = async () => {
+      if (await isPalMirrorSecureActivated() && PLMSecContext && PLMSecContext.isSecureReady() && chatId !== "") {
+        await PLMSecContext.setSecureData(chatId, encodeMessages(true));
+        await PLMSecContext.setSecureData(`METADATA${chatId}`, {
+          ...characterData,
+          id: chatId,
+          lastUpdated: new Date().toISOString()
+        });
+        console.log("saved chat")
+      }
+    }
+    save();
+  }, [messages])
+
   return (
     <div className={`grid place-items-center ${theme == "cai" ? "bg-[#18181b]" : ""}`}>
       <ToastContainer
@@ -481,7 +563,7 @@ const ChatPage = () => {
         theme="dark"
       />
       <div className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
-        <ChatHeader characterData={characterData} getExportedMessages={encodeMessages} importMessages={openFilePicker} />
+        <ChatHeader characterData={characterData} getExportedMessages={() => { encodeMessages(false); }} importMessages={openFilePicker} />
         <div className="overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col justify-end min-h-full">
             <div style={{ height: "60vh" }}></div>

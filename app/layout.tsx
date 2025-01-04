@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@/components/theme-provider"
 import { PMThemeProvider } from '@/components/PalMirrorThemeProvider';
+import { PLMSecureProvider } from '@/context/PLMSecureContext';
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -20,8 +21,6 @@ export const metadata: Metadata = {
   description: "Just-with-a-bit-more-style AI chat platform",
 };
 
-
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,16 +38,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <PMThemeProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-          >
-
-            {children}
-          </ThemeProvider>
-        </PMThemeProvider>
-
+        <PLMSecureProvider>
+          <PMThemeProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+            >
+              {children}
+            </ThemeProvider>
+          </PMThemeProvider>
+        </PLMSecureProvider>
       </body>
     </html>
   );

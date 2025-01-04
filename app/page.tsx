@@ -1,17 +1,26 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useContext } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ToastContainer, toast } from 'react-toastify';
-import { CircleHelp } from 'lucide-react';
+import { CircleHelp, ArrowRight, Trash2 } from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
+
+import { AnimatePresence, motion } from "motion/react"
 
 import pako from 'pako';
 
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
+interface ChatMetadata extends CharacterData {
+  id: string;
+  lastUpdated: Date;
+}
+
+import { PLMSecureContext } from '@/context/PLMSecureContext';
+import { isPalMirrorSecureActivated } from '@/utils/palMirrorSecureUtils';
 
 import {
   Dialog,
@@ -34,10 +43,37 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const [isSecureActivated, setIsSecureActivated] = useState(false);
+  const [isSecureReady, setIsSecureReady] = useState(false);
+  const [PLMSecurePass, setPLMSecurePass] = useState('');
+  const PLMsecureContext = useContext(PLMSecureContext);
+  const [tagline, setTagline] = useState('');
+
+  const [chatList, setChatList] = useState<Array<ChatMetadata>>([]);
+
+  const taglines = [
+    "password plz",
+    "What's the password? (It's not 1234.. hopefully.)",
+    "Locked up tighter than a snack stash.",
+    "We just need your key to your.. private space.",
+    "Go on, unlock it.",
+    "Have the password? Cool.",
+    "You know the drill. Password.",
+    "Nothing to see here.. promise.",
+    "Password, or go home.",
+    "Unless you know the password, LEAVE.",
+  ];
+
+  const getRandomTagline = () => {
+    return taglines[Math.floor(Math.random() * taglines.length)];
+  };
+  useEffect(() => {
+    setTagline(getRandomTagline());
+  }, []);
+
   const loadCharacterData = () => {
     const storedData = localStorage.getItem('characterData');
     if (storedData) {
@@ -48,12 +84,10 @@ export default function Home() {
         ...rest
       }));
     }
-  }; 
-
+  };
 
   const router = useRouter();
   const [characterData, setCharacterData] = useState<CharacterData>(defaultCharacterData);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [linkChar, setLinkChar] = useState('')
 
@@ -83,13 +117,13 @@ export default function Home() {
       return;
     }
 
-    
     setCharacterData(prevData => {
       const updatedData = { ...prevData, image: "", plmex: { dynamicStatuses: [], invocations: [] } };
       localStorage.setItem('characterData', JSON.stringify(updatedData));
       toast.success('Character data saved! Starting chat...');
       return updatedData;
     });
+    sessionStorage.removeItem("chatSelect");
     router.push('/chat');
   };
 
@@ -107,7 +141,6 @@ export default function Home() {
     const match = url.match(new RegExp(`/${author}/([^/?)]+)`));
     return match ? match[1] : null;
   };
-
 
   const getChubaiInfo = (url: string = linkChar) => {
     toast.promise(
@@ -143,6 +176,7 @@ export default function Home() {
             return updatedData;
           });
 
+          sessionStorage.removeItem("chatSelect");
           router.push("/chat");
           resolve();
         } catch (error) {
@@ -156,39 +190,6 @@ export default function Home() {
       }
     );
   };
-
-  // const CHUNK_SIZE = 65536;
-  // const fromBase64Batch = (base64: string): Uint8Array => {
-  //   let result = new Uint8Array(0);
-  //   let currentIndex = 0;
-
-  //   // Decode in chunks
-  //   while (currentIndex < base64.length) {
-  //     const chunk = base64.slice(currentIndex, currentIndex + CHUNK_SIZE * 4); // base64 length is 4 chars per 3 bytes
-  //     const binaryString = atob(chunk); // Decode the base64 chunk
-  //     const uintArray = new Uint8Array(binaryString.length);
-
-  //     for (let i = 0; i < binaryString.length; i++) {
-  //       uintArray[i] = binaryString.charCodeAt(i); // Convert to Uint8Array
-  //     }
-
-  //     // Append the chunk to result
-  //     result = concatUint8Arrays(result, uintArray);
-
-  //     currentIndex += chunk.length;
-  //   }
-
-  //   return result;
-  // };
-
-  // // Helper to concatenate Uint8Arrays
-  // const concatUint8Arrays = (arr1: Uint8Array, arr2: Uint8Array): Uint8Array => {
-  //   const result = new Uint8Array(arr1.length + arr2.length);
-  //   result.set(arr1);
-  //   result.set(arr2, arr1.length);
-  //   return result;
-  // };
-
 
   const importCharacter = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files![0];
@@ -218,11 +219,12 @@ export default function Home() {
             const characterData: CharacterData = JSON.parse(decompressedData);
 
             setCharacterData((oldCharacterData) => {
-              const updatedData = {...oldCharacterData, ...characterData}
+              const updatedData = { ...oldCharacterData, ...characterData }
               localStorage.setItem('characterData', JSON.stringify(updatedData));
               return updatedData;
             })
 
+            sessionStorage.removeItem("chatSelect");
             router.push("/chat")
 
             resolve();
@@ -242,117 +244,244 @@ export default function Home() {
     );
   };
 
-  return (
-    <div className="grid items-center justify-items-center content-center min-h-screen p-8 pb-20 gap-4 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2">
-        PalMirror
-      </h1>
-      <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-5xl pb-2 text-center w-4/5">
-        Talk with your favorite characters—just with a bit more <em>style</em>
-      </h1>
+  const PLMSecureAttemptUnlock = () => {
+    toast.promise(
+      new Promise<void>(async (resolve, reject) => {
+        const setKeySuccessful = await PLMsecureContext?.setKey(PLMSecurePass);
+        setPLMSecurePass("");
+        if (!setKeySuccessful) {
+          reject();
+          return;
+        }
+        resolve()
+        setIsSecureReady(true);
+      }),
+      {
+        pending: "Verifying...",
+        success: "Unlocked successfully. Welcome back!",
+        error: "Failed to unlock.",
+      }
+    )
+  }
 
-      <div className="pb-7">
-        <div className="flex justify-items-center items-center flex-col sm:flex-row gap-2 sm:gap-4">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>Get from a platform</Button>
-            </DialogTrigger>
-            <DialogContent className="w-full max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Get from a platform</DialogTitle>
-              </DialogHeader>
-                <Button className="w-full" onClick={() => router.push('/search')}>Search for a character</Button>
-              <hr />
-              <Input value={linkChar} onChange={(e) => setLinkChar(e.target.value)} placeholder="Character link..." />
-              <div className="flex justify-items-center items-center gap-4">
-                <Button onClick={() => getChubaiInfo()}>Get from chub.ai</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <em >or</em>
-          <Popover>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="mx-auto">Setup character</Button>
-              </DialogTrigger>
-              <DialogContent className="w-auto max-h-[80vh] overflow-y-auto font-sans">
-                <DialogHeader>
-                  <DialogTitle>Setup character</DialogTitle>
-                  <div className="palmirror-exc rounded-lg p-3 !my-4">
-                    <div className="flex justify-center items-center">
-                      <h1 className="text-2xl !font-extrabold tracking-tight text-center w-full palmirror-exc-text text-center">
-                        PalMirror Experience
-                      </h1>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <CircleHelp />
-                        </Button>
-                      </PopoverTrigger>
-                    </div>
-                    <div className="flex justify-center items-center gap-2 !mt-2">
-                      <Button variant="palmirror" onClick={() => { router.push("/palexp/create") }}>Create</Button>
-                      <Button variant="palmirror" onClick={() => { fileInputRef.current?.click(); }}>Import from file</Button>
-                    </div>
-                  </div>
-                  <div className="py-4">
-                    <div className="grid w-full items-center gap-1.5 w-80">
-                      <Label htmlFor="charName">Character name <span className="text-red-500">*</span></Label>
-                      <Input id="charName" value={characterData.name} onChange={(e) => handleInputChange(e, 'name')} />
-                    </div>
-                  </div>
-                  <div className="py-4">
-                    <div className="grid w-full items-center gap-1.5 w-80">
-                      <Label htmlFor="charPersonality">Personality <span className="text-red-500">*</span></Label>
-                      <Textarea id="charPersonality" value={characterData.personality} onChange={(e) => handleInputChange(e, 'personality')} />
-                    </div>
-                  </div>
-                  <div className="py-4">
-                    <div className="grid w-full items-center gap-1.5 w-80">
-                      <Label htmlFor="charInitialMessage">First message <span className="text-red-500">*</span></Label>
-                      <Textarea id="charInitialMessage" value={characterData.initialMessage} onChange={(e) => handleInputChange(e, 'initialMessage')} />
-                    </div>
-                  </div>
-                  <div className="py-4">
-                    <div className="grid w-full items-center gap-1.5 w-80">
-                      <Label htmlFor="charScenario">Scenario</Label>
-                      <Input id="charScenario" value={characterData.scenario} onChange={(e) => handleInputChange(e, 'scenario')} />
-                    </div>
-                  </div>
-                  <Accordion type="single" collapsible className="w-full mb-4">
-                    <AccordionItem value="item-1">
-                      <AccordionTrigger>Your personality</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="py-4">
-                          <div className="grid w-full items-center gap-1.5 w-80">
-                            <Label htmlFor="userName">Your name</Label>
-                            <Input id="userName" value={characterData.userName} onChange={(e) => handleInputChange(e, 'userName')} />
-                          </div>
-                        </div>
-                        <div className="py-4">
-                          <div className="grid w-full items-center gap-1.5 w-80">
-                            <Label htmlFor="userPersonality">Your personality</Label>
-                            <Textarea id="userPersonality" value={characterData.userPersonality} onChange={(e) => handleInputChange(e, 'userPersonality')} />
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                  <Button className="w-80" onClick={startChat}>Start chat</Button>
-                </DialogHeader>
-              </DialogContent>
-            </Dialog>
-            <PopoverContent asChild className="z-[999999] min-w-80">
-              <p>PalMirror-exclusive characters with customizable traits and reactions. Adjust their emotions and status in real-time as they react to your changes, triggering sounds and effects. More features are being worked out for PalMirror Experience characters.</p>
-            </PopoverContent>
-          </Popover>
-
+  const GetFromPlatform = () => (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button>Get from a platform</Button>
+      </DialogTrigger>
+      <DialogContent className="w-full max-h-[80vh] overflow-y-auto flex flex-col gap-2 font-sans">
+        <DialogHeader>
+          <DialogTitle>Get from a platform</DialogTitle>
+        </DialogHeader>
+        <Button className="w-full" onClick={() => router.push('/search')}>Search for a character</Button>
+        <hr />
+        <Input value={linkChar} onChange={(e) => setLinkChar(e.target.value)} placeholder="Character link..." />
+        <div className="flex justify-items-center items-center gap-4">
+          <Button onClick={() => getChubaiInfo()}>Get from chub.ai</Button>
         </div>
-        {/* <hr className="my-4"></hr>
-          <div className="flex justify-center items-center">
-          </div> */}
+      </DialogContent>
+    </Dialog>
+  );
+
+  const SetupCharacter = () => (
+    <Popover>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="mx-auto">Setup character</Button>
+        </DialogTrigger>
+        <DialogContent className="w-auto max-h-[80vh] overflow-y-auto font-sans">
+          <DialogHeader>
+            <DialogTitle>Setup character</DialogTitle>
+            <div className="palmirror-exc rounded-lg p-3 !my-4">
+              <div className="flex justify-center items-center">
+                <h1 className="text-2xl !font-extrabold tracking-tight text-center w-full palmirror-exc-text">
+                  PalMirror Experience
+                </h1>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <CircleHelp />
+                  </Button>
+                </PopoverTrigger>
+              </div>
+              <div className="flex justify-center items-center gap-2 !mt-2">
+                <Button variant="palmirror" onClick={() => { router.push("/palexp/create") }}>Create</Button>
+                <Button variant="palmirror" onClick={() => { fileInputRef.current?.click(); }}>Import from file</Button>
+              </div>
+            </div>
+            <div className="py-4">
+              <div className="grid w-full items-center gap-1.5">
+                <Label htmlFor="charName">Character name <span className="text-red-500">*</span></Label>
+                <Input id="charName" value={characterData.name} onChange={(e) => handleInputChange(e, 'name')} />
+              </div>
+            </div>
+            <div className="py-4">
+              <div className="grid w-full items-center gap-1.5">
+                <Label htmlFor="charPersonality">Personality <span className="text-red-500">*</span></Label>
+                <Textarea id="charPersonality" value={characterData.personality} onChange={(e) => handleInputChange(e, 'personality')} />
+              </div>
+            </div>
+            <div className="py-4">
+              <div className="grid w-full items-center gap-1.5">
+                <Label htmlFor="charInitialMessage">First message <span className="text-red-500">*</span></Label>
+                <Textarea id="charInitialMessage" value={characterData.initialMessage} onChange={(e) => handleInputChange(e, 'initialMessage')} />
+              </div>
+            </div>
+            <div className="py-4">
+              <div className="grid w-full items-center gap-1.5">
+                <Label htmlFor="charScenario">Scenario</Label>
+                <Input id="charScenario" value={characterData.scenario} onChange={(e) => handleInputChange(e, 'scenario')} />
+              </div>
+            </div>
+            <Accordion type="single" collapsible className="w-full mb-4">
+              <AccordionItem value="item-1">
+                <AccordionTrigger>Your personality</AccordionTrigger>
+                <AccordionContent>
+                  <div className="py-4">
+                    <div className="grid w-full items-center gap-1.5">
+                      <Label htmlFor="userName">Your name</Label>
+                      <Input id="userName" value={characterData.userName} onChange={(e) => handleInputChange(e, 'userName')} />
+                    </div>
+                  </div>
+                  <div className="py-4">
+                    <div className="grid w-full items-center gap-1.5">
+                      <Label htmlFor="userPersonality">Your personality</Label>
+                      <Textarea id="userPersonality" value={characterData.userPersonality} onChange={(e) => handleInputChange(e, 'userPersonality')} />
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            <Button className="w-80" onClick={startChat}>Start chat</Button>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+      <PopoverContent asChild className="z-[999999] min-w-80">
+        <p>PalMirror-exclusive characters with customizable traits and reactions. Adjust their emotions and status in real-time as they react to your changes, triggering sounds and effects. More features are being worked out for PalMirror Experience characters.</p>
+      </PopoverContent>
+    </Popover>
+  )
+
+  useEffect(() => {
+    isPalMirrorSecureActivated().then((activated) => {
+      setIsSecureActivated(activated);
+      console.log(isSecureActivated)
+    });
+  }, []);
+
+  useEffect(() => {
+    if (PLMsecureContext) {
+      setIsSecureReady(PLMsecureContext.isSecureReady());
+    }
+  }, [])
+
+  useEffect(() => {
+    const refreshChatList = async () => {
+      if (isSecureReady) {
+        let chatStore
+        try {
+          chatStore = await PLMsecureContext?.getAllKeys();
+        } catch { return; }
+        if (chatStore) {
+          const filteredChats = chatStore.filter((key: string) => key.startsWith("METADATA"));
+          const chatListPromises = filteredChats.map(async (key: string) => {
+            const chatData = await PLMsecureContext?.getSecureData(key);
+            return chatData;
+          });
+          const resolvedChatList = await Promise.all(chatListPromises);
+          setChatList(resolvedChatList);
+        }
+      }
+    }
+
+    refreshChatList()
+  }, [isSecureReady])
+
+
+  return isSecureActivated ? (
+    <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
+      <div className="w-full">
+        <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2 w-full">
+          PalMirror
+        </h1>
       </div>
-      <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character. PalMirror does not store your chats.</p>
-      <p className="text-sm opacity-40 text-center">An <u><a href="https://github.com/Joystickplays/palmirror">open-source</a></u> project by GoTeam</p>
+
+      <div className="flex flex-grow w-full">
+        <AnimatePresence mode="popLayout">
+          {!isSecureReady && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
+              className="flex items-center justify-center gap-2 flex-col flex-grow">
+              <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight pb-2 text-center">
+                {tagline}
+              </h1>
+              <p>PalMirror Secure is active and encrypted.</p>
+              <hr className="!m-2 w-full max-w-screen-sm h-px" />
+              <div className="flex gap-2 w-full max-w-screen-sm">
+                <Input value={PLMSecurePass} onChange={(e) => { setPLMSecurePass(e.target.value) }} type="password" className="flex-grow" />
+                <Button onClick={PLMSecureAttemptUnlock}>Unlock</Button>
+              </div>
+            </motion.div>
+          )}
+
+
+          {/* chats list */}
+          {isSecureReady && (
+            <motion.div
+              initial={{ opacity: 0, y: 200 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
+              className="w-full"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 flex-grow w-full justify-center items-start ">
+                <AnimatePresence mode="popLayout">
+                  {chatList.length > 0 ? (
+                    chatList.map((chat, index) => (
+                      <motion.div
+                      initial={{ opacity: 0, scale: 1.1 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.5 }}
+                      transition={{ type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
+                      key={index} className="flex flex-col gap-1.5 p-6 border rounded-xl h-full">
+                        {chat.image && (
+                          <img src={chat.image} className="w-full h-24 rounded-xl object-cover" />
+                        )}
+                        <h2 className="font-bold">{chat.name}</h2>
+                        <p className="opacity-70">Last chatted: {chat.lastUpdated.toLocaleString()}</p>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => {
+                            PLMsecureContext?.removeKey(chat.id);
+                            PLMsecureContext?.removeKey(`METADATA${chat.id}`);
+                            setChatList((prevList) => prevList.filter((chatItem) => chatItem.id !== chat.id));
+                           }}><Trash2 /></Button>
+                          <Button variant="outline" onClick={() => { sessionStorage.setItem("chatSelect", chat.id); router.push(`/chat`) }}>Continue <ArrowRight /></Button>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <p className="opacity-50 text-sm">No chats found.</p>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {isSecureReady && (
+        <motion.div
+          initial={{ opacity: 0, y: 200 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
+          className="fixed bottom-0 translate-x-1/2 pb-7">
+          <div className="flex items-center content-center justify-center gap-2 sm:gap-4 max-w-fit">
+            <GetFromPlatform />
+            <SetupCharacter />
+          </div>
+        </motion.div>
+      )}
 
       <ToastContainer
         position="top-right"
@@ -372,5 +501,43 @@ export default function Home() {
         onChange={importCharacter}
       />
     </div>
-  );
+  ) :
+    (
+      <div className="grid items-center justify-items-center content-center min-h-screen p-8 pb-20 gap-4 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+        <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2">
+          PalMirror
+        </h1>
+        <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-5xl pb-2 text-center w-4/5">
+          Talk with your favorite characters—just with a bit more <em>style</em>
+        </h1>
+
+        <div className="pb-7">
+          <div className="flex justify-items-center items-center flex-col sm:flex-row gap-2 sm:gap-4">
+            <GetFromPlatform />
+            <em>or</em>
+            <SetupCharacter />
+          </div>
+        </div>
+        <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character.</p>
+        <p className="text-sm opacity-40 text-center">An <u><a href="https://github.com/Joystickplays/palmirror">open-source</a></u> project by GoTeam</p>
+
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          theme="dark"
+        />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".plmc"
+          style={{ display: "none" }}
+          onChange={importCharacter}
+        />
+      </div>
+    );
 }

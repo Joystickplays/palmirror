@@ -98,7 +98,8 @@ export default function Search() {
             localStorage.setItem('characterData', JSON.stringify(updatedData));
             return updatedData;
           });
-  
+          
+          sessionStorage.removeItem("chatSelect");
           router.push("/chat");
           resolve();
         } catch (error) {
