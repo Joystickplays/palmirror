@@ -264,6 +264,24 @@ export default function Home() {
     )
   }
 
+  const formatDateWithLocale = (inputDate) => {
+  const date = new Date(inputDate);
+  const options = {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true, // Ensures am/pm format
+  };
+  const time = date.toLocaleString('en-US', options); // Get time in "hh:mm am/pm" format
+  const day = String(date.getDate()).padStart(2, '0'); // Ensure day is 2 digits
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Ensure month is 2 digits (0-based)
+
+  return `${time}, ${day}-${month}`;
+};
+
+  function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any }[] {
+   return data.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+  }
+
   const GetFromPlatform = () => (
     <Dialog>
       <DialogTrigger asChild>
@@ -438,7 +456,7 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 flex-grow w-full justify-center items-start ">
                 <AnimatePresence mode="popLayout">
                   {chatList.length > 0 ? (
-                    chatList.map((chat, index) => (
+                    sortByLastUpdated(chatList).map((chat, index) => (
                       <motion.div
                       initial={{ opacity: 0, scale: 1.1 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -449,7 +467,7 @@ export default function Home() {
                           <img src={chat.image} className="w-full h-24 rounded-xl object-cover" />
                         )}
                         <h2 className="font-bold">{chat.name}</h2>
-                        <p className="opacity-70">Last chatted: {chat.lastUpdated.toLocaleString()}</p>
+                        <p className="opacity-70">Last chatted: {formatDateWithLocale(chat.lastUpdated)}</p>
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" onClick={() => {
                             PLMsecureContext?.removeKey(chat.id);
