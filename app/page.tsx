@@ -264,13 +264,19 @@ export default function Home() {
     )
   }
 
-  const formatDateWithLocale = (inputDate: string) => {
-  const date = new Date(inputDate);
-  const options = {
+  const formatDateWithLocale = (dateInput: string | Date): string => {
+  const date = new Date(dateInput); // Ensure the input is a Date object
+
+  if (isNaN(date.getTime())) {
+    throw new Error("Invalid Date");
+  }
+
+  const options: Intl.DateTimeFormatOptions = {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true, // Ensures am/pm format
   };
+
   const time = date.toLocaleString('en-US', options); // Get time in "hh:mm am/pm" format
   const day = String(date.getDate()).padStart(2, '0'); // Ensure day is 2 digits
   const month = String(date.getMonth() + 1).padStart(2, '0'); // Ensure month is 2 digits (0-based)
