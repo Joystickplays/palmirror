@@ -278,9 +278,11 @@ export default function Home() {
   return `${time}, ${day}-${month}`;
 };
 
-  function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any }[] {
-   return data.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
-  }
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any }[] {
+  return data.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
   const GetFromPlatform = () => (
     <Dialog>
