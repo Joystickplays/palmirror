@@ -264,7 +264,7 @@ export default function Home() {
     )
   }
 
-  const formatDateWithLocale = (inputDate) => {
+  const formatDateWithLocale = (inputDate: string) => {
   const date = new Date(inputDate);
   const options = {
     hour: '2-digit',
