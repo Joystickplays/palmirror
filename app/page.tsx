@@ -457,7 +457,7 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
           {/* chats list */}
           {isSecureReady && (
             <motion.div
-              initial={{ opacity: 0, scale: 1.5 }}
+              initial={{ opacity: 0, scale: 0.7 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
               className="w-full"
