@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
 import { useSpring, animated } from '@react-spring/web';
 import { useDrag } from '@use-gesture/react';
-import { Pencil, Rewind, Check, MessagesSquare } from 'lucide-react';
+import { Pencil, Rewind, Check, MessagesSquare, RotateCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox"
@@ -104,6 +104,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [changingStatusCharReacts, setChangingStatusCharReacts] = useState(false);
   const [changingStatusReason, setChangingStatusReason] = useState("");
 
+  const [canRegenerate, setCanRegenerate] = useState(false);
+ 
   const triggerRegenerate = useCallback(() => {
     regenerateFunction();
   }, [regenerateFunction]);
@@ -117,7 +119,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     const dragThreshold = -200;
     const isEligibleForRegenerate = !globalIsThinking && !stillGenerating && role !== "user" && !isEditing && isLastMessage;
     const isRegenerateAction = mx < dragThreshold && isEligibleForRegenerate;
-
+    setCanRegenerate(isEligibleForRegenerate)
     if (isRegenerateAction && !aboutToRegenerate) {
       aboutToRegenerate = true;
       vibrate(50);
@@ -139,10 +141,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
     });
 
     apiScaleSpring.start({
-      scale: down ? (isRegenerateAction ? 0.8 : 0.97) : 1,
+      scale: down ? (isRegenerateAction ? 0.8 : x.to(val => 1 + (val / 2000))) : 1,
     });
-
-    if ((vx < -10 || mx < dragThreshold) && !down && isEligibleForRegenerate) {
+  
+    if (((vx > 1 && mx < 0) || mx < dragThreshold) && !down && isEligibleForRegenerate) {
       apiSpring.start({
         x: -500,
         y: 0,
@@ -240,19 +242,21 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const rpTextRender = (content: string, usingInvocationHolder: boolean = true) => {
     let processedContent = content
 
-
+    try {
     if (usingInvocationHolder && characterData.plmex.invocations.length > 0) {
       processedContent = filterInvocationTags(content)
     }
     processedContent = processedContent.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
 
     processedContent = removeStatusSection(processedContent)
-
+    } catch (e) { console.log("Text rendering failed; proceeding with raw"); console.log(e); }
+    
     return processedContent
   }
 
 
   useEffect(() => {
+    try {
     setStatuses(extractStatusData(content));
     if (characterData.plmex.invocations.length > 0) {
       const { foundStrings, modifiedString } = invocationTagsDetection(content);
@@ -264,6 +268,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
         return newInvocationHolder;
       });
     }
+    } catch (e) { console.log(e) }
+    
   }, [content])
 
   const renderContent = () => {
@@ -431,6 +437,15 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   paddingRight: fontSize.to(s => `${s}rem`),
                 }}>
                   {renderContent()}
+                  {/* Swipe to regenerate overlay */}
+                  <animated.div class="absolute inset-0 bg-black flex gap-2 items-end justify-end z-10 text-white bg-opacity-50 pointer-events-none"
+                   style={{
+                     opacity: canRegenerate ? x.to(val => -val / 100) : 0
+                   }}>
+                   
+                   <RotateCw className="animate-[spin_2s_infinite]" />
+                   <p>Swipe left to rewrite...</p>
+                  </animated.div>
                 </animated.div>
               </CardContent>
             </Card>

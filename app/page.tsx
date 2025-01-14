@@ -275,13 +275,14 @@ export default function Home() {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true, // Ensures am/pm format
+    month: 'long',
   };
 
   const time = date.toLocaleString('en-US', options); // Get time in "hh:mm am/pm" format
   const day = String(date.getDate()).padStart(2, '0'); // Ensure day is 2 digits
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // Ensure month is 2 digits (0-based)
+  const month = date.toLocaleString('en-US', { month: 'long' }); // Month name (e.g., "January")
 
-  return `${time}, ${day}-${month}`;
+  return `${day} ${time}`;
 };
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -475,7 +476,7 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
                           <img src={chat.image} className="w-full h-24 rounded-xl object-cover" />
                         )}
                         <h2 className="font-bold">{chat.name}</h2>
-                        <p className="opacity-70">Last chatted: {formatDateWithLocale(chat.lastUpdated)}</p>
+                        <p className="opacity-70 ml-auto text-xs">{formatDateWithLocale(chat.lastUpdated)}</p>
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" onClick={() => {
                             PLMsecureContext?.removeKey(chat.id);
