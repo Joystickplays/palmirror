@@ -457,8 +457,8 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
           {/* chats list */}
           {isSecureReady && (
             <motion.div
-              initial={{ opacity: 0, y: 200 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 1.5 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
               className="w-full"
             >
@@ -470,7 +470,7 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
                       initial={{ opacity: 0, scale: 1.1 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.5 }}
-                      transition={{ type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
+                      transition={{ delay: index * 0.1, type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
                       key={index} className="flex flex-col gap-1.5 p-6 border rounded-xl h-full">
                         {chat.image && (
                           <img src={chat.image} className="w-full h-24 rounded-xl object-cover" />
