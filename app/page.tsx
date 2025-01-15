@@ -487,7 +487,7 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
               <p>PalMirror Secure is active and encrypted.</p>
               <hr className="!m-2 w-full max-w-screen-sm h-px" />
               <div className="flex gap-2 w-full max-w-screen-sm">
-                <Input value={PLMSecurePass} onChange={(e) => setPLMSecurePass(e.target.value)} onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement> | null) => { if (e && e.key === "Enter") {PLMSecureAttemptUnlock()} }} type="password" className="flex-grow" />
+                <Input value={PLMSecurePass} onChange={(e) => setPLMSecurePass(e.target.value)} onKeyDown={(e: React.KeyboardEvent<HTMLInputElement> | null) => { if (e && e.key === "Enter") {PLMSecureAttemptUnlock()} }} type="password" className="flex-grow" />
                 <Button onClick={PLMSecureAttemptUnlock}>Unlock</Button>
               </div>
             </motion.div>
