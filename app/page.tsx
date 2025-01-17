@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ToastContainer, toast } from 'react-toastify';
-import { CircleHelp, ArrowRight, Trash2 } from 'lucide-react';
+import { CircleHelp, ArrowRight, Trash2, Earth } from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { AnimatePresence, motion } from "motion/react"
@@ -21,6 +21,7 @@ interface ChatMetadata extends CharacterData {
 
 import { PLMSecureContext } from '@/context/PLMSecureContext';
 import { isPalMirrorSecureActivated } from '@/utils/palMirrorSecureUtils';
+import { charPalExpScript } from '@/utils/gPECMini';
 
 import {
   Dialog,
@@ -346,6 +347,43 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
         <div className="flex justify-items-center items-center gap-4">
           <Button onClick={() => getChubaiInfo()}>Get from chub.ai</Button>
         </div>
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="item-1">
+            <AccordionTrigger>Get from other platforms</AccordionTrigger>
+            <AccordionContent>
+              <div className="py-2 flex flex-col gap-2">
+                <p>PalMirror cannot automatically get characters from other platforms for you.</p>
+                <p>However, you can get them yourself and get the PalMirror Experience variant for the character you want.</p>
+                <div className="p-4 rounded-xl border flex flex-col gap-4">
+                  <div>
+                    <h2 className="text-lg font-bold">Step 1</h2>
+                    <p>Copy this script below.</p>
+                    <div className="flex gap-2 mt-2">
+                      <code className="p-2 border rounded-md w-full overflow-hidden whitespace-nowrap text-ellipsis">const charUrl=window.location.href,platform=window.location.hostname,sc...</code>
+                      <Button onClick={() => { navigator.clipboard.writeText(charPalExpScript); toast.success("Script copied.") }}>Copy</Button>
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Step 2</h2>
+                    <p>Go to the character page you want to convert to a PLExperience character.</p>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Step 3</h2>
+                    In the address bar, clear out the input and type in <b className="font-bold p-2 rounded-sm border">javascript:</b>, then paste the script.
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Step 4</h2>
+                    Do <span className="font-bold text-red-500">not</span> press Enter yet. Press the suggestion item that has a world/internet icon, something like: <Earth />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Step 5</h2>
+                    After a bit, the script should automatically create and download a .plmc file. If you feel a vibration instead, that means the script is not compatible with that platform yet.
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </DialogContent>
     </Dialog>
   );

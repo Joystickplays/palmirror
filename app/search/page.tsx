@@ -9,12 +9,6 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AnimatePresence, motion } from 'motion/react';
 
-const apiProviders = [
-  {
-    query: (searchQuery: string, page: number) => `https://api.chub.ai/search?excludetopics=&first=20&page=${page}&namespace=*&search=${encodeURIComponent(searchQuery)}&include_forks=true&nsfw=true&nsfw_only=false&require_custom_prompt=false&require_example_dialogues=false&require_images=false&require_expressions=false&nsfl=true&asc=false&min_ai_rating=0&min_tokens=50&max_tokens=100000&chub=true&require_lore=false&exclude_mine=true&require_lore_embedded=false&require_lore_linked=false&sort=default&topics=&inclusive_or=false&recommended_verified=false&require_alternate_greetings=false&venus=true&count=false`,
-    processor: (data: any) => data.data.nodes.map((item: any) => ({ provider: 'chub.ai', image: item.avatar_url, name: item.name, description: item.tagline, tags: item.topics, charLink: `https://chub.ai/characters/${item.fullPath}` }))
-  },
-];
 
 
 export default function Search() {
@@ -144,6 +138,14 @@ export default function Search() {
       setLoading(false);
     }
   };
+
+  const apiProviders = [
+    {
+      query: (searchQuery: string, page: number) => `https://api.chub.ai/search?excludetopics=&first=20&page=${page}&namespace=*&search=${encodeURIComponent(searchQuery)}&include_forks=true&nsfw=true&nsfw_only=false&require_custom_prompt=false&require_example_dialogues=false&require_images=false&require_expressions=false&nsfl=true&asc=false&min_ai_rating=0&min_tokens=50&max_tokens=100000&chub=true&require_lore=false&exclude_mine=true&require_lore_embedded=false&require_lore_linked=false&sort=default&topics=&inclusive_or=false&recommended_verified=false&require_alternate_greetings=false&venus=true&count=false`,
+      processor: (data: any) => data.data.nodes.map((item: any) => ({ provider: 'chub.ai', image: item.avatar_url, name: item.name, description: item.tagline, tags: item.topics, charLink: `https://chub.ai/characters/${item.fullPath}` }))
+    },
+  ];
+  
 
   return (
     <div className="flex flex-col gap-6 min-h-screen px-8 lg:px-48 pb-20 p-8 sm:p-10 font-[family-name:var(--font-geist-sans)]">
