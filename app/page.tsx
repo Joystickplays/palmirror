@@ -256,7 +256,8 @@ const taglines = [
             }
 
             const compressedData = fileContent.slice(delimiterIndex + 2);
-            const decompressedData = pako.ungzip(new Uint8Array(compressedData), { to: "string" });
+            const compressedDataT = text.slice(delimiterIndex + 2);
+            const decompressedData = file.name.split('.').slice(0, -1).join('.').includes("ucm") ? compressedDataT : pako.ungzip(new Uint8Array(compressedData), { to: "string" });
             const characterData: CharacterData = JSON.parse(decompressedData);
 
             setCharacterData((oldCharacterData) => {
@@ -377,7 +378,8 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
                   </div>
                   <div>
                     <h2 className="text-lg font-bold">Step 5</h2>
-                    After a bit, the script should automatically create and download a .plmc file. If you feel a vibration instead, that means the script is not compatible with that platform yet.
+                    After a bit, the script should automatically create and download a .plmc file.<br />
+                    <p className="text-sm opacity-50">The script only supports only a few select platforms.</p>
                   </div>
                 </div>
               </div>
