@@ -20,9 +20,9 @@ const themes = {
     showUserName: false,
   },
   palmirrorSunset: {
-    userBg: "bg-[#d88b5a]/20",
+    userBg: "bg-[#d88b5a]/10",
     assistantBg: "bg-[#d66e7b]/10",
-    bg: "bg-[#6a2d10]",
+    bg: "bg-[#6a2d10]/15",
     showUserName: false,
   },
   palmirrorOceans: {

@@ -301,7 +301,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                 <SelectContent>
                   <SelectItem value="palmirror">PalMirror Original</SelectItem>
                   <SelectItem value="palmirrorSunset">PalMirror Sunset</SelectItem>
-                  <SelectItem value="palmirrorOceans">PalMirror Oceans</SelectItem>
                   <SelectItem value="cai">c.ai</SelectItem>
                 </SelectContent>
               </Select>
