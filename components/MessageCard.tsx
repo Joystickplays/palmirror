@@ -93,7 +93,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
   let aboutToRegenerate = false;
   const [isEditing, setIsEditing] = useState(false);
   const [editingContent, setEditingContent] = useState('');
-  const { theme, setTheme } = useTheme();
+  const { theme, getTheme } = useTheme();
+  const currentTheme = getTheme();
   const [statuses, setStatuses] = useState<StatusData>([]);
   const [invocationHolder, setInvocationHolder] = useState("");
   const [seenInvocations, setSeenInvocations] = useState<string[]>([]);
@@ -287,7 +288,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
             </span>
           </Button>
           <textarea
-            className="w-full bg-transparent resize-none border rounded-xl w-full h-52 p-3"
+            className="bg-transparent resize-none border rounded-xl w-full h-52 p-3"
             value={editingContent}
             onChange={(e) => setEditingContent(e.target.value)}
           />
@@ -342,7 +343,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                         </div>
                         {changingStatusCharReacts && (
                           <motion.textarea
-                            className="w-full bg-transparent resize-none border rounded-xl w-full h-20 p-3 mt-2"
+                            className="bg-transparent resize-none border rounded-xl w-full h-20 p-3 mt-2"
                             placeholder="Reason for change"
                             value={changingStatusReason}
                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setChangingStatusReason(e.target.value)}
@@ -384,7 +385,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
       className="flex flex-col justify-end min-h-full overflow-hidden"
     >
       <animated.p className={`${role === "user" ? "ml-auto" : "mr-auto"} opacity-50`} style={{ fontSize: fontSize.to(s => `${s / 1.5}rem`) }}>
-        {role === "user" ? `${theme === "cai" ? characterData.userName || "Y/N" : ""}` : characterData.name || "Character"}
+        {role === "user" ? `${currentTheme.showUserName ? characterData.userName || "Y/N" : ""}` : characterData.name || "Character"}
       </animated.p>
       <Dialog> {/* Alternate messages dialog */}
 
@@ -425,9 +426,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
           <ContextMenuTrigger asChild>
             <Card
               {...bind()}
-              className={`bg-blue-900/20 rounded-xl sm:max-w-lg max-w-full border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
-                ? `${theme == "cai" ? "bg-[#303136]/50" : ""} ${theme == "palmirror" ? "bg-blue-950/20" : ""} ml-auto rounded-br-md text-end`
-                : `${theme == "cai" ? "bg-[#26272b]/50" : ""} ${theme == "palmirror" ? "bg-gray-900/10" : ""} mr-auto rounded-bl-md`
+              className={`rounded-xl sm:max-w-lg max-w-full border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
+                ? `${currentTheme.userBg} ml-auto rounded-br-md text-end`
+                : `${currentTheme.assistantBg} mr-auto rounded-bl-md`
                 } ${isEditing ? "w-full" : ""}`}
             >
               <CardContent className="p-0">

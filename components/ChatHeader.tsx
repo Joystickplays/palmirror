@@ -34,6 +34,8 @@ import { useRouter } from 'next/navigation';
 import { isPalMirrorSecureActivated, PLMSecureGeneralSettings } from '@/utils/palMirrorSecureUtils';
 import { PLMSecureContext } from '@/context/PLMSecureContext';
 
+
+
 interface ChatHeaderProps {
   characterData: CharacterData;
   getExportedMessages: () => void;
@@ -54,7 +56,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
 
   const PLMSecContext = useContext(PLMSecureContext);
 
-  const { theme, setTheme } = useTheme();
+  const { theme, getTheme, setTheme } = useTheme();
+  const currentTheme = getTheme();
   const router = useRouter();
 
   const handleToggleRecommendations = () => {
@@ -174,7 +177,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
 
   return (
     <Card>
-      <CardContent className={`flex relative justify-between items-center p-5 w-full ${theme == "cai" ? "bg-[#26272b]" : ""}`}>
+      <CardContent className={`flex relative justify-between items-center p-5 w-full ${currentTheme.bg}`}>
 
         <img src={characterData.image !== "" ? characterData.image : undefined}
           style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 0.3), transparent)' }}
@@ -297,6 +300,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="palmirror">PalMirror Original</SelectItem>
+                  <SelectItem value="palmirrorSunset">PalMirror Sunset</SelectItem>
+                  <SelectItem value="palmirrorOceans">PalMirror Oceans</SelectItem>
                   <SelectItem value="cai">c.ai</SelectItem>
                 </SelectContent>
               </Select>

@@ -49,7 +49,8 @@ const ChatPage = () => {
   const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { theme, setTheme } = useTheme();
+  const { theme, getTheme } = useTheme();
+  const currentTheme = getTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const router = useRouter();
@@ -144,6 +145,10 @@ const ChatPage = () => {
       apiKey: apiKey ?? "none",
       baseURL: baseURL ?? undefined,
       dangerouslyAllowBrowser: true,
+      defaultHeaders: {
+        "HTTP-Referer": "https://palm.goteamst.com",
+        "X-Title": "PalMirror",
+      }
     });
   }, [apiKey, baseURL]);
 
@@ -551,7 +556,7 @@ const ChatPage = () => {
   }, [messages])
 
   return (
-    <div className={`grid place-items-center ${theme == "cai" ? "bg-[#18181b]" : ""}`}>
+    <div className={`grid place-items-center ${currentTheme.bg}`}>
       <ToastContainer
         position="top-right"
         autoClose={5000}
