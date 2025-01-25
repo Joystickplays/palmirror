@@ -26,9 +26,9 @@ const themes = {
     showUserName: false,
   },
   palmirrorOceans: {
-    userBg: "bg-[#e16359]/20",
-    assistantBg: "bg-[#006f73]/10",
-    bg: "bg-[#1f3b4d]",
+    userBg: "bg-[#a1afd1]/10",
+    assistantBg: "bg-[#2a3f74]/10",
+    bg: "bg-[#0a0c11]",
     showUserName: false,
   },
   cai: {

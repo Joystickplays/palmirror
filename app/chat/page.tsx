@@ -261,7 +261,7 @@ const ChatPage = () => {
       // Add a placeholder message while waiting for the response
       setMessages(prevMessages => [
         ...prevMessages,
-        { role: "assistant", content: "...", stillGenerating: true }
+        { role: "assistant", content: "", stillGenerating: true }
       ]);
 
       for await (const chunk of comp) {

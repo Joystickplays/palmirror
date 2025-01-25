@@ -179,14 +179,16 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
     <Card>
       <CardContent className={`flex relative justify-between items-center p-5 w-full ${currentTheme.bg}`}>
 
-        <img src={characterData.image !== "" ? characterData.image : undefined}
+        {characterData.image !== "" && (
+          <img src={characterData.image !== "" ? characterData.image : undefined}
           style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 0.3), transparent)' }}
           className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full object-cover rounded-lg" />
+        )}
 
         <h2 className="z-[2]">PalMirror · <span className="font-bold">{characterData.name}</span></h2>
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline" className="p-3 size-8 z-[2]"><Settings /></Button>
+            <Button variant="outline" className={`p-3 size-8 z-[2] ${currentTheme.assistantBg}`}><Settings /></Button>
           </DialogTrigger>
           <DialogContent className={`w-auto max-h-[80vh] min-w-96 overflow-y-auto font-sans ${showSecureDialog && "blur-sm"}`}>
             <DialogHeader>
@@ -301,6 +303,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                 <SelectContent>
                   <SelectItem value="palmirror">PalMirror Original</SelectItem>
                   <SelectItem value="palmirrorSunset">PalMirror Sunset</SelectItem>
+                  <SelectItem value="palmirrorOceans">PalMirror Oceans</SelectItem>
                   <SelectItem value="cai">c.ai</SelectItem>
                 </SelectContent>
               </Select>

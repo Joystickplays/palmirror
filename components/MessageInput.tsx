@@ -11,6 +11,7 @@ import {
 import { useTheme } from '@/components/PalMirrorThemeProvider';
 import { CharacterData, defaultCharacterData } from '@/types/CharacterData';
 
+
 interface MessageInputProps {
   newMessage: string;
   setNewMessage: React.Dispatch<React.SetStateAction<string>>;
@@ -39,8 +40,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
     setLocalMessage(newMessage);
   }, [newMessage]);
 
-  const { theme, setTheme } = useTheme();
-
+   const { theme, getTheme, setTheme } = useTheme();
+  const currentTheme = getTheme();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -75,7 +76,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     <div className="relative w-full">
       <Textarea
         id="Message"
-        className={`w-full p-2 ${userPromptThinking ? "text-white/50" : ""} ${ theme == "cai" ? "bg-[#26272b]" : ""} rounded-xl rounded-[27px] rounded-t-2xl pr-16 pl-4`}
+        className={`w-full p-2 ${userPromptThinking ? "text-white/50" : ""} ${currentTheme.assistantBg} rounded-[27px] rounded-t-2xl pr-16 pl-4`}
         value={localMessage}
         onChange={handleInputChange}
         onKeyDown={(e) => localHandleSendMessage(e)}

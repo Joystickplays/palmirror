@@ -23,15 +23,11 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { AnimatePresence, motion } from 'framer-motion';
 import { CharacterData } from "@/types/CharacterData";
+
+import TypingIndication from "@/components/Typing"
+
 
 interface MessageCardProps {
   index: number;
@@ -298,9 +294,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
     return (
       <div>
-        <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
-          {rpTextRender(content)}
-        </ReactMarkdown>
+        {stillGenerating && content.length < 1 ? (
+          <TypingIndication />
+        ) : (
+          <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
+            {rpTextRender(content)}
+          </ReactMarkdown>
+        )}
 
         {imageInvocations.length > 0 && (
           <div className="flex gap-4">
