@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 
-export function useThrottle(callback, delay) {
-  const [data, setData] = useState(null);
-  const timerRef = useRef(null);
+export function useThrottle<T>(callback: (data: T) => void, delay: number) {
+  const [data, setData] = useState<T | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (data !== null) {
@@ -18,7 +18,7 @@ export function useThrottle(callback, delay) {
     };
   }, [data, delay, callback]);
 
-  return (newData) => {
+  return (newData: T) => {
     setData(newData);
   };
 }
