@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useContext } from "react";
 import MessageCard from "@/components/MessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
+import TokenCounter from "@/components/TokenCounter";
 import { useTheme } from '@/components/PalMirrorThemeProvider';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -17,6 +18,7 @@ import { isPalMirrorSecureActivated, PLMSecureGeneralSettings } from '@/utils/pa
 import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation";
 import React from "react";
+
 
 let openai: OpenAI;
 
@@ -604,6 +606,7 @@ const ChatPage = () => {
             <div ref={messageEndRef} />
           </div>
         </div>
+
         <MessageInput
           newMessage={newMessage}
           setNewMessage={setNewMessage}
@@ -615,6 +618,7 @@ const ChatPage = () => {
           rewriteMessage={rewriteMessage}
         />
       </div>
+      <TokenCounter finalMessagesList={messages} />
       <input
         ref={fileInputRef}
         type="file"
