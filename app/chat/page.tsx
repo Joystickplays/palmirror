@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef, useContext } from "react";
+import React from "react";
 import MessageCard from "@/components/MessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
 import TokenCounter from "@/components/TokenCounter";
+import { useThrottle } from "@/utils/useThrottle"
 import { useTheme } from '@/components/PalMirrorThemeProvider';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -17,7 +19,7 @@ import { isPalMirrorSecureActivated, PLMSecureGeneralSettings } from '@/utils/pa
 
 import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation";
-import React from "react";
+import { encodingForModel } from 'js-tiktoken';
 
 
 let openai: OpenAI;
@@ -37,6 +39,9 @@ const ChatPage = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [userPromptThinking, setUserPromptThinking] = useState(false);
+  const [tokenCount, setTokenCount] = useState(0);
+  const [accurateTokenizer, setAccurateTokenizer] = useState(true); // toggle it yourself .
+
 
   const [baseURL, setBaseURL] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -51,12 +56,16 @@ const ChatPage = () => {
   const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+
+
   const { theme, getTheme } = useTheme();
   const currentTheme = getTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const router = useRouter();
   const PLMSecContext = useContext(PLMSecureContext);
+
+  
 
   // Function to download a file
   const downloadFile = (content: string, fileName: string, contentType: string) => {
@@ -271,6 +280,13 @@ const ChatPage = () => {
 
         const chunkContent = chunk.choices[0].delta.content || "";
         assistantMessage += chunkContent;
+
+        if ("usage" in chunk) {
+          const usage = chunk.usage;
+          if (usage && usage.total_tokens > 0) {
+            setTokenCount(usage.total_tokens);
+          }
+        }
 
         // Update the message with the latest chunk
         setMessages((prevMessages) => [
@@ -557,6 +573,38 @@ const ChatPage = () => {
     save();
   }, [messages])
 
+  
+  // Token counting (this was way too laggy so scrapped)
+  
+  // const tokenizer = encodingForModel('gpt-3.5-turbo');
+
+  // const estimateTokens = (messages: Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>): number => {
+  //   const allText = messages.map(item => item.content).join(' ');
+  //   return Math.floor(allText.length);
+  // }
+
+  // const countTokens = (messages: Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>): number => {
+  //   if (accurateTokenizer) {
+  //   return messages.reduce((total, message) => {
+  //     const tokens = tokenizer.encode(message.content); // Encoding each message
+  //     return total + tokens.length;
+  //   }, 0);
+  //   } else {
+  //     return estimateTokens(messages)
+  //   }
+  // };
+
+  // const throttledCountTokens = useThrottle(() => {
+  //   const totalTokens = countTokens(messages);
+  //   setTokenCount(totalTokens);
+  // }, 1000);
+
+  // useEffect(() => {
+  //   throttledCountTokens(messages);
+  // }, [messages, throttledCountTokens]);  
+
+  
+
   return (
     <div className={`grid place-items-center ${currentTheme.bg}`}>
       <ToastContainer
@@ -618,7 +666,7 @@ const ChatPage = () => {
           rewriteMessage={rewriteMessage}
         />
       </div>
-      <TokenCounter finalMessagesList={messages} />
+      <TokenCounter tokenCount={tokenCount} />
       <input
         ref={fileInputRef}
         type="file"
