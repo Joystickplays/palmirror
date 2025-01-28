@@ -35,14 +35,14 @@ const Step2 = forwardRef<HTMLDivElement, Step2Props>(({
             className="flex gap-2 flex-col">
             <h1 className="text-3xl font-extrabold tracking-tight pb-2">Budget configuration</h1>
             <hr />
-            <p>What's the budget?</p>
+            <p>What&apos;s the budget?</p>
             <div className="flex flex-col gap-1">
                 <div className="flex gap-2 items-center justify-start">
                     <p>$</p>
                     <Input placeholder="1" type="number" min="0" value={setupBudgetLimit} onChange={handleInputChangeBudgetLimit} />
                     
                 </div>
-                <p className="text-xs opacity-50">TokenGuard will warn you if you're nearing this limit.</p>
+                <p className="text-xs opacity-50">TokenGuard will warn you if you&apos;re nearing this limit.</p>
             </div>
             <p>How many credits do you currently have?</p>
             <div className="flex flex-col gap-1">
@@ -56,4 +56,5 @@ const Step2 = forwardRef<HTMLDivElement, Step2Props>(({
     )
 });
 
+Step2.displayName = "Step2"
 export default Step2;

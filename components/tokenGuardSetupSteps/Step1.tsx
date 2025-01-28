@@ -89,4 +89,5 @@ const Step1 = forwardRef<HTMLDivElement, Step1Props>(({
     )
 });
 
+Step1.displayName = "Step1"
 export default Step1;
