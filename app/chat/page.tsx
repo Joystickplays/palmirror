@@ -19,7 +19,6 @@ import { isPalMirrorSecureActivated, PLMSecureGeneralSettings } from '@/utils/pa
 
 import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation";
-import { encodingForModel } from 'js-tiktoken';
 
 
 let openai: OpenAI;

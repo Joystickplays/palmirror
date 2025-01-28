@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTheme } from '@/components/PalMirrorThemeProvider';
 import { Settings, Check, BadgeInfo } from 'lucide-react';
+
+import SecureBadge from "@/components/SecureBadge"
+
 import {
   Dialog,
   DialogContent,
@@ -246,7 +249,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                   )}
                 </div>
                 <div className="grid w-full items-center gap-1.5 my-5">
-                  <Label htmlFor="Proxy_apiKey">API key</Label>
+                  <div className="flex gap-2 items-center">
+                    <SecureBadge /> 
+                    <Label htmlFor="Proxy_apiKey">API key</Label>
+                  </div>
                   <Input
                     id="Proxy_apiKey"
                     value={apiKey}

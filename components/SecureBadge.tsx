@@ -11,13 +11,13 @@ const SecureBadge = () => {
   return (
     
     <HoverCard>
-      <HoverCardTrigger asChild>
+      <HoverCardTrigger>
         <div className="p-2 py-1 border rounded-lg select-none">
-          <p className="p-0 m-0 bg-gradient-to-r from-neutral-400 to-neutral-700 text-transparent bg-clip-text">Secure</p>    
+          <p className="p-0 m-0 bg-gradient-to-r from-neutral-400 to-neutral-700 text-transparent bg-clip-text text-1xl font-extrabold tracking-tight">Secure</p>    
         </div>
       </HoverCardTrigger>
       <HoverCardContent>
-        This requires PalMirror Secure to use.
+        <p className="font-normal">This requires PalMirror Secure to use.</p>
       </HoverCardContent>
     </HoverCard>
 
