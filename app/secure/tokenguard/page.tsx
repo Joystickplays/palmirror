@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import SecureBadge from "@/components/SecureBadge"
 import Step1 from "@/components/tokenGuardSetupSteps/Step1"
 import Step2 from "@/components/tokenGuardSetupSteps/Step2"
+import Step3 from "@/components/tokenGuardSetupSteps/Step3"
 import { ToastContainer, toast } from 'react-toastify';
 import { Check } from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
@@ -41,6 +42,7 @@ const MotionButton = motion(Button);
 
 const MotionStep1 = motion(Step1)
 const MotionStep2 = motion(Step2)
+const MotionStep3 = motion(Step3)
 
 export default function TokenGuard() {
 
@@ -166,8 +168,14 @@ export default function TokenGuard() {
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: 300, opacity: 0 }}
                             transition={{ type: "spring", stiffness: 215, damping: 30 }}
-                            setupBudgetLimit={setupBudgetLimit} setSetupBudgetLimit={setSetupBudgetLimit} setupInitialCredits={setupInitialCredits} setSetupInitialCredits={setSetupInitialCredits} />
-                        ) : (
+                            setupBudgetLimit={setupBudgetLimit} setSetupBudgetLimit={setSetupBudgetLimit} setupInitialCredits={setupInitialCredits} setSetupInitialCredits={setSetupInitialCredits} key="setupStep2" />
+                        ) : (setupStep === 3 ? (
+                            <MotionStep3
+                            initial={{ x: -300, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: 300, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 215, damping: 30 }} key="setupStep3" />
+                        ) : ( 
                             <p>idk</p>
                         ))}
                         </AnimatePresence>
@@ -175,7 +183,7 @@ export default function TokenGuard() {
                     </div>
                     <motion.div layout className="flex gap-2 justify-end w-full">
                         <AnimatePresence>
-                            {setupStep > 1 && (
+                            {setupStep > 1 && setupStep < 2 && (
                                 <MotionButton key="prevStep" onClick={() => setSetupStep(setupStep - 1)} variant="outline"
                                 initial={{ x: 50, opacity: 0, scale: 0 }}
                                 animate={{ x: 0, opacity: 1, scale: 1 }}
