@@ -278,7 +278,7 @@ const ChatPage = () => {
       for await (const chunk of comp) {
         if (abortController.current?.signal.aborted) break;
 
-        if ("delta" in chunk.choices[0]) {
+        if (chunk?.choices?.[0]?.delta) {
           const chunkContent = chunk.choices[0].delta.content || "";
           assistantMessage += chunkContent;
         }
