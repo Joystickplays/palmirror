@@ -77,33 +77,33 @@ const taglines = [
     "Halt! Who goes there? Password required.",
     "No password? No entry.",
     "Think you can guess? Think again.",
-    "This isn’t a guessing game, or is it?",
+    "This isn't a guessing game, or is it?",
     "Enter the magic word to continue.",
-    "It’s password time, don’t mess it up.",
+    "It's password time, don't mess it up.",
     "Nope, still waiting for that password.",
     "Hey, sharing passwords is a no-no.",
     "Forgot your password? Awkward.",
     "This is the part where you type the password.",
     "Passwords: Small but mighty.",
-    "Shh... it’s a secret.",
+    "Shh... it's a secret.",
     "One does not simply enter without the password.",
     "No password? No fun.",
-    "Hint: It’s not ‘password’.",
+    "Hint: It's not 'password'.",
     "Your ticket in? The password.",
-    "The secret handshake won’t work here.",
+    "The secret handshake won't work here.",
     "Access is one password away.",
-    "Don’t worry, we’re not judging your password strength. (Much.)",
-    "Guessing won’t get you far.",
-    "Is it your pet’s name? Be honest.",
+    "Don't worry, we're not judging your password strength. (Much.)",
+    "Guessing won't get you far.",
+    "Is it your pet's name? Be honest.",
     "One tiny word stands between you and glory.",
-    "You bring the password, we’ll bring the access.",
+    "You bring the password, we'll bring the access.",
     "Your move. Password time.",
     "No password? No dice.",
     "Spoiler alert: You need the password.",
     "Type it carefully… no pressure.",
-    "The gates are locked. What’s the code?",
-    "Security is fun, isn’t it?",
-    "Trust us, it’s worth it. Enter the password.",
+    "The gates are locked. What's the code?",
+    "Security is fun, isn't it?",
+    "Trust us, it's worth it. Enter the password.",
     "Not taking user data as bribery.",
     "Just hoping that the password manager doesn't autofill the input...",
   ];
@@ -550,7 +550,7 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
                       initial={{ opacity: 0, scale: 1.1 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.5 }}
-                      transition={{ delay: index * 0.1, type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
+                      transition={{ delay: index * 0.05, type: 'spring', mass: 1, damping: 13, stiffness: 161 }}
                       key={index} className="flex flex-col gap-1.5 p-6 border rounded-xl h-full">
                         {chat.image && (
                           <img src={chat.image} className="w-full h-24 rounded-xl object-cover" />
