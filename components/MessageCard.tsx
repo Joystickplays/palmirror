@@ -289,7 +289,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const toolItemVariants = {
     hidden: { opacity: 0, scale: 0 },
-    visible: (index) => ({
+    visible: {
       opacity: 1,
       scale: 1,
       transition: {
@@ -300,7 +300,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
         duration: 0.5,
         delay: index,
       },
-    }),
+    },
   };
 
 
