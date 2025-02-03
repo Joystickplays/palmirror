@@ -72,7 +72,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   editMessage,
   rewindTo,
   changeStatus,
-}) => {
+\}) => {
   const [{ scale }, apiScaleSpring] = useSpring(() => ({
     scale: 1,
     config: { tension: 100, friction: 20 },
@@ -103,7 +103,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const [canRegenerate, setCanRegenerate] = useState(false);
 
-  const motionButton = motion(Button);
+  const MotionButton = motion(Button);
  
   const triggerRegenerate = useCallback(() => {
     regenerateFunction();
@@ -495,8 +495,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
               exit="hidden"
               layout
               className="flex flex-row gap-1 w-full mt-1 px-1 origin-top-left">
-                <motionButton onClick={triggerRegenerate} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><RotateCw className="h-3 opacity-50" /></motionButton>    
-                <motionButton onClick={startEditing} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><Pencil className="h-3 opacity-50" /></motionButton>    
+                <MotionButton onClick={triggerRegenerate} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><RotateCw className="h-3 opacity-50" /></MotionButton>    
+                <MotionButton onClick={startEditing} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><Pencil className="h-3 opacity-50" /></MotionButton>    
               </motion.div>
               )}
             </AnimatePresence>
