@@ -72,7 +72,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   editMessage,
   rewindTo,
   changeStatus,
-\}) => {
+}) => {
   const [{ scale }, apiScaleSpring] = useSpring(() => ({
     scale: 1,
     config: { tension: 100, friction: 20 },
