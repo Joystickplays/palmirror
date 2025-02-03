@@ -102,6 +102,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [changingStatusReason, setChangingStatusReason] = useState("");
 
   const [canRegenerate, setCanRegenerate] = useState(false);
+
+  const motionButton = motion(Button);
  
   const triggerRegenerate = useCallback(() => {
     regenerateFunction();
@@ -269,6 +271,39 @@ const MessageCard: React.FC<MessageCardProps> = ({
     
   }, [content])
 
+  const toolbarVariants = {
+    hidden: { opacity: 0, scale: 0, height: 0 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      height: "auto",
+      transition: {
+        staggerChildren: 0.3,
+        type: 'spring',
+        mass: 1,
+        stiffness: 251,
+        damping: 22,
+      },
+    },
+  };
+
+  const toolItemVariants = {
+    hidden: { opacity: 0, scale: 0 },
+    visible: (index) => ({
+      opacity: 1,
+      scale: 1,
+      transition: {
+        type: 'spring',
+        mass: 1,
+        stiffness: 251,
+        damping: 22,
+        duration: 0.5,
+        delay: index,
+      },
+    }),
+  };
+
+
   const renderContent = () => {
     if (isEditing) {
       return (
@@ -424,6 +459,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
         </DialogContent>
         <ContextMenu>
           <ContextMenuTrigger asChild>
+          <div>
             <Card
               {...bind()}
               className={`rounded-xl sm:max-w-lg max-w-full border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
@@ -450,6 +486,21 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 </animated.div>
               </CardContent>
             </Card>
+            <AnimatePresence>
+            {!globalIsThinking && isLastMessage && role === "assistant" && !isEditing && (
+              <motion.div
+              variants={toolbarVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              layout
+              className="flex flex-row gap-1 w-full mt-1 px-1 origin-top-left">
+                <motionButton onClick={triggerRegenerate} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><RotateCw className="h-3 opacity-50" /></motionButton>    
+                <motionButton onClick={startEditing} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><Pencil className="h-3 opacity-50" /></motionButton>    
+              </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           </ContextMenuTrigger>
           <ContextMenuContent className="w-64 font-sans font-semibold">
             {isGreetingMessage && characterData.alternateInitialMessages && (
