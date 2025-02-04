@@ -16,7 +16,7 @@ interface NewcomerDrawerProps {
   close: () => void,
 }
 
-const NewcomerDrawer = React.FC<NewcomerDrawerProps> = ({
+const NewcomerDrawer: React.FC<NewcomerDrawerProps> = ({
   open,
   close,
 }) => {
