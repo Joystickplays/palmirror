@@ -6,6 +6,7 @@ import MessageCard from "@/components/MessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
 import TokenCounter from "@/components/TokenCounter";
+import NewcomerDrawer from "@/components/NewcomerDrawer";
 import { useThrottle } from "@/utils/useThrottle"
 import { useTheme } from '@/components/PalMirrorThemeProvider';
 import { ToastContainer, toast } from "react-toastify";
@@ -50,6 +51,8 @@ const ChatPage = () => {
   const [modelName, setModelName] = useState('gpt-3.5-turbo');
 
   const [exclusionCount, setExclusionCount] = useState(0);
+
+  const [showingNewcomerDrawer, setShowingNewcomerDrawer] = useState(false);
 
   const abortController = useRef<AbortController | null>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -575,6 +578,13 @@ const ChatPage = () => {
     save();
   }, [messages])
 
+  // Show newcomer drawer if new ..
+  useEffect(() => {
+    if (!localStorage.getItem("NewcomerDrawer")) {
+      setShowingNewcomerDrawer(true);
+    }
+  }, [])
+
   
   // Token counting (this was way too laggy so scrapped)
   
@@ -676,6 +686,7 @@ const ChatPage = () => {
         style={{ display: "none" }}
         onChange={handleFileInput}
       />
+      <NewcomerDrawer close={() => {localStorage.setItem("NewcomerDrawer", "ok"); setShowingNewcomerDrawer(false);}} open={showingNewcomerDrawer} />
     </div>
   );
 };

@@ -54,6 +54,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
   const [showSecureDialog, setShowSecureDialog] = useState(false);
   const [alreadyEncrypted, setAlreadyEncrypted] = useState(false);
 
+  const [showReloadSuggestion, setShowReloadSuggestion] = useState(false);
+
   const PLMSecContext = useContext(PLMSecureContext);
 
   const { theme, getTheme, setTheme } = useTheme();
@@ -126,6 +128,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
     const value = event.target.value;
     setBaseURL(value);
     setInputChangedYet(true);
+    setShowReloadSuggestion(true);
   };
   
   const secureAPIKeySave = async () => {
@@ -203,6 +206,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                     value={baseURL}
                     onChange={handleBaseURLChange}
                   />
+                  {showReloadSuggestion && ( <p className="opacity-50 text-xs">Base URL changes require a <Button variant="outline" className="!p-2" onClick={() => window.location.reload()}>reload</Button> to work properly.</p> )}
                   <Button variant="outline" size="sm" onClick={handleToggleRecommendations}>
                     {showRecommendations ? "Hide Recommendations" : "Show Recommendations"}
                   </Button>
@@ -212,7 +216,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                         <p className="text-xs opacity-50">Recommendations</p>
                         <div className="flex gap-4">
                           <Button variant="outline" size="sm" onClick={() => handleProviderSelect("OpenAI")}>OpenAI</Button>
-                          <Button variant="outline" size="sm" onClick={() => handleProviderSelect("CosmosRP")}>CosmosRP</Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -227,20 +230,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                           <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Uses industry-leading AI models</p>
                         </div>
                         <Button onClick={() => { setBaseURL("https://api.openai.com/v1"); handleProviderSelect(""); }}>Use this provider as base URL</Button>
-                      </CardContent>
-                    </Card>
-                  )}
-                  {showRecommendations && selectedProvider === "CosmosRP" && (
-                    <Card className="mt-4">
-                      <CardContent className="font-sans p-3">
-                        <p>CosmosRP is a completely free and uncensored LLM AI made for roleplay.</p>
-                        <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
-                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Roleplay-excellent quality</p>
-                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Lengthy responses</p>
-                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Made for roleplay</p>
-                          <p className="flex gap-2 text-sm  font-bold"><Check className="opacity-50" /> Does <u>NOT</u> require an API key</p>
-                        </div>
-                        <Button onClick={() => { setBaseURL("https://api.pawan.krd/cosmosrp/v1"); handleProviderSelect(""); }}>Use this provider as base URL</Button>
                       </CardContent>
                     </Card>
                   )}
