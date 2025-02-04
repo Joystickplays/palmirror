@@ -28,7 +28,7 @@ const NewcomerDrawer: React.FC<NewcomerDrawerProps> = ({
   }
  
   return (
-    <Drawer open={open} dismissable={false} onOpenChange={onChange}>
+    <Drawer open={open} dismissible={false} onOpenChange={onChange}>
       <DrawerContent className="font-sans !text-left">
         <DrawerHeader>
           <DrawerTitle>Welcome to PalMirror!</DrawerTitle>
