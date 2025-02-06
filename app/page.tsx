@@ -551,7 +551,7 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.5 }}
                       transition={{ delay: index * 0.05, type: 'spring', mass: 1, damping: 13, stiffness: 161 }}
-                      key={index} className="flex flex-col gap-1.5 p-6 border rounded-xl h-full">
+                      key={chat.lastUpdated} className="flex flex-col gap-1.5 p-6 border rounded-xl h-full">
                         {chat.image && (
                           <img src={chat.image} className="w-full h-24 rounded-xl object-cover" />
                         )}

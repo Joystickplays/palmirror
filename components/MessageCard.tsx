@@ -487,7 +487,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 </animated.div>
               </CardContent>
             </Card>
-            <AnimatePresence>
+            {/* <AnimatePresence>
             {!globalIsThinking && isLastMessage && role === "assistant" && !isEditing && (
               <motion.div
               variants={toolbarVariants}
@@ -500,7 +500,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 <MotionButton onClick={startEditing} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><Pencil className="h-3 opacity-50" /></MotionButton>    
               </motion.div>
               )}
-            </AnimatePresence>
+            </AnimatePresence> */}
           </div>
           </ContextMenuTrigger>
           <ContextMenuContent className="w-64 font-sans font-semibold">
