@@ -348,13 +348,13 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
         <div className="flex justify-items-center items-center gap-4">
           <Button onClick={() => getChubaiInfo()}>Get from chub.ai</Button>
         </div>
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="item-1">
-            <AccordionTrigger>Get from other platforms</AccordionTrigger>
-            <AccordionContent>
-              <div className="py-2 flex flex-col gap-2">
-                <p>PalMirror cannot automatically get characters from other platforms for you.</p>
-                <p>However, you can get them yourself and get the PalMirror Experience variant for the character you want.</p>
+	        <Accordion type="single" collapsible className="w-full">
+	          <AccordionItem value="item-1">
+	            <AccordionTrigger>Get from other platforms</AccordionTrigger>
+	            <AccordionContent>
+	              <div className="py-2 flex flex-col gap-2">
+	                <p>PalMirror cannot automatically get characters from other platforms for you.</p>
+	                <p>However, you can get them yourself and get the PalMirror Experience variant for the character you want.</p>
                 <div className="p-4 rounded-xl border flex flex-col gap-4">
                   <div>
                     <h2 className="text-lg font-bold">Step 1</h2>
@@ -614,18 +614,26 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
         <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2">
           PalMirror
         </h1>
-        <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-5xl pb-2 text-center w-4/5">
-          Talk with your favorite characters—just with a bit more <em>style</em>
+        <h1 className="text-3xl font-extrabold tracking-tight lg:text-5xl pb-2 text-center w-full">
+          Mirrors your favourite characters.
         </h1>
 
-        <div className="pb-7">
-          <div className="flex justify-items-center items-center flex-col sm:flex-row gap-2 sm:gap-4">
-            <GetFromPlatform />
-            <em>or</em>
-            <SetupCharacter />
-          </div>
+        <div className="pb-7 w-full">
+          <Button className="block mx-auto" onClick={() => router.push('/search')}>Search for a character</Button>
+          <Accordion type="single" collapsible className="w-full mt-4">
+	    <AccordionItem value="item-1">
+              <AccordionTrigger></AccordionTrigger>
+              <AccordionContent>
+                <div className="flex justify-items-center items-center gap-1 flex-col sm:flex-row sm:gap-4">
+                  <GetFromPlatform />
+                  <SetupCharacter />
+                </div>       
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+         
         </div>
-        <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character.</p>
+        {/* <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character.</p> */}
         <p className="text-sm opacity-40 text-center">An <u><a href="https://github.com/Joystickplays/palmirror">open-source</a></u> project by GoTeam</p>
 
         <ToastContainer

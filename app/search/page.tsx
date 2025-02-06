@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox"
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AnimatePresence, motion } from 'motion/react';
@@ -16,6 +17,7 @@ export default function Search() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [exclusionTopic, setExclusionTopic] = useState("NSFW");
   const [characterData, setCharacterData] = useState({
     name: "",
     personality: "",
@@ -30,7 +32,9 @@ export default function Search() {
     }
   });
   const router = useRouter();
-  
+  const [excludeNSFW, setExcludeNSFW] = useState(true);  
+
+
   useEffect(() => {
     const storedData = localStorage.getItem('characterData');
     if (storedData) {
@@ -118,7 +122,7 @@ export default function Search() {
     try {
       window.scrollTo(0, 0); // Scroll to the top
       const fetchPromises = apiProviders.map(provider =>
-        fetch(provider.query(searchQuery, page)).then(response => {
+        fetch(provider.query(searchQuery, page, exclusionTopic)).then(response => {
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -141,7 +145,7 @@ export default function Search() {
 
   const apiProviders = [
     {
-      query: (searchQuery: string, page: number) => `https://api.chub.ai/search?excludetopics=&first=20&page=${page}&namespace=*&search=${encodeURIComponent(searchQuery)}&include_forks=true&nsfw=true&nsfw_only=false&require_custom_prompt=false&require_example_dialogues=false&require_images=false&require_expressions=false&nsfl=true&asc=false&min_ai_rating=0&min_tokens=50&max_tokens=100000&chub=true&require_lore=false&exclude_mine=true&require_lore_embedded=false&require_lore_linked=false&sort=default&topics=&inclusive_or=false&recommended_verified=false&require_alternate_greetings=false&venus=true&count=false`,
+      query: (searchQuery: string, page: number, exclusion: string) => `https://api.chub.ai/search?excludetopics=${exclusion}&first=20&page=${page}&namespace=*&search=${encodeURIComponent(searchQuery)}&include_forks=true&nsfw=true&nsfw_only=false&require_custom_prompt=false&require_example_dialogues=false&require_images=false&require_expressions=false&nsfl=true&asc=false&min_ai_rating=0&min_tokens=50&max_tokens=100000&chub=true&require_lore=false&exclude_mine=true&require_lore_embedded=false&require_lore_linked=false&sort=default&topics=&inclusive_or=false&recommended_verified=false&require_alternate_greetings=false&venus=true&count=false`,
       processor: (data: any) => data.data.nodes.map((item: any) => ({ provider: 'chub.ai', image: item.avatar_url, name: item.name, description: item.tagline, tags: item.topics, charLink: `https://chub.ai/characters/${item.fullPath}` }))
     },
   ];
@@ -161,6 +165,10 @@ export default function Search() {
             placeholder="Enter search query..."
           />
           <Button onClick={() => handleSearch()}>Search</Button>
+        </div>
+        <div className="flex gap-2 items-center">
+          <Checkbox checked={excludeNSFW} onCheckedChange={(ch) => {setExcludeNSFW(ch); if (ch) { setExclusionTopic("NSFW")} else { setExclusionTopic("") }}}/>
+          <p>Exclude NSFW</p>
         </div>
         <p className="text-xs opacity-50">Search engine and content by <a href="https://chub.ai">chub.ai</a></p>
       </div>

@@ -187,8 +187,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
           style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 0.3), transparent)' }}
           className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full object-cover rounded-lg" />
         )}
-
-        <h2 className="z-[2]">PalMirror · <span className="font-bold">{characterData.name}</span></h2>
+        <div className="flex gap-1 flex-col">
+          <h2 className="z-[2]"><span className="font-bold">{characterData.name}</span></h2>
+          <p className="text-xs font-bold opacity-50">On PalMirror</p>
+        </div>
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" className={`p-3 size-8 z-[2] ${currentTheme.assistantBg}`}><Settings /></Button>
