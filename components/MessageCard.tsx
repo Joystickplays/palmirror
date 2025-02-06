@@ -58,6 +58,8 @@ const vibrate = (duration: number) => {
   }
 };
 
+const MotionButton = motion(Button);
+
 
 const MessageCard: React.FC<MessageCardProps> = ({
   index,
@@ -103,7 +105,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const [canRegenerate, setCanRegenerate] = useState(false);
 
-  const MotionButton = motion(Button);
  
   const triggerRegenerate = useCallback(() => {
     regenerateFunction();
