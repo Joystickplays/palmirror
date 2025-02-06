@@ -167,7 +167,7 @@ export default function Search() {
           <Button onClick={() => handleSearch()}>Search</Button>
         </div>
         <div className="flex gap-2 items-center">
-          <Checkbox checked={excludeNSFW} onCheckedChange={(ch) => {setExcludeNSFW(ch); if (ch) { setExclusionTopic("NSFW")} else { setExclusionTopic("") }}}/>
+          <Checkbox checked={excludeNSFW} onCheckedChange={(ch) => {setExcludeNSFW(ch === true); if (ch) { setExclusionTopic("NSFW")} else { setExclusionTopic("") }}}/>
           <p>Exclude NSFW</p>
         </div>
         <p className="text-xs opacity-50">Search engine and content by <a href="https://chub.ai">chub.ai</a></p>
