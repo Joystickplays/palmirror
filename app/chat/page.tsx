@@ -207,7 +207,7 @@ const ChatPage = () => {
     if (!force && ((e && e.key !== "Enter"))) return;
 
     loadSettingsFromLocalStorage();
-    if (!baseURL.includes("https://")) {
+    if (!baseURL.includes("http")) {
       toast.error("You need to configure your AI provider first in Settings.");
       return;
     }
