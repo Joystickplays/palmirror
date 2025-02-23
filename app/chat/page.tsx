@@ -48,7 +48,7 @@ const ChatPage = () => {
   const [apiKey, setApiKey] = useState("none");
   const [generationTemperature, setTemperature] = useState(0.5);
   const [modelInstructions, setModelInstructions] = useState("");
-  const [modelName, setModelName] = useState('gpt-3.5-turbo');
+  const [modelName, setModelName] = useState('');
 
   const [exclusionCount, setExclusionCount] = useState(0);
 
