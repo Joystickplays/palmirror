@@ -50,7 +50,7 @@ const NewcomerDrawer: React.FC<NewcomerDrawerProps> = ({
         </DrawerHeader>
         <DrawerFooter>
           <DrawerClose>
-            <Button onClick={close} className="w-full">Let's start chatting!</Button>
+            <Button onClick={close} className="w-full">Let&apos;s start chatting!</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
