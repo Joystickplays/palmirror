@@ -32,7 +32,7 @@ const NewcomerDrawer: React.FC<NewcomerDrawerProps> = ({
       <DrawerContent className="font-sans !text-left">
         <DrawerHeader>
           <DrawerTitle>Welcome to PalMirror!</DrawerTitle>
-          <DrawerDescription>PalMirror is a bring-your-own-AI character chat frontend. PalMirror doesn&apos;t provide an LLM out of the box.
+          <DrawerDescription>While PalMirror is traditionally a bring-your-own-AI character chat frontend, we also provide PalAI, a free AI service for newcomers made for PalMirror by default. Here are some alternatives you may like:
           </DrawerDescription>
           <div className="border rounded-lg my-2 p-4 text-left">
             <h1 className="font-extrabold text-2xl w-full">Recommendations</h1>
@@ -50,7 +50,7 @@ const NewcomerDrawer: React.FC<NewcomerDrawerProps> = ({
         </DrawerHeader>
         <DrawerFooter>
           <DrawerClose>
-            <Button onClick={close} className="w-full">Got it!</Button>
+            <Button onClick={close} className="w-full">Let's start chatting!</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>

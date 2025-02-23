@@ -44,7 +44,7 @@ const ChatPage = () => {
   const [accurateTokenizer, setAccurateTokenizer] = useState(true); // toggle it yourself .
 
 
-  const [baseURL, setBaseURL] = useState("");
+  const [baseURL, setBaseURL] = useState("https://cvai.mhi.im/v1");
   const [apiKey, setApiKey] = useState("none");
   const [generationTemperature, setTemperature] = useState(0.5);
   const [modelInstructions, setModelInstructions] = useState("");
@@ -150,6 +150,8 @@ const ChatPage = () => {
       setModelName(parsedSettings.modelName || '');
       setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
       setModelInstructions(parsedSettings.modelInstructions || '')
+    } else {
+      setBaseURL("https://cvai.mhi.im/v1")
     }
   }
 
