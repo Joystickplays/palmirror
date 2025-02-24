@@ -237,6 +237,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                           <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Excellent quality</p>
                           <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Fast responses</p>
                           <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Uses industry-leading AI models</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-0" /> May be more restricted/censored</p>
                         </div>
                         <Button onClick={() => { handleBaseURLChange("https://api.openai.com/v1"); handleProviderSelect("");  }}>Use this provider as base URL</Button>
                       </CardContent>
@@ -248,10 +249,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                         <p>PalAI is a proprietary PalMirror AI provider and the default, using OpenRouter to give you access to flagship, openweight models for free. Thanks to <a href="https://hostedon.mochig.com" target="_blank" className="text-blue-300 underline">Mochig</a> for hosting!</p>
                         <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
                           <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Made for PalMirror</p>
-                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> <b>Does not require an API key</b></p>
-                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Does <b>not</b> log your responses</p>
-                          <p className="flex gap-2 text-sm"><Check className="opacity-0" /> Has limited ratelimits (3/min)</p>
-                          <p className="flex gap-2 text-sm"><Check className="opacity-0" /> May have unstable constant connection</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Does <b>NOT</b> require an API key</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Does <b>NOT</b> log your responses</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Selection of high-quality, openweight models</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Uncensored most of the time</p>
                         </div>
                         <Button onClick={() => { handleBaseURLChange("https://cvai.mhi.im/v1"); handleProviderSelect(""); }}>Use this provider as base URL</Button>
                       </CardContent>

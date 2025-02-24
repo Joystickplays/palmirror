@@ -262,7 +262,17 @@ const ChatPage = () => {
 	    };
 	  }),
 	  ...(userMSGaddOnList || regenerate ? [] : [{ role: "user", content: userMessageContent, name: "-" }] as const),
+          
 	];
+
+    const lastMessage = messagesList[messagesList.length - 1];
+    if (lastMessage?.role === "assistant") {
+       finalStructuredMessages.push({
+          role: "system",
+          content: "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter).]",
+          name: "system",
+       });
+    }
 
     try {
       abortController.current = new AbortController();
