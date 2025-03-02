@@ -189,20 +189,20 @@ export default function Search() {
             </motion.div>
           ) : (
             <div>
-              <AnimatePresence mode="popLayout">
                 <motion.div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <AnimatePresence mode="popLayout">
                   {searchResults.map((result, index) => (
                     <motion.div
                       key={index}
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1 }}
+                      initial={{ opacity: 0, scale: 0, filter: 'blur(10px)' }}
+                      animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                       exit={{ opacity: 0, scale: 0 }}
                       transition={{ delay: index * 0.1, type: "spring", mass: 1, damping: 15, stiffness: 80 }}
                       className="rounded-lg border shadow-md p-4 flex justify-between flex-col gap-4"
                     >
-                      <div className="flex items-center gap-4">
-                        <img src={result.image} alt={result.name} className="w-12 h-12 rounded-full" />
-                        <div>
+                      <div className="flex flex-col items-center gap-4">
+                        <img src={result.image} alt={result.name} className="w-full h-24 rounded-xl object-cover object-[50%_10%]" />
+                        <div className="w-full">
                           <h2 className="text-lg font-semibold">{result.name}</h2>
                           <p className="text-sm text-gray-500">{result.description}</p>
                         </div>
@@ -217,8 +217,8 @@ export default function Search() {
                       </div>
                     </motion.div>
                   ))}
-                </motion.div>
               </AnimatePresence>
+                </motion.div>
               {searchResults.length > 0 && (
                 <div className="flex justify-center items-center mt-4 mb-20">
                   <Button

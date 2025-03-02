@@ -593,7 +593,7 @@ const ChatPage = () => {
   // Show newcomer drawer if new ..
   useEffect(() => {
     if (!localStorage.getItem("NewcomerDrawer")) {
-      setShowingNewcomerDrawer(true);
+      // setShowingNewcomerDrawer(true);
     }
   }, [])
 
@@ -641,7 +641,11 @@ const ChatPage = () => {
         draggable
         theme="dark"
       />
-      <div className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
+      <motion.div
+      initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+      animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+      transition={{ type: 'spring', mass: 1, damping: 25, stiffness: 161, filter: { type: 'spring', mass: 1, damping: 38, stiffness: 161 } }}
+      className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
         <ChatHeader characterData={characterData} getExportedMessages={() => { encodeMessages(false); }} importMessages={openFilePicker} />
         <div className="overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col justify-end min-h-full">
@@ -689,7 +693,7 @@ const ChatPage = () => {
           suggestReply={suggestReply}
           rewriteMessage={rewriteMessage}
         />
-      </div>
+      </motion.div>
       <TokenCounter tokenCount={tokenCount} />
       <input
         ref={fileInputRef}

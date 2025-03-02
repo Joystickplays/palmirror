@@ -507,9 +507,13 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
   return isSecureActivated ? (
     <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
       <div className="w-full">
-        <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2 w-full">
+        <motion.h1
+        initial={{ scale: 0, x: -200 }}
+        animate={{ scale: 1, x: 0 }}
+        transition={{ type: 'spring', mass: 1, damping: 23, stiffness: 161, scale: { type: 'spring', mass: 1, damping: 18, stiffness: 100 } }}
+        className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2 w-full">
           PalMirror
-        </h1>
+        </motion.h1>
       </div>
 
       <div className="flex flex-grow w-full">
@@ -537,7 +541,7 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
           {/* chats list */}
           {isSecureReady && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.7 }}
+              initial={{ opacity: 0, scale: 1 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
               className="w-full"
@@ -547,10 +551,10 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
                   {chatList.length > 0 ? (
                     sortByLastUpdated(chatList).map((chat, index) => (
                       <motion.div
-                      initial={{ opacity: 0, scale: 1.1 }}
-                      animate={{ opacity: 1, scale: 1 }}
+                      initial={{ opacity: 0, scale: 0.7, y: 100, filter: 'blur(10px)' }}
+                      animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
                       exit={{ opacity: 0, scale: 0.5 }}
-                      transition={{ delay: index * 0.05, type: 'spring', mass: 1, damping: 13, stiffness: 161 }}
+                      transition={{ delay: index * 0.1, type: 'spring', mass: 1, damping: 23, stiffness: 161, y: { type: 'spring', mass: 1, damping: 13, stiffness: 97 } }}
                       key={chat.lastUpdated} className="flex flex-col gap-1.5 p-6 border rounded-xl h-full">
                         {chat.image && (
                           <img src={chat.image} className="w-full h-24 rounded-xl object-cover" />
