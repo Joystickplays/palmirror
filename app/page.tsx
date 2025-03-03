@@ -46,6 +46,157 @@ import {
 
 import { useRouter } from 'next/navigation';
 
+// New components moved outside Home():
+function GetFromPlatform({ router, linkChar, setLinkChar, getChubaiInfo }: { 
+	router: ReturnType<typeof useRouter>, 
+	linkChar: string, 
+	setLinkChar: React.Dispatch<React.SetStateAction<string>>, 
+	getChubaiInfo: () => void 
+}) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button>Get from a platform</Button>
+      </DialogTrigger>
+      <DialogContent className="w-full max-h-[80vh] overflow-y-auto flex flex-col gap-2 font-sans">
+        <DialogHeader>
+          <DialogTitle>Get from a platform</DialogTitle>
+        </DialogHeader>
+        <Button className="w-full" onClick={() => router.push('/search')}>Search for a character</Button>
+        <hr />
+        <Input value={linkChar} onChange={(e) => setLinkChar(e.target.value)} placeholder="Character link..." />
+        <div className="flex justify-items-center items-center gap-4">
+          <Button onClick={getChubaiInfo}>Get from chub.ai</Button>
+        </div>
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="item-1">
+            <AccordionTrigger>Get from other platforms</AccordionTrigger>
+            <AccordionContent>
+              <div className="py-2 flex flex-col gap-2">
+                <p>PalMirror cannot automatically get characters from other platforms for you.</p>
+                <p>However, you can get them yourself and get the PalMirror Experience variant for the character you want.</p>
+                <div className="p-4 rounded-xl border flex flex-col gap-4">
+                  <div>
+                    <h2 className="text-lg font-bold">Step 1</h2>
+                    <p>Copy this script below.</p>
+                    <div className="flex gap-2 mt-2">
+                      <code className="p-2 border rounded-md w-full overflow-hidden whitespace-nowrap text-ellipsis">const charUrl=window.location.href,platform=window.location.hostname,sc...</code>
+                      <Button onClick={() => { navigator.clipboard.writeText(charPalExpScript); toast.success("Script copied.") }}>Copy</Button>
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Step 2</h2>
+                    <p>Go to the character page you want to convert to a PLExperience character.</p>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Step 3</h2>
+                    In the address bar, clear out the input and type in <b className="font-bold p-2 rounded-sm border">javascript:</b>, then paste the script.
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Step 4</h2>
+                    Do <span className="font-bold text-red-500">not</span> press Enter yet. Press the suggestion item that has a world/internet icon, something like: <Earth />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Step 5</h2>
+                    After a bit, the script should automatically create and download a .plmc file.<br />
+                    <p className="text-sm opacity-50">The script only supports only a few select platforms.</p>
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SetupCharacter({ router, fileInputRef, characterData, handleInputChange, startChat }: { 
+  router: ReturnType<typeof useRouter>, 
+  fileInputRef: React.RefObject<HTMLInputElement>,
+  characterData: CharacterData, 
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof CharacterData) => void, 
+  startChat: () => void 
+}) {
+  return (
+    <Popover>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="mx-auto">Setup character</Button>
+        </DialogTrigger>
+        <DialogContent className="w-auto max-h-[80vh] overflow-y-auto font-sans">
+          <DialogHeader>
+            <DialogTitle>Setup character</DialogTitle>
+            <div className="palmirror-exc rounded-lg p-3 !my-4">
+              <div className="flex justify-center items-center">
+                <h1 className="text-2xl !font-extrabold tracking-tight text-center w-full palmirror-exc-text">
+                  PalMirror Experience
+                </h1>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <CircleHelp />
+                  </Button>
+                </PopoverTrigger>
+              </div>
+              <div className="flex justify-center items-center gap-2 !mt-2">
+                <Button variant="palmirror" onClick={() => { router.push("/palexp/create") }}>Create</Button>
+                <Button variant="palmirror" onClick={() => { fileInputRef.current?.click(); }}>Import from file</Button>
+              </div>
+            </div>
+            <div className="py-4">
+              <div className="grid w-full items-center gap-1.5">
+                <Label htmlFor="charName">Character name <span className="text-red-500">*</span></Label>
+                <Input id="charName" value={characterData.name} onChange={(e) => handleInputChange(e, 'name')} />
+              </div>
+            </div>
+            <div className="py-4">
+              <div className="grid w-full items-center gap-1.5">
+                <Label htmlFor="charPersonality">Personality <span className="text-red-500">*</span></Label>
+                <Textarea id="charPersonality" value={characterData.personality} onChange={(e) => handleInputChange(e, 'personality')} />
+              </div>
+            </div>
+            <div className="py-4">
+              <div className="grid w-full items-center gap-1.5">
+                <Label htmlFor="charInitialMessage">First message <span className="text-red-500">*</span></Label>
+                <Textarea id="charInitialMessage" value={characterData.initialMessage} onChange={(e) => handleInputChange(e, 'initialMessage')} />
+              </div>
+            </div>
+            <div className="py-4">
+              <div className="grid w-full items-center gap-1.5">
+                <Label htmlFor="charScenario">Scenario</Label>
+                <Input id="charScenario" value={characterData.scenario} onChange={(e) => handleInputChange(e, 'scenario')} />
+              </div>
+            </div>
+            <Accordion type="single" collapsible className="w-full mb-4">
+              <AccordionItem value="item-1">
+                <AccordionTrigger>Your personality</AccordionTrigger>
+                <AccordionContent>
+                  <div className="py-4">
+                    <div className="grid w-full items-center gap-1.5">
+                      <Label htmlFor="userName">Your name</Label>
+                      <Input id="userName" value={characterData.userName} onChange={(e) => handleInputChange(e, 'userName')} />
+                    </div>
+                  </div>
+                  <div className="py-4">
+                    <div className="grid w-full items-center gap-1.5">
+                      <Label htmlFor="userPersonality">Your personality</Label>
+                      <Textarea id="userPersonality" value={characterData.userPersonality} onChange={(e) => handleInputChange(e, 'userPersonality')} />
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            <Button className="w-80" onClick={startChat}>Start chat</Button>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+      <PopoverContent asChild className="z-[999999] min-w-80">
+        <p>PalMirror-exclusive characters with customizable traits and reactions. Adjust their emotions and status in real-time as they react to your changes, triggering sounds and effects. More features are being worked out for PalMirror Experience characters.</p>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function Home() {
   const [isSecureActivated, setIsSecureActivated] = useState(false);
   const [isSecureReady, setIsSecureReady] = useState(false);
@@ -333,141 +484,6 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  const GetFromPlatform = () => (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button>Get from a platform</Button>
-      </DialogTrigger>
-      <DialogContent className="w-full max-h-[80vh] overflow-y-auto flex flex-col gap-2 font-sans">
-        <DialogHeader>
-          <DialogTitle>Get from a platform</DialogTitle>
-        </DialogHeader>
-        <Button className="w-full" onClick={() => router.push('/search')}>Search for a character</Button>
-        <hr />
-        <Input value={linkChar} onChange={(e) => setLinkChar(e.target.value)} placeholder="Character link..." />
-        <div className="flex justify-items-center items-center gap-4">
-          <Button onClick={() => getChubaiInfo()}>Get from chub.ai</Button>
-        </div>
-	        <Accordion type="single" collapsible className="w-full">
-	          <AccordionItem value="item-1">
-	            <AccordionTrigger>Get from other platforms</AccordionTrigger>
-	            <AccordionContent>
-	              <div className="py-2 flex flex-col gap-2">
-	                <p>PalMirror cannot automatically get characters from other platforms for you.</p>
-	                <p>However, you can get them yourself and get the PalMirror Experience variant for the character you want.</p>
-                <div className="p-4 rounded-xl border flex flex-col gap-4">
-                  <div>
-                    <h2 className="text-lg font-bold">Step 1</h2>
-                    <p>Copy this script below.</p>
-                    <div className="flex gap-2 mt-2">
-                      <code className="p-2 border rounded-md w-full overflow-hidden whitespace-nowrap text-ellipsis">const charUrl=window.location.href,platform=window.location.hostname,sc...</code>
-                      <Button onClick={() => { navigator.clipboard.writeText(charPalExpScript); toast.success("Script copied.") }}>Copy</Button>
-                    </div>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold">Step 2</h2>
-                    <p>Go to the character page you want to convert to a PLExperience character.</p>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold">Step 3</h2>
-                    In the address bar, clear out the input and type in <b className="font-bold p-2 rounded-sm border">javascript:</b>, then paste the script.
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold">Step 4</h2>
-                    Do <span className="font-bold text-red-500">not</span> press Enter yet. Press the suggestion item that has a world/internet icon, something like: <Earth />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold">Step 5</h2>
-                    After a bit, the script should automatically create and download a .plmc file.<br />
-                    <p className="text-sm opacity-50">The script only supports only a few select platforms.</p>
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </DialogContent>
-    </Dialog>
-  );
-
-  const SetupCharacter = () => (
-    <Popover>
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button className="mx-auto">Setup character</Button>
-        </DialogTrigger>
-        <DialogContent className="w-auto max-h-[80vh] overflow-y-auto font-sans">
-          <DialogHeader>
-            <DialogTitle>Setup character</DialogTitle>
-            <div className="palmirror-exc rounded-lg p-3 !my-4">
-              <div className="flex justify-center items-center">
-                <h1 className="text-2xl !font-extrabold tracking-tight text-center w-full palmirror-exc-text">
-                  PalMirror Experience
-                </h1>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <CircleHelp />
-                  </Button>
-                </PopoverTrigger>
-              </div>
-              <div className="flex justify-center items-center gap-2 !mt-2">
-                <Button variant="palmirror" onClick={() => { router.push("/palexp/create") }}>Create</Button>
-                <Button variant="palmirror" onClick={() => { fileInputRef.current?.click(); }}>Import from file</Button>
-              </div>
-            </div>
-            <div className="py-4">
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="charName">Character name <span className="text-red-500">*</span></Label>
-                <Input id="charName" value={characterData.name} onChange={(e) => handleInputChange(e, 'name')} />
-              </div>
-            </div>
-            <div className="py-4">
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="charPersonality">Personality <span className="text-red-500">*</span></Label>
-                <Textarea id="charPersonality" value={characterData.personality} onChange={(e) => handleInputChange(e, 'personality')} />
-              </div>
-            </div>
-            <div className="py-4">
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="charInitialMessage">First message <span className="text-red-500">*</span></Label>
-                <Textarea id="charInitialMessage" value={characterData.initialMessage} onChange={(e) => handleInputChange(e, 'initialMessage')} />
-              </div>
-            </div>
-            <div className="py-4">
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="charScenario">Scenario</Label>
-                <Input id="charScenario" value={characterData.scenario} onChange={(e) => handleInputChange(e, 'scenario')} />
-              </div>
-            </div>
-            <Accordion type="single" collapsible className="w-full mb-4">
-              <AccordionItem value="item-1">
-                <AccordionTrigger>Your personality</AccordionTrigger>
-                <AccordionContent>
-                  <div className="py-4">
-                    <div className="grid w-full items-center gap-1.5">
-                      <Label htmlFor="userName">Your name</Label>
-                      <Input id="userName" value={characterData.userName} onChange={(e) => handleInputChange(e, 'userName')} />
-                    </div>
-                  </div>
-                  <div className="py-4">
-                    <div className="grid w-full items-center gap-1.5">
-                      <Label htmlFor="userPersonality">Your personality</Label>
-                      <Textarea id="userPersonality" value={characterData.userPersonality} onChange={(e) => handleInputChange(e, 'userPersonality')} />
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-            <Button className="w-80" onClick={startChat}>Start chat</Button>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-      <PopoverContent asChild className="z-[999999] min-w-80">
-        <p>PalMirror-exclusive characters with customizable traits and reactions. Adjust their emotions and status in real-time as they react to your changes, triggering sounds and effects. More features are being worked out for PalMirror Experience characters.</p>
-      </PopoverContent>
-    </Popover>
-  )
-
   useEffect(() => {
     isPalMirrorSecureActivated().then((activated) => {
       setIsSecureActivated(activated);
@@ -588,8 +604,19 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
           transition={{ type: 'spring', mass: 1, damping: 19, stiffness: 161 }}
           className="fixed bottom-0 translate-x-1/2 pb-7">
           <div className="flex items-center content-center justify-center gap-2 sm:gap-4 max-w-fit">
-            <GetFromPlatform />
-            <SetupCharacter />
+            <GetFromPlatform 
+              router={router} 
+              linkChar={linkChar} 
+              setLinkChar={setLinkChar} 
+              getChubaiInfo={getChubaiInfo} 
+            />
+            <SetupCharacter 
+              router={router} 
+              fileInputRef={fileInputRef} 
+              characterData={characterData} 
+              handleInputChange={handleInputChange} 
+              startChat={startChat} 
+            />
           </div>
         </motion.div>
       )}
@@ -629,8 +656,19 @@ function sortByLastUpdated(data: { [key: string]: any }[]): { [key: string]: any
               <AccordionTrigger></AccordionTrigger>
               <AccordionContent>
                 <div className="flex justify-items-center items-center gap-1 flex-col sm:flex-row sm:gap-4">
-                  <GetFromPlatform />
-                  <SetupCharacter />
+                  <GetFromPlatform 
+                    router={router} 
+                    linkChar={linkChar} 
+                    setLinkChar={setLinkChar} 
+                    getChubaiInfo={getChubaiInfo} 
+                  />
+                  <SetupCharacter 
+                    router={router} 
+                    fileInputRef={fileInputRef} 
+                    characterData={characterData} 
+                    handleInputChange={handleInputChange} 
+                    startChat={startChat} 
+                  />
                 </div>       
               </AccordionContent>
             </AccordionItem>
