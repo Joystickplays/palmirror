@@ -563,8 +563,10 @@ const ChatPage = () => {
 
           const chatData = await PLMSecContext.getSecureData(chatId);
           if (chatData) {
-            decodeMessages(chatData);
-            console.log("loaded chat")
+            setTimeout(() => {
+              decodeMessages(chatData);
+              console.log("loaded chat")
+            }, 500)
           }
         } else {
           setChatId(crypto.randomUUID())
