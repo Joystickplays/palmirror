@@ -114,55 +114,55 @@ function GetFromPlatform({
                       <h1 className="text-lg text-center font-bold">
                         Script disclaimer and terms
                       </h1>
-                      <p class="mb-4">
+                      <p className="mb-4">
                         PalMirror does not automatically fetch characters from
                         third-party platforms. However, users may manually
                         obtain character data using external scripts.
                       </p>
 
-                      <p class="mb-4">
+                      <p className="mb-4">
                         By using any provided script or method to obtain
                         characters, you agree to the following:
                       </p>
 
-                      <ul class="list-disc list-inside space-y-2">
+                      <ul className="list-disc list-inside space-y-2">
                         <li>
-                          <span class="font-semibold">Personal Use Only</span> –
+                          <span className="font-semibold">Personal Use Only</span> –
                           The script is provided solely for{" "}
-                          <span class="font-semibold">personal</span> use. You
+                          <span className="font-semibold">personal</span> use. You
                           may not use it for redistribution, commercial
                           purposes, or any activity that violates third-party
                           Terms of Service.
                         </li>
                         <li>
-                          <span class="font-semibold">No Affiliation</span> –
+                          <span className="font-semibold">No Affiliation</span> –
                           PalMirror is{" "}
-                          <span class="font-semibold">not affiliated with</span>
+                          <span className="font-semibold">not affiliated with</span>
                           , endorsed by, or associated with any third-party
                           platform from which characters may be imported.
                         </li>
                         <li>
-                          <span class="font-semibold">User Responsibility</span>{" "}
+                          <span className="font-semibold">User Responsibility</span>{" "}
                           – PalMirror{" "}
-                          <span class="font-semibold">
+                          <span className="font-semibold">
                             does not run or execute
                           </span>{" "}
                           any script on your behalf. The decision to use such
                           tools is entirely{" "}
-                          <span class="font-semibold">yours</span>, and you
+                          <span className="font-semibold">yours</span>, and you
                           assume{" "}
-                          <span class="font-semibold">full responsibility</span>{" "}
+                          <span className="font-semibold">full responsibility</span>{" "}
                           for any consequences.
                         </li>
                         <li>
-                          <span class="font-semibold">No Liability</span> –
+                          <span className="font-semibold">No Liability</span> –
                           PalMirror and GoTeam Studios{" "}
-                          <span class="font-semibold">are not responsible</span>{" "}
+                          <span className="font-semibold">are not responsible</span>{" "}
                           for any damages, loss of access, or penalties
                           resulting from the use of this script.
                         </li>
                         <li>
-                          <span class="font-semibold">
+                          <span className="font-semibold">
                             Compliance with Laws
                           </span>{" "}
                           – You agree to comply with all applicable laws and
@@ -171,10 +171,10 @@ function GetFromPlatform({
                         </li>
                       </ul>
 
-                      <p class="mt-4">
+                      <p className="mt-4">
                         By proceeding, you acknowledge that you understand and
                         accept these terms. If you do not agree,{" "}
-                        <span class="font-semibold">
+                        <span className="font-semibold">
                           do not use the script.
                         </span>
                       </p>
