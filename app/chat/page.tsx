@@ -36,6 +36,7 @@ const ChatPage = () => {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>>([]);
   const [characterData, setCharacterData] = useState<CharacterData>(defaultCharacterData);
   const [chatId, setChatId] = useState('');
+  const [loaded, setLoaded] = useState(false);
 
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -563,10 +564,11 @@ const ChatPage = () => {
 
           const chatData = await PLMSecContext.getSecureData(chatId);
           if (chatData) {
-            setTimeout(() => {
+            //setTimeout(() => {
               decodeMessages(chatData);
               console.log("loaded chat")
-            }, 500)
+              setLoaded(true);
+            //}, 500)
           }
         } else {
           setChatId(crypto.randomUUID())
@@ -645,7 +647,7 @@ const ChatPage = () => {
       />
       <motion.div
       initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
-      animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+      animate={loaded ? { opacity: 1, scale: 1, filter: 'blur(0px)' } : false}
       transition={{ type: 'spring', mass: 1, damping: 25, stiffness: 161, filter: { type: 'spring', mass: 1, damping: 38, stiffness: 161 } }}
       className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
         <ChatHeader characterData={characterData} getExportedMessages={() => { encodeMessages(false); }} importMessages={openFilePicker} />

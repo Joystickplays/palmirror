@@ -14,11 +14,6 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-  InnerDialog,
-  InnerDialogContent,
-  InnerDialogHeader,
-  InnerDialogTitle,
-  InnerDialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -149,10 +144,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
 
   const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    if (!alreadyEncrypted) {
-      setShowSecureDialog(true);
-      return;
-    }
+    //if (!alreadyEncrypted) {
+    //  setShowSecureDialog(true);
+    //  return;
+    //}
     setApiKey(value);
     
     setInputChangedYet(true);
@@ -265,19 +260,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                     id="Proxy_apiKey"
                     value={apiKey}
                     onChange={handleApiKeyChange}
+                    disabled={!alreadyEncrypted}
                     type="password"
                   />
-                  <InnerDialog open={showSecureDialog} onOpenChange={setShowSecureDialog}>
-                    <InnerDialogContent className="font-sans">
-                      <InnerDialogHeader>
-                        <InnerDialogTitle>Use PalMirror Secure</InnerDialogTitle>
-                      </InnerDialogHeader>
-                      <p>We value your privacy and security in PalMirror. If your API needs an API Key, setup PalMirror Secure so we can encrypt it for you.</p>
-                      <div className="flex gap-2 mt-2 justify-content-center">
-                        <Button className="w-full" onClick={() => router.push('/secure')}>Setup PalMirror Secure</Button>
-                      </div>
-                    </InnerDialogContent>
-                  </InnerDialog>
+                  {!alreadyEncrypted && (
+                  <div className="flex flex-col gap-2 mt-2 border rounded-xl p-4">
+                    <p>To use your API Keys, please setup PalMirror Secure for secure encryption. </p> <Button onClick={() => router.push('/secure')}>Setup PalMirror Secure</Button>
+                  </div>
+                  )}
                 </div>
                 <div className="grid w-full items-center gap-1.5">
                   <Label htmlFor="Proxy_modelName">Model Name</Label>

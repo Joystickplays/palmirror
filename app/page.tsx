@@ -64,7 +64,7 @@ function GetFromPlatform({
         <Button>Get from a platform</Button>
       </DialogTrigger>
       <DialogContent className="w-full max-h-[80vh] overflow-y-auto flex flex-col gap-2 font-sans">
-        <DialogHeader>
+        <DialogHeader className="mb-2">
           <DialogTitle>Get from a platform</DialogTitle>
         </DialogHeader>
         <Button className="w-full" onClick={() => router.push("/search")}>
