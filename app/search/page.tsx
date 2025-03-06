@@ -9,7 +9,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AnimatePresence, motion } from 'motion/react';
-
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
 
 
 export default function Search() {
@@ -112,17 +116,43 @@ export default function Search() {
       }
     );
   };
-  const handleSearch = async (page = 1) => {
-    if (!searchQuery) {
+
+  const extractTags = (input: string): { exclusion: string; inclusion: string; clean: string } => {
+    const exclusion: string[] = [];
+    const inclusion: string[] = [];
+    
+    const words = input.split(/\s+/);
+    const cleanWords = words.filter(word => {
+        if (word.startsWith('-')) {
+            exclusion.push(word.slice(1));
+            return false;
+        } else if (word.startsWith('+')) {
+            inclusion.push(word.slice(1));
+            return false;
+        }
+        return true;
+    });
+
+    return {
+        exclusion: exclusion.join(','),
+        inclusion: inclusion.join(','),
+        clean: cleanWords.join(' ')
+    };
+  }
+
+  const handleSearch = async (page = 1, initial?: boolean) => {
+    if (!initial && !searchQuery) {
       toast.error('Please enter a search query.');
       return;
     }
+
+    const extractedTags = extractTags(searchQuery)
 
     setLoading(true);
     try {
       window.scrollTo(0, 0); // Scroll to the top
       const fetchPromises = apiProviders.map(provider =>
-        fetch(provider.query(searchQuery, page, exclusionTopic)).then(response => {
+        fetch(provider.query(extractedTags.clean || "", page, (initial ? "NSFW,RPG" : exclusionTopic + (exclusionTopic === "" ? "" : ",") + extractedTags.exclusion), (initial ? "SFW,Male,NovelAI" : extractedTags.inclusion))).then(response => {
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -145,11 +175,14 @@ export default function Search() {
 
   const apiProviders = [
     {
-      query: (searchQuery: string, page: number, exclusion: string) => `https://api.chub.ai/search?excludetopics=${exclusion}&first=20&page=${page}&namespace=*&search=${encodeURIComponent(searchQuery)}&include_forks=true&nsfw=true&nsfw_only=false&require_custom_prompt=false&require_example_dialogues=false&require_images=false&require_expressions=false&nsfl=true&asc=false&min_ai_rating=0&min_tokens=50&max_tokens=100000&chub=true&require_lore=false&exclude_mine=true&require_lore_embedded=false&require_lore_linked=false&sort=default&topics=&inclusive_or=false&recommended_verified=false&require_alternate_greetings=false&venus=true&count=false`,
+      query: (searchQuery: string, page: number, exclusion: string, inclusion?: string) => `https://api.chub.ai/search?excludetopics=${exclusion}&first=20&page=${page}&namespace=*&search=${encodeURIComponent(searchQuery)}&include_forks=true&nsfw=true&nsfw_only=false&require_custom_prompt=false&require_example_dialogues=false&require_images=false&require_expressions=false&nsfl=true&asc=false&min_ai_rating=0&min_tokens=50&max_tokens=100000&chub=true&require_lore=false&exclude_mine=true&require_lore_embedded=false&require_lore_linked=false&sort=default&topics=${inclusion || ''}&inclusive_or=false&recommended_verified=false&require_alternate_greetings=false&venus=true&count=false`,
       processor: (data: any) => data.data.nodes.map((item: any) => ({ provider: 'chub.ai', image: item.avatar_url, name: item.name, description: item.tagline, tags: item.topics, charLink: `https://chub.ai/characters/${item.fullPath}` }))
     },
   ];
   
+  useEffect(() => {
+    handleSearch(1, true)
+  }, [])
 
   return (
     <div className="flex flex-col gap-6 min-h-screen px-8 lg:px-48 pb-20 p-8 sm:p-10 font-[family-name:var(--font-geist-sans)]">
@@ -170,7 +203,25 @@ export default function Search() {
           <Checkbox checked={excludeNSFW} onCheckedChange={(ch) => {setExcludeNSFW(ch === true); if (ch) { setExclusionTopic("NSFW")} else { setExclusionTopic("") }}}/>
           <p>Exclude NSFW</p>
         </div>
-        <p className="text-xs opacity-50">Search engine and content by <a href="https://chub.ai">chub.ai</a></p>
+        <div className="flex justify-between">
+          <p className="text-xs opacity-50">Search engine and content by <a href="https://chub.ai">chub.ai</a></p>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="p-1 px-2  h-6 text-xs">Search tips</Button>
+            </PopoverTrigger>
+          <PopoverContent asChild>
+            <div className="font-sans flex flex-col gap-2">
+              <p>Use + to require tags and - to exclude tags from your search results.</p>
+              <hr />
+              
+              <div className="border rounded-xl p-2 w-full text-sm">
+                Knight +Male +Fantasy -Female
+              </div>
+              <p className="text-xs opacity-70 border-l-4 border-gray-500 pl-2 ml-2">{"Finds results containing 'Knight' while ensuring they have the 'Male' and 'Fantasy' tags. Results with the 'Female' tag will be excluded."}</p>
+            </div>
+          </PopoverContent>          
+          </Popover>
+        </div>
       </div>
       <div className="h-screen">
         <AnimatePresence mode="popLayout">
