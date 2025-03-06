@@ -572,7 +572,10 @@ const ChatPage = () => {
           }
         } else {
           setChatId(crypto.randomUUID())
+          setLoaded(true);
         }
+      } else {
+        setLoaded(true);
       }
     }
     load();
