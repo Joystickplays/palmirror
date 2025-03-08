@@ -761,9 +761,12 @@ export default function Home() {
   }, [isSecureReady]);
 
   const handleKeyPressPin = (key: string) => {
+    const secureMetadata = localStorage.getItem("secureMetadata");
+    const secureLength = secureMetadata ? JSON.parse(secureMetadata).length : 0;
+
     if (key === "⌫") {
       setPLMSecurePass((prev) => prev.slice(0, -1));
-    } else if (PLMSecurePass.length < JSON.parse(localStorage.getItem("secureMetadata")).length) {
+    } else if (PLMSecurePass.length < secureLength) {
       setPLMSecurePass((prev) => prev + key);
     } else {
 //      PLMSecureAttemptUnlock();
