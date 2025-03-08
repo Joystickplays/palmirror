@@ -823,7 +823,7 @@ export default function Home() {
               <div className="flex gap-2 w-full max-w-screen-sm">
                 {localStorage.getItem("secureMetadata") ? (
                   <div className="w-full">
-                    <PinDisplay input={PLMSecurePass} />
+                    <PinDisplay input={PLMSecurePass} show={false} />
                     <Keypad onKeyPress={handleKeyPressPin}/>
                   </div>
                 ) : (
