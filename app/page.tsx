@@ -774,7 +774,9 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (localStorage.getItem("secureMetadata") && PLMSecurePass.length === JSON.parse(localStorage.getItem("secureMetadata")).length) {    
+    const secureMetadata = localStorage.getItem("secureMetadata");
+    const secureLength = secureMetadata ? JSON.parse(secureMetadata).length : 0;
+    if (localStorage.getItem("secureMetadata") && PLMSecurePass.length === secureLength) {    
       setTimeout(PLMSecureAttemptUnlock, 200);
     }
   }, [PLMSecurePass])
