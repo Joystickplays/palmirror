@@ -9,6 +9,9 @@ import { ToastContainer, toast } from "react-toastify";
 import { CircleHelp, ArrowRight, Trash2, Earth } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 
+import Keypad from "@/components/Keypad";
+import PinDisplay from "@/components/PINDisplay";
+
 import { AnimatePresence, motion } from "motion/react";
 
 import pako from "pako";
@@ -127,22 +130,28 @@ function GetFromPlatform({
 
                       <ul className="list-disc list-inside space-y-2">
                         <li>
-                          <span className="font-semibold">Personal Use Only</span> –
-                          The script is provided solely for{" "}
-                          <span className="font-semibold">personal</span> use. You
-                          may not use it for redistribution, commercial
+                          <span className="font-semibold">
+                            Personal Use Only
+                          </span>{" "}
+                          – The script is provided solely for{" "}
+                          <span className="font-semibold">personal</span> use.
+                          You may not use it for redistribution, commercial
                           purposes, or any activity that violates third-party
                           Terms of Service.
                         </li>
                         <li>
-                          <span className="font-semibold">No Affiliation</span> –
-                          PalMirror is{" "}
-                          <span className="font-semibold">not affiliated with</span>
+                          <span className="font-semibold">No Affiliation</span>{" "}
+                          – PalMirror is{" "}
+                          <span className="font-semibold">
+                            not affiliated with
+                          </span>
                           , endorsed by, or associated with any third-party
                           platform from which characters may be imported.
                         </li>
                         <li>
-                          <span className="font-semibold">User Responsibility</span>{" "}
+                          <span className="font-semibold">
+                            User Responsibility
+                          </span>{" "}
                           – PalMirror{" "}
                           <span className="font-semibold">
                             does not run or execute
@@ -151,13 +160,17 @@ function GetFromPlatform({
                           tools is entirely{" "}
                           <span className="font-semibold">yours</span>, and you
                           assume{" "}
-                          <span className="font-semibold">full responsibility</span>{" "}
+                          <span className="font-semibold">
+                            full responsibility
+                          </span>{" "}
                           for any consequences.
                         </li>
                         <li>
                           <span className="font-semibold">No Liability</span> –
                           PalMirror and GoTeam Studios{" "}
-                          <span className="font-semibold">are not responsible</span>{" "}
+                          <span className="font-semibold">
+                            are not responsible
+                          </span>{" "}
                           for any damages, loss of access, or penalties
                           resulting from the use of this script.
                         </li>
@@ -747,6 +760,22 @@ export default function Home() {
     refreshChatList();
   }, [isSecureReady]);
 
+  const handleKeyPressPin = (key: string) => {
+    if (key === "⌫") {
+      setPLMSecurePass((prev) => prev.slice(0, -1));
+    } else if (PLMSecurePass.length < JSON.parse(localStorage.getItem("secureMetadata")).length) {
+      setPLMSecurePass((prev) => prev + key);
+    } else {
+//      PLMSecureAttemptUnlock();
+    }
+  };
+
+  useEffect(() => {
+    if (localStorage.getItem("secureMetadata") && PLMSecurePass.length === JSON.parse(localStorage.getItem("secureMetadata")).length) {    
+      setTimeout(PLMSecureAttemptUnlock, 200);
+    }
+  }, [PLMSecurePass])
+
   return isSecureActivated ? (
     <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
       <div className="w-full">
@@ -787,24 +816,32 @@ export default function Home() {
               <p>PalMirror Secure is active and encrypted.</p>
               <hr className="!m-2 w-full max-w-screen-sm h-px" />
               <div className="flex gap-2 w-full max-w-screen-sm">
-                <Input
-                  value={PLMSecurePass}
-                  onChange={(e) => setPLMSecurePass(e.target.value)}
-                  onKeyDown={(
-                    e: React.KeyboardEvent<HTMLInputElement> | null,
-                  ) => {
-                    if (e && e.key === "Enter") {
-                      PLMSecureAttemptUnlock();
-                    }
-                  }}
-                  type="password"
-                  className="flex-grow"
-                />
-                <Button onClick={PLMSecureAttemptUnlock}>Unlock</Button>
+                {localStorage.getItem("secureMetadata") ? (
+                  <div className="w-full">
+                    <PinDisplay input={PLMSecurePass} />
+                    <Keypad onKeyPress={handleKeyPressPin}/>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 w-full max-w-screen-sm">
+                    <Input
+                      value={PLMSecurePass}
+                      onChange={(e) => setPLMSecurePass(e.target.value)}
+                      onKeyDown={(
+                        e: React.KeyboardEvent<HTMLInputElement> | null,
+                      ) => {
+                        if (e && e.key === "Enter") {
+                          PLMSecureAttemptUnlock();
+                        }
+                      }}
+                      type="password"
+                      className="flex-grow"
+                    />
+                    <Button onClick={PLMSecureAttemptUnlock}>Unlock</Button>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
-
           {/* chats list */}
           {isSecureReady && (
             <motion.div
