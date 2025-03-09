@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@/components/theme-provider";
 import { PMThemeProvider } from "@/components/PalMirrorThemeProvider";
 import { PLMSecureProvider } from "@/context/PLMSecureContext";
+import { WebAuthnProvider } from "@/context/PLMSecureWebAuthnContext";
 // import { AnimatePresence, motion } from 'framer-motion';
 
 import type { Metadata } from "next";
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <WebAuthnProvider>
         <PLMSecureProvider>
           <PMThemeProvider>
             <ThemeProvider attribute="class" defaultTheme="dark">
@@ -60,6 +62,7 @@ export default function RootLayout({
             </ThemeProvider>
           </PMThemeProvider>
         </PLMSecureProvider>
+        </WebAuthnProvider>
       </body>
     </html>
   );
