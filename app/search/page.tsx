@@ -15,6 +15,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 
+import AutoScrollContainer from '@/components/AutoScroll';
 
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -251,20 +252,27 @@ export default function Search() {
                       transition={{ delay: index * 0.1, type: "spring", mass: 1, damping: 15, stiffness: 80 }}
                       className="rounded-lg border shadow-md p-4 flex justify-between flex-col gap-4"
                     >
+                      {/* <div className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 w-8 h-4 rounded border bg-black"></div> */}
+
                       <div className="flex flex-col items-center gap-4">
-                        <img src={result.image} alt={result.name} className="w-full h-24 rounded-xl object-cover object-[50%_10%]" />
+                        <img src={result.image} alt={result.name}
+                        className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-44 rounded-lg object-cover object-[50%_10%] z-[-5]"
+                        style={{ maskImage: 'linear-gradient(to bottom, rgba(0, 0, 0, 1), transparent)' }} />
+                        <div className="h-24"></div>
                         <div className="w-full">
                           <h2 className="text-lg font-semibold">{result.name}</h2>
                           <p className="text-sm text-gray-500">{result.description}</p>
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <div className="flex gap-2 overflow-hidden">
+                        <AutoScrollContainer speed={0.5}>
+                        <div className="flex gap-2">
                           {result.tags.map((tag: string) => (
                             <span key={tag} className="px-2 py-1 border text-gray-500 text-xs rounded-md whitespace-nowrap"><p className="m-0 p-0">{tag}</p></span>
                           ))}
                         </div>
-                        <Button variant="outline" className="w-full" onClick={() => getChubaiInfo(result.charLink)}>New chat with them</Button>
+                        </AutoScrollContainer>
+                        <Button variant="outline" className="w-full" onClick={() => getChubaiInfo(result.charLink)}>New chat</Button>
                       </div>
                     </motion.div>
                   ))}

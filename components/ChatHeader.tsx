@@ -16,6 +16,14 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -181,24 +189,27 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
 
   return (
     <Card>
-      <CardContent className={`flex relative justify-between items-center p-5 w-full ${currentTheme.bg}`}>
+    <Drawer repositionInputs={false} direction={"right"}>
+
+      <CardContent className={`flex relative justify-between items-center p-5 w-full ${currentTheme.bg} overflow-hidden rounded-lg`}>
 
         {characterData.image !== "" && (
           <img src={characterData.image !== "" ? characterData.image : undefined}
           style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 0.3), transparent)' }}
-          className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full object-cover rounded-lg" />
+          className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full object-cover rounded-lg object-[50%_35%] blur-[3px] hover:blur-none active:blur-none scale-110 hover:scale-100 active:scale-100 transition duration-300 ease-out" />
         )}
         <div className="flex gap-1 flex-col">
           <h2 className="z-[2]"><span className="font-bold">{characterData.name}</span></h2>
           <p className="text-xs font-bold opacity-50">On PalMirror</p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
+          <DrawerTrigger asChild>
             <Button variant="outline" className={`p-3 size-8 z-[2] ${currentTheme.assistantBg}`}><Settings /></Button>
-          </DialogTrigger>
-          <DialogContent className={`w-auto max-h-[80vh] min-w-96 overflow-y-auto font-sans ${showSecureDialog && "blur-sm"}`}>
-            <DialogHeader>
-              <DialogTitle className="mb-8">Chat settings</DialogTitle>
+          </DrawerTrigger>
+          <DrawerContent className={`w-auto max-h-[88vh] sm:max-h-auto ml-10 sm:ml-3 mr-3 mb-4 rounded-xl max-w-screen overflow-y-hidden overflow-x-hidden font-sans ${showSecureDialog && "blur-sm"}`}
+          style={{ '--initial-transform': 'calc(100% + 16px)' } as React.CSSProperties}>
+            <div className="overflow-y-auto overflow-x-hidden">
+            <DrawerHeader>
+              <DrawerTitle className="mb-8">Chat settings</DrawerTitle>
               <h2 className="my-4 font-bold">AI Provider settings</h2>
               <div className="py-4 flex flex-col gap-2">
                 <div className="grid w-full items-center gap-1.5">
@@ -241,12 +252,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                   {showRecommendations && selectedProvider === "PalAI" && (
                     <Card className="mt-4">
                       <CardContent className="font-sans p-3">
-                        <p>PalAI is a proprietary PalMirror AI provider and the default, using OpenRouter to give you access to flagship, openweight models for free. Thanks to <a href="https://hostedon.mochig.com" target="_blank" className="text-blue-300 underline">Mochig</a> for hosting!</p>
+                        <p>PalAI is the proprietary PalMirror AI provider and the default, using OpenRouter to give you access to flagship, openweight models for free. Thanks to <a href="https://hostedon.mochig.com" target="_blank" className="text-blue-300 underline">Mochig</a> for hosting!</p>
                         <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
                           <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Made for PalMirror</p>
-                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Does <b>NOT</b> require an API key</p>
-                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Does <b>NOT</b> log your responses</p>
-                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Selection of high-quality, openweight models</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /><b>No</b> API Keys</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /><b>No</b> response logging</p>
+                          <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Flagship openweight models</p>
                           <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Uncensored most of the time</p>
                         </div>
                         <Button onClick={() => { handleBaseURLChange("https://cvai.mhi.im/v1"); handleProviderSelect(""); }}>Use this provider as base URL</Button>
@@ -311,10 +322,11 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                   <SelectItem value="cai">c.ai</SelectItem>
                 </SelectContent>
               </Select>
-            </DialogHeader>
-          </DialogContent>
-        </Dialog>
+            </DrawerHeader>
+            </div>
+          </DrawerContent>
       </CardContent>
+        </Drawer>
     </Card>
   );
 };

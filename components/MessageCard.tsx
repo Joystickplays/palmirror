@@ -18,6 +18,15 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+
+import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
@@ -102,6 +111,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [changingStatusValue, setChangingStatusValue] = useState("");
   const [changingStatusCharReacts, setChangingStatusCharReacts] = useState(false);
   const [changingStatusReason, setChangingStatusReason] = useState("");
+
+  const [showAltDrawer, setShowAltDrawer] = useState(false);
 
   const [canRegenerate, setCanRegenerate] = useState(false);
 
@@ -254,7 +265,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
     return processedContent
   }
 
-
+  useEffect(() => {
+    document.body.style.removeProperty("pointer-events");
+  }, [showAltDrawer])
+ 
   useEffect(() => {
     try {
     setStatuses(extractStatusData(content));
@@ -423,11 +437,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
       <animated.p className={`${role === "user" ? "ml-auto" : "mr-auto"} opacity-50`} style={{ fontSize: fontSize.to(s => `${s / 1.5}rem`) }}>
         {role === "user" ? `${currentTheme.showUserName ? characterData.userName || "Y/N" : ""}` : characterData.name || "Character"}
       </animated.p>
-      <Dialog> {/* Alternate messages dialog */}
-
-        <DialogContent className="w-auto max-h-[80vh] max-w-[100vw] min-w-[90vw] overflow-y-auto font-sans">
-          <DialogHeader>
-            <DialogTitle className="mb-8">Choose an alternate initial message</DialogTitle>
+      <Drawer  open={showAltDrawer}  onOpenChange={(open) => { setShowAltDrawer(open) }} > {/* Alternate messages Drawer */}
+         <DrawerContent className="w-auto max-h-[80vh] max-w-[100vw] min-w-[90vw] font-sans">
+          <div className="overflow-y-auto">
+          <DrawerHeader>
+            <DrawerTitle className="mb-8">Choose an alternate initial message</DrawerTitle>
             {/* <Select>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Choose an alternate initial message" />
@@ -441,7 +455,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                     <ReactMarkdown className="markdown-content">
                       {rpTextRender(message)}
                     </ReactMarkdown>
-                    <DialogClose asChild>
+                    <DrawerClose asChild>
                       <Button onClick={() => {
                         editMessage(0, message);
                         setInvocationHolder("");
@@ -449,21 +463,23 @@ const MessageCard: React.FC<MessageCardProps> = ({
                         setSeenInvocations([]);
                         setIsEditing(false);
                       }} className="mt-5 w-full">Use</Button>
-                    </DialogClose>
+                    </DrawerClose>
                   </CardContent>
                 </Card>
               );
             })}
             {/* </SelectContent>
             </Select> */}
-          </DialogHeader>
-        </DialogContent>
+          </DrawerHeader>
+         </div>
+        </DrawerContent>
+      </Drawer>
         <ContextMenu>
           <ContextMenuTrigger asChild>
           <div>
             <Card
               {...bind()}
-              className={`rounded-xl sm:max-w-lg max-w-full border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
+              className={`rounded-xl sm:max-w-lg max-w-full w-fit border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
                 ? `${currentTheme.userBg} ml-auto rounded-br-md text-end`
                 : `${currentTheme.assistantBg} mr-auto rounded-bl-md`
                 } ${isEditing ? "w-full" : ""}`}
@@ -497,7 +513,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
               layout
               className="flex flex-row gap-1 w-full mt-1 px-1 origin-top-left">
                 <MotionButton onClick={triggerRegenerate} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><RotateCw className="h-3 opacity-50" /></MotionButton>    
-                <MotionButton onClick={startEditing} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><Pencil className="h-3 opacity-50" /></MotionButton>    
+                <MotionButton onClick=startEditing} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><Pencil className="h-3 opacity-50" /></MotionButton>    
               </motion.div>
               )}
             </AnimatePresence> */}
@@ -505,18 +521,16 @@ const MessageCard: React.FC<MessageCardProps> = ({
           </ContextMenuTrigger>
           <ContextMenuContent className="w-64 font-sans font-semibold">
             {isGreetingMessage && characterData.alternateInitialMessages && (
-              <DialogTrigger asChild>
-                <ContextMenuItem asChild>
+                <ContextMenuItem onClick={() => setShowAltDrawer(true)} asChild>
                   <span className="flex items-center gap-2">
                     <MessagesSquare className="h-4 w-4" />
                     Choose an alternate initial message
                   </span>
                 </ContextMenuItem>
-              </DialogTrigger>
 
 
             )}
-            <ContextMenuItem onClick={() => rewindTo(index)} disabled={stillGenerating} asChild>
+           <ContextMenuItem onClick={() => rewindTo(index)} disabled={stillGenerating} asChild>
               <span className="flex items-center gap-2">
                 <Rewind className="h-4 w-4" />
                 Rewind to here
@@ -530,7 +544,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
-      </Dialog>
+
     </animated.div >
   );
 };
