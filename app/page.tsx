@@ -818,7 +818,7 @@ export default function Home() {
               }}
               className="w-full"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 flex-grow w-full justify-center items-start ">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow w-full justify-center items-start ">
                 <AnimatePresence mode="popLayout">
                   {chatList.length > 0 ? (
                     sortByLastUpdated(chatList).map((chat, index) => (
@@ -837,11 +837,12 @@ export default function Home() {
                         }}
                         exit={{ opacity: 0, scale: 0.5 }}
                         transition={{
-                          delay: index * 0.1,
+                          delay: index * 0.05,
                           type: "spring",
                           mass: 1,
-                          damping: 23,
+                          damping: 27,
                           stiffness: 161,
+                          restDelta: 0.001,
                           y: {
                             type: "spring",
                             mass: 1,
@@ -853,12 +854,15 @@ export default function Home() {
                         className="flex flex-col gap-1.5 p-6 border rounded-xl h-full"
                       >
                         {chat.image && (
+                          <div>
                           <img
                             src={chat.image}
-                            className="w-full h-24 rounded-xl object-cover"
+                            className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-[200px] h-full rounded-xl object-cover object-[50%_30%] pointer-events-none"
+                            style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 1), transparent)' }}
                           />
+                          </div>
                         )}
-                        <h2 className="font-bold">{chat.name}</h2>
+                        <h2 className="font-bold ml-auto">{chat.name}</h2>
                         <p className="opacity-70 ml-auto text-xs">
                           {formatDateWithLocale(chat.lastUpdated)}
                         </p>
