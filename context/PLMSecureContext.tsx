@@ -20,7 +20,7 @@ interface PLMSecureContextProps {
   removeKey: (key: string) => Promise<void>;
 
   registerCredential: (password: string) => Promise<void>;
-  authenticateCredential: () => Promise<void>;
+  authenticateCredential: () => Promise<ArrayBuffer>;
   resetCredential: () => Promise<void>;
 }
 
@@ -66,7 +66,7 @@ const MergedProviderContent: React.FC<MergedProviderContentProps> = ({
     await registerUser(password);
   };
 
-  const authenticateCredential = async (): Promise<void> => {
+  const authenticateCredential = async (): Promise<ArrayBuffer> => {
     return await authenticate();
   };
 
