@@ -19,7 +19,7 @@ interface PLMSecureContextProps {
   isSecureReady: () => boolean;
   removeKey: (key: string) => Promise<void>;
 
-  registerCredential: (primaryKey?: string) => Promise<void>;
+  registerCredential: (password: string) => Promise<void>;
   authenticateCredential: () => Promise<void>;
   resetCredential: () => Promise<void>;
 }
