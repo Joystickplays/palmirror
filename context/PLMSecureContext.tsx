@@ -61,7 +61,7 @@ const MergedProviderContent: React.FC<MergedProviderContentProps> = ({
 }) => {
   const { registerUser, authenticate, deleteCredential } = useAuth();
 
-  const registerCredential = async (password): Promise<void> => {
+  const registerCredential = async (password: string): Promise<void> => {
    // if (!isReady) { throw new Error("Haven't properly authenticated yet.") }
     await registerUser(password);
   };
