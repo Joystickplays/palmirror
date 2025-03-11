@@ -202,6 +202,8 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ----- Registration Flow -----
   const registerUser = async (primaryKeyInput?: string): Promise<void> => {
+    const encoder = new TextEncoder();
+
     // Create a challenge for WebAuthn.
     const challenge = generateRandomBuffer(32);
 
@@ -238,7 +240,6 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const salt = generateRandomBuffer(16);
       const derivedKey = await deriveKey(credentialIdHex, salt);
-      const encoder = new TextEncoder();
       const keyToEncrypt = primaryKeyInput
         ? encoder.encode(primaryKeyInput)
         : generateRandomBuffer(32);
@@ -298,6 +299,7 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       setDecryptedPrimaryKey(new Uint8Array(decryptedBuffer));
       setIsAuthenticated(true);
+      return decryptedBuffer
     } catch (err) {
       console.error("Authentication error:", err);
       throw err;
