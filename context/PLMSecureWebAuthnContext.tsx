@@ -266,7 +266,7 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // ----- Authentication Flow -----
-  const authenticate = async (): Promise<void> => {
+  const authenticate = async (): Promise<ArrayBuffer> => {
     if (!credential) {
       throw new Error("No registered credential found");
     }
