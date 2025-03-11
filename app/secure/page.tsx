@@ -18,6 +18,15 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerFooter,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 import {
   Accordion,
@@ -50,10 +59,11 @@ export default function Home() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pin, setPin] = useState("");
   const [showPin, setShowPin] = useState(false);
-  
+
   const [selectedMethod, setSelectedMethod] = useState("password");
 
   const [alreadyEncrypted, setAlreadyEncrypted] = useState(false);
+  const [showCompleteDrawer, setShowCompleteDrawer] = useState(false);
 
   const handleKeyPressPin = (key: string) => {
     if (key === "⌫") {
@@ -88,10 +98,14 @@ export default function Home() {
         selectedMethod === "password" ? password : pin,
       );
       if (selectedMethod === "pin") {
-        localStorage.setItem("secureMetadata", JSON.stringify({ type: selectedMethod, length: pin.length }))
+        localStorage.setItem(
+          "secureMetadata",
+          JSON.stringify({ type: selectedMethod, length: pin.length }),
+        );
       }
-      toast.success("Setup successful!");
+      //toast.success("Setup successful!");
       setAlreadyEncrypted(true);
+      setShowCompleteDrawer(true);
     } catch (error) {
       toast.error("Failed to setup PalMirror Secure...");
       console.log(error);
@@ -103,7 +117,7 @@ export default function Home() {
 
   const removePLMSecure = async () => {
     await indexedDB.deleteDatabase("PalMirrorSecure");
-    localStorage.removeItem("secureMetadata")
+    localStorage.removeItem("secureMetadata");
     setAlreadyEncrypted(false);
     toast.success("PalMirror Secure removed successfully!");
   };
@@ -139,7 +153,12 @@ export default function Home() {
             <DialogHeader>
               <DialogTitle>Setup PalMirror Secure</DialogTitle>
             </DialogHeader>
-            <Tabs defaultValue="password" className="block mx-auto w-full" value={selectedMethod} onValueChange={setSelectedMethod}>
+            <Tabs
+              defaultValue="password"
+              className="block mx-auto w-full"
+              value={selectedMethod}
+              onValueChange={setSelectedMethod}
+            >
               <TabsList className="w-full mb-2">
                 <TabsTrigger className="w-full" value="password">
                   Password
@@ -296,6 +315,34 @@ export default function Home() {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+      {/* Complete drawer  */}
+      <Drawer
+        open={showCompleteDrawer}
+        onOpenChange={(open) => setShowCompleteDrawer(open)}
+      >
+        <DrawerContent className="px-6 font-sans">
+          <DrawerHeader>
+            <DrawerTitle>PalMirror Secure is setup!</DrawerTitle>
+          </DrawerHeader>
+          <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', mass: 1, stiffness: 190, damping: 10, delay: 0.2 }}>
+            <Check size={128} className="block mx-auto" />
+          </motion.div>
+          <p>
+            PalMirror will now ask you to unlock every app open. You can setup
+            an optional <b>passkey</b> so you can unlock with{" "}
+            <b>your biometrics such as fingerprint.</b>
+          </p>
+          <DrawerFooter>
+            <Button>Setup Passkey</Button>
+            <DrawerClose>
+              <Button variant="outline">No thanks</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
       <ToastContainer
         position="top-right"
         autoClose={5000}

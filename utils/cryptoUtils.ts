@@ -33,6 +33,7 @@ const fromStringToCryptoKey = async (key: string): Promise<CryptoKey> => {
     );
 }
 
+
 export const encryptData = async (data: string, password: string | CryptoKey, salt: Uint8Array, iv: Uint8Array, passAsKey: boolean) => {
     const encoder = new TextEncoder();
     const dataBuffer = encoder.encode(data);
@@ -46,7 +47,7 @@ export const encryptData = async (data: string, password: string | CryptoKey, sa
 };
 
 export const decryptData = async (password: string | CryptoKey, data: { encryptedData: ArrayBuffer }, salt: Uint8Array, iv: Uint8Array, passAsKey: boolean) => {
-    const key = passAsKey ? password as CryptoKey : await deriveKey(password as string, salt);
+    const key = passAsKey ? password as CryptoKey : (await deriveKey(password as string, salt))
     const decryptedData = await window.crypto.subtle.decrypt(
         { name: 'AES-GCM', iv: iv },
         key,
