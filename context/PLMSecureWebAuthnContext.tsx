@@ -16,7 +16,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   credential?: Credential;
   registerUser: (primaryKey?: string) => Promise<void>;
-  authenticate: () => Promise<void>;
+  authenticate: () => Promise<ArrayBuffer>;
   logout: () => void;
   deleteCredential: () => Promise<void>;
   decryptedPrimaryKey?: Uint8Array;
