@@ -669,10 +669,10 @@ export default function Home() {
     );
   };
 
-  const PLMSecureAttemptUnlock = () => {
+  const PLMSecureAttemptUnlock = (key?: string) => {
     toast.promise(
       new Promise<void>(async (resolve, reject) => {
-        const setKeySuccessful = await PLMsecureContext?.setKey(PLMSecurePass);
+        const setKeySuccessful = await PLMsecureContext?.setKey(key ?? PLMSecurePass);
         setPLMSecurePass("");
         if (!setKeySuccessful) {
           reject();
@@ -735,8 +735,7 @@ export default function Home() {
           console.log("PLM Secure - Attempting passkey authentication")
           const returnedKey = await PLMsecureContext?.authenticateCredential()
           const decoder = new TextDecoder('utf-8')
-          setPLMSecurePass(decoder.decode(returnedKey))
-          PLMSecureAttemptUnlock()
+          PLMSecureAttemptUnlock(decoder.decode(returnedKey))
         } catch (error) {
           console.error(error)
           toast.error("Passkey dialog cancelled?")
