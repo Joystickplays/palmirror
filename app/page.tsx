@@ -731,20 +731,20 @@ export default function Home() {
 
   useEffect(() => {
     const fun = async () => {
-      if (PLMsecureContext.hasCredential) {
+      if (PLMsecureContext?.hasCredential) {
         try {
-          const returnedKey = await PLMsecureContext.authenticateCredential()
-          await PLMsecureContext.setKey(returnedKey)
+          const returnedKey = await PLMsecureContext?.authenticateCredential()
+          await PLMsecureContext?.setKey(returnedKey)
         } catch (error) {}
       }    
     }
 
     fun()
-  }, [PLMsecureContext.hasCredential])
+  }, [PLMsecureContext?.hasCredential])
  
   useEffect(() => {
     if (PLMsecureContext) {
-      setIsSecureReady(PLMsecureContext.isSecureReady());
+      setIsSecureReady(PLMsecureContext?.isSecureReady());
     }
   }, []);
 
@@ -833,7 +833,7 @@ export default function Home() {
                 {tagline}
               </h1>
               <p>PalMirror Secure is active and encrypted.</p>
-              <Button onClick={PLMsecureContext.authenticateCredential}>Use passkey</Button>
+              <Button onClick={PLMsecureContext?.authenticateCredential}>Use passkey</Button>
               <hr className="!m-2 w-full max-w-screen-sm h-px" />
               <div className="flex gap-2 w-full max-w-screen-sm">
                 {localStorage.getItem("secureMetadata") ? (
