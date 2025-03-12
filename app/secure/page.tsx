@@ -133,7 +133,7 @@ export default function Home() {
   const verifyAndCreatePasskey = async () => {
     if (!await PLMsecureContext?.verifyKey(passkeyVerification)) { toast.error("Password is incorrect."); return; }
     try {
-      await PLMsecureContext.registerCredential(passkeyVerification)
+      await PLMsecureContext?.registerCredential(passkeyVerification)
       setShowPasskeySetupDrawer(false)
       setPasskeyVerification("")
       toast.success("Passkey setup successful! Try by going to your chat list.")
