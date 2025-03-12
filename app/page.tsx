@@ -725,9 +725,23 @@ export default function Home() {
     isPalMirrorSecureActivated().then((activated) => {
       setIsSecureActivated(activated);
       console.log(isSecureActivated);
+
     });
   }, []);
 
+  useEffect(() => {
+    const fun = async () => {
+      if (PLMsecureContext.hasCredential) {
+        try {
+          const returnedKey = await PLMsecureContext.authenticateCredential()
+          await PLMsecureContext.setKey(returnedKey)
+        } catch (error) {}
+      }    
+    }
+
+    fun()
+  }, [PLMsecureContext.hasCredential])
+ 
   useEffect(() => {
     if (PLMsecureContext) {
       setIsSecureReady(PLMsecureContext.isSecureReady());
@@ -819,6 +833,7 @@ export default function Home() {
                 {tagline}
               </h1>
               <p>PalMirror Secure is active and encrypted.</p>
+              <Button onClick={PLMsecureContext.authenticateCredential}>Use passkey</Button>
               <hr className="!m-2 w-full max-w-screen-sm h-px" />
               <div className="flex gap-2 w-full max-w-screen-sm">
                 {localStorage.getItem("secureMetadata") ? (
@@ -1033,7 +1048,7 @@ export default function Home() {
         <u>
           <a href="https://github.com/Joystickplays/palmirror">open-source</a>
         </u>{" "}
-        project by GoTeam
+        project by GoTeam Studios
       </p>
 
       <ToastContainer

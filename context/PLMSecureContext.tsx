@@ -13,6 +13,7 @@ import { WebAuthnProvider, useAuth } from '@/context/PLMSecureWebAuthnContext';
 
 interface PLMSecureContextProps {
   setKey: (password: string) => Promise<boolean>;
+  verifyKey: (password: string) => Promise<boolean>;
   setSecureData: (key: string, data: any) => Promise<void>;
   getSecureData: (key: string) => Promise<any>;
   getAllKeys: () => Promise<string[]>;
@@ -22,6 +23,7 @@ interface PLMSecureContextProps {
   registerCredential: (password: string) => Promise<void>;
   authenticateCredential: () => Promise<ArrayBuffer>;
   resetCredential: () => Promise<void>;
+  hasCredential: boolean;
 }
 
 export const PLMSecureContext = createContext<PLMSecureContextProps | undefined>(undefined);
@@ -59,10 +61,9 @@ const MergedProviderContent: React.FC<MergedProviderContentProps> = ({
   isReady,
   setIsReady,
 }) => {
-  const { registerUser, authenticate, deleteCredential } = useAuth();
+  const { registerUser, authenticate, deleteCredential, credential } = useAuth();
 
   const registerCredential = async (password: string): Promise<void> => {
-   // if (!isReady) { throw new Error("Haven't properly authenticated yet.") }
     await registerUser(password);
   };
 
@@ -87,6 +88,17 @@ const MergedProviderContent: React.FC<MergedProviderContentProps> = ({
     setDerivedKey(derived);
     setIsReady(true);
     return true;
+  };
+
+  const verifyKey = async (password: string, passAsKey: boolean = false): Promise<boolean> => {
+    try {
+      await getSecureDataUtil('generalSettings', password, passAsKey);
+      return true;
+    } catch (e) {
+      console.log("PLM Secure - Verification failed!");
+      console.log(e);
+      return false;
+    }
   };
 
   const setSecureData = async (key: string, data: any): Promise<void> => {
@@ -120,8 +132,11 @@ const MergedProviderContent: React.FC<MergedProviderContentProps> = ({
 
   const isSecureReadyFunc = (): boolean => isReady;
 
+  const hasCredential = Boolean(credential); 
+
   const mergedContextValue: PLMSecureContextProps = {
     setKey,
+    verifyKey,
     setSecureData,
     getSecureData,
     getAllKeys,
@@ -130,6 +145,7 @@ const MergedProviderContent: React.FC<MergedProviderContentProps> = ({
     registerCredential,
     authenticateCredential,
     resetCredential,
+    hasCredential,
   };
 
   return (
