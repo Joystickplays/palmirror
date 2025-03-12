@@ -733,10 +733,16 @@ export default function Home() {
     const fun = async () => {
       if (PLMsecureContext?.hasCredential) {
         try {
+          console.log("PLM Secure - Attempting passkey authentication")
           const returnedKey = await PLMsecureContext?.authenticateCredential()
+          console.log(returnedKey)
           const decoder = new TextDecoder('utf-8')
+          console.log(decoder.decode(returnedKey))
           await PLMsecureContext?.setKey(decoder.decode(returnedKey))
-        } catch (error) {}
+        } catch (error) {
+          console.error(error)
+          toast.error("Eh, something errored while auth.. Forgive this mortal buggy application, I have zero sleep.")
+        }
       }    
     }
 
