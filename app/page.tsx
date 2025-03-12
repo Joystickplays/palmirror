@@ -863,7 +863,7 @@ export default function Home() {
                       type="password"
                       className="flex-grow"
                     />
-                    <Button onClick={PLMSecureAttemptUnlock}>Unlock</Button>
+                    <Button onClick={() => PLMSecureAttemptUnlock()}>Unlock</Button>
                   </div>
                 )}
               </div>
