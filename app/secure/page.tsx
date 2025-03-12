@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,8 +53,12 @@ import { useRouter } from "next/navigation";
 
 import { motion, AnimatePresence } from "framer-motion";
 
+import { PLMSecureContext } from "@/context/PLMSecureContext";
+
 export default function Home() {
   const router = useRouter();
+  const PLMsecureContext = useContext(PLMSecureContext);
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pin, setPin] = useState("");
@@ -64,6 +68,10 @@ export default function Home() {
 
   const [alreadyEncrypted, setAlreadyEncrypted] = useState(false);
   const [showCompleteDrawer, setShowCompleteDrawer] = useState(false);
+  const [showPasskeySetupDrawer, setShowPasskeySetupDrawer] = useState(false);
+  const [passkeyVerification, setPasskeyVerification] = useState("");
+
+
 
   const handleKeyPressPin = (key: string) => {
     if (key === "⌫") {
@@ -120,6 +128,16 @@ export default function Home() {
     localStorage.removeItem("secureMetadata");
     setAlreadyEncrypted(false);
     toast.success("PalMirror Secure removed successfully!");
+  };
+
+  const verifyAndCreatePasskey = async () => {
+    if (!await PLMsecureContext?.verifyKey(passkeyVerification)) { toast.error("Password is incorrect."); return; }
+    try {
+      await PLMsecureContext.registerCredential(passkeyVerification)
+      setShowPasskeySetupDrawer(false)
+      setPasskeyVerification("")
+      toast.success("Passkey setup successful! Try by going to your chat list.")
+    } catch (error) { toast.error("Failed to setup! Canceled the dialog?")  }	
   };
 
   useEffect(() => {
@@ -315,6 +333,27 @@ export default function Home() {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+      {/* Passkey Setup drawer  */}
+      <Drawer
+        open={showPasskeySetupDrawer}
+        onOpenChange={(open) => setShowPasskeySetupDrawer(open)}
+      >
+        <DrawerContent className="px-6 font-sans">
+          <DrawerHeader>
+            <DrawerTitle>Passkey setup</DrawerTitle>
+          </DrawerHeader>
+          <p className="mb-3 block">
+            Verify your password/PIN to create a passkey.
+          </p>
+          <Input type="password" value={passkeyVerification} onChange={(e) => setPasskeyVerification(e.target.value)} />
+          <DrawerFooter>
+            <Button onClick={verifyAndCreatePasskey}>Create</Button>
+            <DrawerClose>
+              <Button variant="outline">Cancel</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
       {/* Complete drawer  */}
       <Drawer
         open={showCompleteDrawer}
@@ -336,7 +375,7 @@ export default function Home() {
             <b>your biometrics such as fingerprint.</b>
           </p>
           <DrawerFooter>
-            <Button>Setup Passkey</Button>
+            <Button onClick={() => { setShowCompleteDrawer(false); setShowPasskeySetupDrawer(true); }}>Setup Passkey</Button>
             <DrawerClose>
               <Button variant="outline">No thanks</Button>
             </DrawerClose>

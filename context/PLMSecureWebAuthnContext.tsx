@@ -49,6 +49,7 @@ function getPersistedCredential(): Promise<PersistedCredential | null> {
       new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, "readonly");
         const store = tx.objectStore(STORE_NAME);
+        console.log("PLM Secure - Getting `credential` from IndexedDB");
         const req = store.get("credential");
         req.onsuccess = () => resolve(req.result || null);
         req.onerror = () => reject(req.error);
@@ -118,31 +119,50 @@ const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
   return bytes.buffer;
 };
 
-const deriveKey = async (
-  credentialIdHex: string,
-  salt: Uint8Array
-): Promise<CryptoKey> => {
-  const idBuffer = hexToUint8Array(credentialIdHex);
-  const baseKey = await window.crypto.subtle.importKey(
+
+async function deriveKeyFromAssertion(
+  assertion: PublicKeyCredential,
+  salt: Uint8Array,
+  credentialIdHex: string
+): Promise<CryptoKey> {
+  const assertionResponse = assertion.response as AuthenticatorAssertionResponse;
+  const signature = new Uint8Array(assertionResponse.signature);
+
+  const encoder = new TextEncoder();
+  const stableChallenge = await window.crypto.subtle.digest(
+    "SHA-256",
+    encoder.encode(credentialIdHex)
+  );
+  const stableChallengeBytes = new Uint8Array(stableChallenge);
+
+  const combined = new Uint8Array(
+    stableChallengeBytes.length + signature.length
+  );
+  combined.set(stableChallengeBytes);
+  combined.set(signature, stableChallengeBytes.length);
+
+  const hash = await window.crypto.subtle.digest("SHA-256", combined);
+  const keyMaterial = await window.crypto.subtle.importKey(
     "raw",
-    idBuffer,
+    hash,
     { name: "HKDF" },
     false,
     ["deriveKey"]
   );
+
   return window.crypto.subtle.deriveKey(
     {
       name: "HKDF",
       hash: "SHA-256",
       salt: salt,
-      info: new Uint8Array([1, 2, 3, 4]),
+      info: new TextEncoder().encode("WebAuthn-Key"),
     },
-    baseKey,
+    keyMaterial,
     { name: "AES-GCM", length: 256 },
     true,
     ["encrypt", "decrypt"]
   );
-};
+}
 
 const encryptPrimaryKey = async (
   derivedKey: CryptoKey,
@@ -189,9 +209,11 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
   // On mount, load the persisted credential from IndexedDB.
   useEffect(() => {
     (async () => {
+      console.log("PLM Secure - Trying to get WebAuthn credential");
       try {
         const persisted = await getPersistedCredential();
         if (persisted) {
+          console.log("PLM Secure - Found and set!");
           setCredential(persisted);
         }
       } catch (err) {
@@ -204,11 +226,11 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
   const registerUser = async (primaryKeyInput?: string): Promise<void> => {
     const encoder = new TextEncoder();
 
-    // Create a challenge for WebAuthn.
-    const challenge = generateRandomBuffer(32);
+    // Create a challenge for WebAuthn credential creation.
+    const creationChallenge = generateRandomBuffer(32);
 
     const publicKey: PublicKeyCredentialCreationOptions = {
-      challenge: challenge.buffer,
+      challenge: creationChallenge.buffer,
       rp: { name: "Local Test App" },
       user: {
         // Dummy values; the browser will ignore these for a platform authenticator.
@@ -229,17 +251,54 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     try {
-      const credentialResponse = (await navigator.credentials.create({
+      const creationResponse = (await navigator.credentials.create({
         publicKey,
       })) as PublicKeyCredential;
-      if (!credentialResponse) throw new Error("Credential creation failed");
+      if (!creationResponse)
+        throw new Error("Credential creation failed");
 
-      // Use the rawId as the sole secret input.
-      const rawId = new Uint8Array(credentialResponse.rawId);
+      // Use the rawId as the secret input.
+      const rawId = new Uint8Array(creationResponse.rawId);
       const credentialIdHex = uint8ArrayToHex(rawId);
 
+      // Generate a salt for HKDF.
       const salt = generateRandomBuffer(16);
-      const derivedKey = await deriveKey(credentialIdHex, salt);
+
+      // --- New step: derive a key using a stable challenge and a WebAuthn assertion ---
+      // We compute a stable challenge from the credentialId and then call navigator.credentials.get
+      // with that fixed challenge. (Assuming the authenticator will sign deterministically.)
+      const encoder = new TextEncoder();
+      const stableChallenge = await window.crypto.subtle.digest(
+        "SHA-256",
+        encoder.encode(credentialIdHex)
+      );
+
+      const assertionRequest: PublicKeyCredentialRequestOptions = {
+        challenge: stableChallenge, // fixed challenge derived from credentialId
+        timeout: 60000,
+        userVerification: "required",
+        allowCredentials: [
+          {
+            id: hexToUint8Array(credentialIdHex),
+            type: "public-key",
+            transports: ["internal"],
+          },
+        ],
+      };
+
+      const assertionResponse = (await navigator.credentials.get({
+        publicKey: assertionRequest,
+      })) as PublicKeyCredential;
+      if (!assertionResponse)
+        throw new Error("Post-registration assertion failed");
+
+      // Derive the encryption key using the new function.
+      const derivedKey = await deriveKeyFromAssertion(
+        assertionResponse,
+        salt,
+        credentialIdHex
+      );
+      // Encrypt the primary key (from input or random).
       const keyToEncrypt = primaryKeyInput
         ? encoder.encode(primaryKeyInput)
         : generateRandomBuffer(32);
@@ -271,9 +330,14 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
       throw new Error("No registered credential found");
     }
     const salt = new Uint8Array(base64ToArrayBuffer(credential.hkdfSalt));
-    const challenge = generateRandomBuffer(32);
+    // Use the same stable challenge as in registration.
+    const encoder = new TextEncoder();
+    const stableChallenge = await window.crypto.subtle.digest(
+      "SHA-256",
+      encoder.encode(credential.credentialId)
+    );
     const publicKey: PublicKeyCredentialRequestOptions = {
-      challenge: challenge.buffer,
+      challenge: stableChallenge,
       timeout: 60000,
       userVerification: "required",
       allowCredentials: [
@@ -291,7 +355,12 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
       })) as PublicKeyCredential;
       if (!assertion) throw new Error("Authentication failed");
 
-      const derivedKey = await deriveKey(credential.credentialId, salt);
+      // Derive the key from the assertion and salt.
+      const derivedKey = await deriveKeyFromAssertion(
+        assertion,
+        salt,
+        credential.credentialId
+      );
       const decryptedBuffer = await decryptPrimaryKey(
         derivedKey,
         credential.encryptedPrimaryKey,
@@ -299,7 +368,7 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       setDecryptedPrimaryKey(new Uint8Array(decryptedBuffer));
       setIsAuthenticated(true);
-      return decryptedBuffer
+      return decryptedBuffer;
     } catch (err) {
       console.error("Authentication error:", err);
       throw err;
