@@ -163,7 +163,9 @@ const INFO_STRING = "WebAuthn-Key";
 async function deriveKeyFromAssertion(
   assertion: PublicKeyCredential
 ): Promise<CryptoKey> {
-  const signatureBuffer = assertion.response.signature;
+  const assertionResponse = assertion.response as AuthenticatorAssertionResponse;
+  const signatureBuffer = assertionResponse.signature; 
+
   const keyMaterial = await window.crypto.subtle.importKey(
     "raw",
     signatureBuffer,
@@ -171,15 +173,20 @@ async function deriveKeyFromAssertion(
     false,
     ["deriveKey"]
   );
+
   return window.crypto.subtle.deriveKey(
-    { name: "HKDF", hash: "SHA-256", salt: FIXED_SALT, info: new TextEncoder().encode(INFO_STRING) },
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: FIXED_SALT,
+      info: new TextEncoder().encode("some-context"), // Make sure to provide a valid context
+    },
     keyMaterial,
     { name: "AES-GCM", length: 256 },
     true,
     ["encrypt", "decrypt"]
   );
 }
-
 // ----- WebAuthnProvider Component (Modified) -----
 export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
