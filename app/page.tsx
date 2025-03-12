@@ -729,42 +729,27 @@ export default function Home() {
     });
   }, []);
 
-  useEffect(() => {
-    const fun = async () => {
+   const authPasskey = async () => {
       if (PLMsecureContext?.hasCredential) {
         try {
           console.log("PLM Secure - Attempting passkey authentication")
           const returnedKey = await PLMsecureContext?.authenticateCredential()
-          console.log(returnedKey)
           const decoder = new TextDecoder('utf-8')
-          console.log(decoder.decode(returnedKey))
-          await PLMsecureContext?.setKey(decoder.decode(returnedKey))
+          setPLMSecurePass(decoder.decode(returnedKey))
+          PLMSecureAttemptUnlock()
         } catch (error) {
           console.error(error)
-          toast.error("Eh, something errored while auth.. Forgive this mortal buggy application, I have zero sleep.")
+          toast.error("Passkey dialog cancelled?")
         }
       }    
     }
 
-    fun()
+
+  useEffect(() => {
+    authPasskey()
   }, [PLMsecureContext?.hasCredential])
 
-  const authPasskey = async () => {
-      if (PLMsecureContext?.hasCredential) {
-        try {
-          console.log("PLM Secure - Attempting passkey authentication")
-          const returnedKey = await PLMsecureContext?.authenticateCredential()
-          console.log(returnedKey)
-          const decoder = new TextDecoder('utf-8')
-          console.log(decoder.decode(returnedKey))
-          await PLMsecureContext?.setKey(decoder.decode(returnedKey))
-        } catch (error) {
-          console.error(error)
-          toast.error("Eh, something errored while auth.. Forgive this mortal buggy application, I have zero sleep.")
-        }
-      }    
-    }
-
+ 
   useEffect(() => {
     if (PLMsecureContext) {
       setIsSecureReady(PLMsecureContext?.isSecureReady());
@@ -856,7 +841,7 @@ export default function Home() {
                 {tagline}
               </h1>
               <p>PalMirror Secure is active and encrypted.</p>
-              <Button onClick={authPasskey}>Use passkey</Button>
+              {/* <Button onClick={authPasskey}>Use passkey</Button> */}
               <hr className="!m-2 w-full max-w-screen-sm h-px" />
               <div className="flex gap-2 w-full max-w-screen-sm">
                 {localStorage.getItem("secureMetadata") ? (
