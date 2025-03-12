@@ -734,7 +734,8 @@ export default function Home() {
       if (PLMsecureContext?.hasCredential) {
         try {
           const returnedKey = await PLMsecureContext?.authenticateCredential()
-          await PLMsecureContext?.setKey(returnedKey)
+          const decoder = TextDecoder('utf-8')
+          await PLMsecureContext?.setKey(decoder.decode(returnedKey))
         } catch (error) {}
       }    
     }
