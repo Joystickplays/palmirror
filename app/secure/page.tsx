@@ -337,7 +337,7 @@ export default function Home() {
             </ul>
           </AccordionContent>
         </AccordionItem>
-        <AccordionItem value="item-1">
+        <AccordionItem value="item-2">
           <AccordionTrigger>Can I verify with my biometrics?</AccordionTrigger>
           <AccordionContent className="flex flex-col gap-2">
             <p>
