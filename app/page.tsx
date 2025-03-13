@@ -732,7 +732,7 @@ export default function Home() {
   }, []);
 
    const authPasskey = async () => {
-      if (PLMsecureContext?.hasCredential) {
+      if (PLMsecureContext?.hasCredential && !isSecureReady) {
         try {
           setPasskeyOngoing(true)
           console.log("PLM Secure - Attempting passkey authentication")
@@ -750,7 +750,7 @@ export default function Home() {
 
 
   useEffect(() => { authPasskey()
-  }, [PLMsecureContext?.hasCredential])
+  }, [PLMsecureContext?.hasCredential, isSecureReady])
 
  
   useEffect(() => {
