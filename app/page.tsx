@@ -386,6 +386,8 @@ export default function Home() {
   const [isSecureReady, setIsSecureReady] = useState(false);
   const [PLMSecurePass, setPLMSecurePass] = useState("");
   const PLMsecureContext = useContext(PLMSecureContext);
+  const [passkeyOngoing, setPasskeyOngoing] = useState(false)
+
   const [tagline, setTagline] = useState("");
 
   const [chatList, setChatList] = useState<Array<ChatMetadata>>([]);
@@ -732,20 +734,22 @@ export default function Home() {
    const authPasskey = async () => {
       if (PLMsecureContext?.hasCredential) {
         try {
+          setPasskeyOngoing(true)
           console.log("PLM Secure - Attempting passkey authentication")
           const returnedKey = await PLMsecureContext?.authenticateCredential()
           const decoder = new TextDecoder('utf-8')
           PLMSecureAttemptUnlock(decoder.decode(returnedKey))
+          setPasskeyOngoing(false)
         } catch (error) {
           console.error(error)
           toast.error("Passkey dialog cancelled?")
+          setPasskeyOngoing(false)
         }
       }    
     }
 
 
-  useEffect(() => {
-    authPasskey()
+  useEffect(() => { authPasskey()
   }, [PLMsecureContext?.hasCredential])
 
  
@@ -826,7 +830,7 @@ export default function Home() {
           {!isSecureReady && (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              animate={{ opacity: 1, scale: passkeyOngoing ? 0.8 : 1, filter: passkeyOngoing ? 'blur(10px)' : 'blur(0px)'}}
               exit={{ opacity: 0, scale: 0.5 }}
               transition={{
                 type: "spring",
