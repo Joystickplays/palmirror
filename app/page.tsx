@@ -920,6 +920,7 @@ export default function Home() {
                         }}
                         key={chat.lastUpdated}
                         className="flex flex-col gap-1.5 p-6 border rounded-xl h-full"
+                        layout
                       >
                         {chat.image && (
                           <div>
