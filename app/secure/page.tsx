@@ -71,8 +71,6 @@ export default function Home() {
   const [showPasskeySetupDrawer, setShowPasskeySetupDrawer] = useState(false);
   const [passkeyVerification, setPasskeyVerification] = useState("");
 
-
-
   const handleKeyPressPin = (key: string) => {
     if (key === "⌫") {
       setPin((prev) => prev.slice(0, -1));
@@ -131,13 +129,20 @@ export default function Home() {
   };
 
   const verifyAndCreatePasskey = async () => {
-    if (!await PLMsecureContext?.verifyKey(passkeyVerification)) { toast.error("Password is incorrect."); return; }
+    if (!(await PLMsecureContext?.verifyKey(passkeyVerification))) {
+      toast.error("Password is incorrect.");
+      return;
+    }
     try {
-      await PLMsecureContext?.registerCredential(passkeyVerification)
-      setShowPasskeySetupDrawer(false)
-      setPasskeyVerification("")
-      toast.success("Passkey setup successful! Try by going to your chat list.")
-    } catch (error) { toast.error("Failed to setup! Canceled the dialog?")  }	
+      await PLMsecureContext?.registerCredential(passkeyVerification);
+      setShowPasskeySetupDrawer(false);
+      setPasskeyVerification("");
+      toast.success(
+        "Passkey setup successful! Try by going to your chat list.",
+      );
+    } catch (error) {
+      toast.error("Failed to setup! Canceled the dialog?");
+    }
   };
 
   useEffect(() => {
@@ -332,6 +337,22 @@ export default function Home() {
             </ul>
           </AccordionContent>
         </AccordionItem>
+        <AccordionItem value="item-1">
+          <AccordionTrigger>Can I verify with my biometrics?</AccordionTrigger>
+          <AccordionContent className="flex flex-col gap-2">
+            <p>
+              Absolutely! PalMirror Secure supports passkeys that allows you to
+              verify with your device&apos;s lock, such as fingerprint.
+              <br />
+              <br />
+              If you have setup PalMirror Secure already, setup your passkey
+              with the button below!
+            </p>
+            <Button onClick={() => setShowPasskeySetupDrawer(true)}>
+              Setup passkey
+            </Button>
+          </AccordionContent>
+        </AccordionItem>
       </Accordion>
       {/* Passkey Setup drawer  */}
       <Drawer
@@ -345,21 +366,34 @@ export default function Home() {
           <p className="mb-3 block">
             Verify your password/PIN to create a passkey.
           </p>
-          <Input type="password" value={passkeyVerification} onChange={(e) => setPasskeyVerification(e.target.value)} />
-      <Accordion
-        type="single"
-        collapsible
-        className="w-full mb-4"
-      >
-        <AccordionItem value="item-1">
-          <AccordionTrigger>Technical security consideration</AccordionTrigger>
-          <AccordionContent className="flex flex-col gap-2">
-            <p>
-              While convenient, passkey handling is done <b>purely local</b> and does <b>rely on ANY server at all to guarantee security.</b> With that said, your PalMirror Secure key can be technically <b>hacked by a determined hacker IF they have access to your browser and device,</b> so please be responsible with <b>locking your device within the OS.</b>  PalMirror will do its best to maximize your security and privacy with PalMirror Secure.
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+          <Input
+            type="password"
+            value={passkeyVerification}
+            onChange={(e) => setPasskeyVerification(e.target.value)}
+          />
+          <Accordion type="single" collapsible className="w-full mb-4">
+            <AccordionItem value="item-1">
+              <AccordionTrigger>
+                Technical security consideration
+              </AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-2">
+                <p>
+                  While convenient, passkey handling is done <b>purely local</b>{" "}
+                  and does{" "}
+                  <b>rely on ANY server at all to guarantee security.</b> With
+                  that said, your PalMirror Secure key can be technically{" "}
+                  <b>
+                    hacked by a determined hacker IF they have access to your
+                    browser and device,
+                  </b>{" "}
+                  so please be responsible with{" "}
+                  <b>locking your device within the OS.</b> PalMirror will do
+                  its best to maximize your security and privacy with PalMirror
+                  Secure.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
           <DrawerFooter>
             <Button onClick={verifyAndCreatePasskey}>Create</Button>
             <DrawerClose>
@@ -378,9 +412,16 @@ export default function Home() {
             <DrawerTitle>PalMirror Secure is setup!</DrawerTitle>
           </DrawerHeader>
           <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', mass: 1, stiffness: 190, damping: 10, delay: 0.2 }}>
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{
+              type: "spring",
+              mass: 1,
+              stiffness: 190,
+              damping: 10,
+              delay: 0.2,
+            }}
+          >
             <Check size={128} className="block mx-auto" />
           </motion.div>
           <p>
@@ -389,7 +430,14 @@ export default function Home() {
             <b>your biometrics such as fingerprint.</b>
           </p>
           <DrawerFooter>
-            <Button onClick={() => { setShowCompleteDrawer(false); setShowPasskeySetupDrawer(true); }}>Setup Passkey</Button>
+            <Button
+              onClick={() => {
+                setShowCompleteDrawer(false);
+                setShowPasskeySetupDrawer(true);
+              }}
+            >
+              Setup Passkey
+            </Button>
             <DrawerClose>
               <Button variant="outline">No thanks</Button>
             </DrawerClose>
