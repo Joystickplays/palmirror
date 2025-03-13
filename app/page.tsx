@@ -732,7 +732,7 @@ export default function Home() {
   }, []);
 
    const authPasskey = async () => {
-      if (PLMsecureContext?.hasCredential && !PLMsecureContext.isSecureReady) {
+      if (PLMsecureContext?.hasCredential && !PLMsecureContext?.isSecureReady) {
         try {
           setPasskeyOngoing(true)
           console.log("PLM Secure - Attempting passkey authentication")
