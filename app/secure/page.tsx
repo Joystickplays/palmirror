@@ -346,6 +346,20 @@ export default function Home() {
             Verify your password/PIN to create a passkey.
           </p>
           <Input type="password" value={passkeyVerification} onChange={(e) => setPasskeyVerification(e.target.value)} />
+      <Accordion
+        type="single"
+        collapsible
+        className="w-full mb-4"
+      >
+        <AccordionItem value="item-1">
+          <AccordionTrigger>Technical security consideration</AccordionTrigger>
+          <AccordionContent className="flex flex-col gap-2">
+            <p>
+              While convenient, passkey handling is done <b>purely local</b> and does <b>rely on ANY server at all to guarantee security.</b> With that said, your PalMirror Secure key can be technically <b>hacked by a determined hacker IF they have access to your browser and device,</b> so please be responsible with <b>locking your device within the OS.</b>  PalMirror will do its best to maximize your security and privacy with PalMirror Secure.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
           <DrawerFooter>
             <Button onClick={verifyAndCreatePasskey}>Create</Button>
             <DrawerClose>
