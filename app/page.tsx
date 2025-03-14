@@ -751,7 +751,7 @@ export default function Home() {
 
 
   useEffect(() => { setTimeout(authPasskey, 600)
-  }, [PLMsecureContext?.hasCredential, PLMsecureContext.isSecureReady])
+  }, [PLMsecureContext?.hasCredential, PLMsecureContext?.isSecureReady])
 
  
   useEffect(() => {
