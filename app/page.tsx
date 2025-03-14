@@ -736,12 +736,6 @@ export default function Home() {
   }, []);
 
    const authPasskey = async () => {
-      console.log("hascred")
-      console.log(PLMsecureContext?.hasCredential)
-      console.log("is secure ready")
-      console.log(PLMsecureContext?.isSecureReady())
-      console.log("everything as if")
-      console.log((PLMsecureContext?.hasCredential && !(PLMsecureContext?.isSecureReady())))
       if (PLMsecureContext?.hasCredential && !(PLMsecureContext?.isSecureReady())) {
         try {
           setPasskeyOngoing(true)
@@ -749,7 +743,6 @@ export default function Home() {
           const returnedKey = await PLMsecureContext?.authenticateCredential()
           const decoder = new TextDecoder('utf-8')
           PLMSecureAttemptUnlock(decoder.decode(returnedKey))
-          console.log("attempted")
           setPasskeyOngoing(false)
         } catch (error) {
           console.error(error)
@@ -764,7 +757,6 @@ export default function Home() {
   }, 500);
 
   useEffect(() => {
-      console.log("lol")
       throttledAuthPasskey(authPasskey);
   }, [PLMsecureContext?.hasCredential, PLMsecureContext?.isSecureReady]);
  
