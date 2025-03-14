@@ -391,6 +391,7 @@ export default function Home() {
   const [tagline, setTagline] = useState("");
 
   const [chatList, setChatList] = useState<Array<ChatMetadata>>([]);
+  const [chatsLoading, setChatsLoading] = useState(true)
 
   const taglines = [
     "password plz",
@@ -749,7 +750,7 @@ export default function Home() {
     }
 
 
-  useEffect(() => { authPasskey()
+  useEffect(() => { setTimeout(authPasskey, 600)
   }, [PLMsecureContext?.hasCredential, PLMsecureContext.isSecureReady])
 
  
@@ -776,8 +777,13 @@ export default function Home() {
             const chatData = await PLMsecureContext?.getSecureData(key);
             return chatData;
           });
-          const resolvedChatList = await Promise.all(chatListPromises);
-          setChatList(resolvedChatList);
+          Promise.all(chatListPromises).then(resolvedChatList => {
+            setChatsLoading(false)
+            if (chatListPromises.length < 3) { setChatList(resolvedChatList); return; }
+            setTimeout(() => {
+              setChatList(resolvedChatList);
+            }, 200) 
+          })
         }
       }
     };
@@ -963,7 +969,7 @@ export default function Home() {
                       </motion.div>
                     ))
                   ) : (
-                    <p className="opacity-50 text-sm">No chats found.</p>
+                    <p className="opacity-50 text-sm">{chatsLoading ? 'Loading your chats...' : 'No chats found.'}</p>
                   )}
                 </AnimatePresence>
               </div>

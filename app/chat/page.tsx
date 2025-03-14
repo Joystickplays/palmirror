@@ -662,11 +662,11 @@ const ChatPage = () => {
                 {messages.map((message, index) => {
                   const isSecondLast = index === messages.length - 2;
                   return (
-                    <motion.div key={index} ref={isSecondLast ? secondLastMessageRef : null} className={message.role === "user" ? "origin-bottom-right" : "origin-bottom-left"}
-                      initial={{ scale: 0.8, opacity: 0, x: message.role === "user" ? 100 : -100 }}
-                      animate={{ scale: 1, opacity: 1, x: 0 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{ type: "spring", stiffness: 215, damping: 30 }}>
+                    <motion.div key={index} ref={isSecondLast ? secondLastMessageRef : null} className={`${message.role === "user" ? "origin-bottom-right" : "origin-bottom-left"} overflow-hidden`}
+                      initial={{ scale: 0.8, opacity: 0, x: message.role === "user" ? 100 : -100, }}
+                      animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+                      exit={{ height: 0, opacity: 0, filter: 'blur(5px)' }}
+                      transition={{ type: "spring", stiffness: 215, damping: 25 }}>
                       <MessageCard
                         index={index}
                         role={message.role}

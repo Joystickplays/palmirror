@@ -25,7 +25,7 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({ btn, delay, onKeyPress }) =
           transition: {
             delay: initialAnimationComplete ? 0 : delay,
             type: "spring",
-            stiffness: 250,
+            stiffness: 180,
             damping: 30,
           },
         },
