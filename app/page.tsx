@@ -49,6 +49,8 @@ import {
 
 import { useRouter } from "next/navigation";
 
+import { useDebounce } from "@/utils/useDebounce";
+
 // New components moved outside Home():
 function GetFromPlatform({
   router,
@@ -387,6 +389,7 @@ export default function Home() {
   const [PLMSecurePass, setPLMSecurePass] = useState("");
   const PLMsecureContext = useContext(PLMSecureContext);
   const [passkeyOngoing, setPasskeyOngoing] = useState(false)
+ 
 
   const [tagline, setTagline] = useState("");
 
@@ -733,13 +736,20 @@ export default function Home() {
   }, []);
 
    const authPasskey = async () => {
-      if (PLMsecureContext?.hasCredential && !PLMsecureContext?.isSecureReady) {
+      console.log("hascred")
+      console.log(PLMsecureContext?.hasCredential)
+      console.log("is secure ready")
+      console.log(PLMsecureContext?.isSecureReady())
+      console.log("everything as if")
+      console.log((PLMsecureContext?.hasCredential && !(PLMsecureContext?.isSecureReady())))
+      if (PLMsecureContext?.hasCredential && !(PLMsecureContext?.isSecureReady())) {
         try {
           setPasskeyOngoing(true)
           console.log("PLM Secure - Attempting passkey authentication")
           const returnedKey = await PLMsecureContext?.authenticateCredential()
           const decoder = new TextDecoder('utf-8')
           PLMSecureAttemptUnlock(decoder.decode(returnedKey))
+          console.log("attempted")
           setPasskeyOngoing(false)
         } catch (error) {
           console.error(error)
@@ -749,10 +759,14 @@ export default function Home() {
       }    
     }
 
+  const throttledAuthPasskey = useDebounce((data) => {
+    authPasskey()
+  }, 500);
 
-  useEffect(() => { setTimeout(authPasskey, 600)
-  }, [PLMsecureContext?.hasCredential, PLMsecureContext?.isSecureReady])
-
+  useEffect(() => {
+      console.log("lol")
+      throttledAuthPasskey(authPasskey);
+  }, [PLMsecureContext?.hasCredential, PLMsecureContext?.isSecureReady]);
  
   useEffect(() => {
     if (PLMsecureContext) {
@@ -778,9 +792,9 @@ export default function Home() {
             return chatData;
           });
           Promise.all(chatListPromises).then(resolvedChatList => {
-            setChatsLoading(false)
-            if (chatListPromises.length < 3) { setChatList(resolvedChatList); return; }
+            if (chatListPromises.length < 3) { setChatList(resolvedChatList); setChatsLoading(false); return; }
             setTimeout(() => {
+              setChatsLoading(false)
               setChatList(resolvedChatList);
             }, 200) 
           })
@@ -901,7 +915,7 @@ export default function Home() {
                           opacity: 0,
                           scale: 0.7,
                           y: 100,
-                          filter: "blur(10px)",
+                          filter: "blur(3px)",
                         }}
                         animate={{
                           opacity: 1,
