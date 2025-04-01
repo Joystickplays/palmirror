@@ -820,10 +820,10 @@ export default function Home() {
 
   return isSecureActivated ? (
     <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
-      <div className="w-full">
+      <div>
         <motion.h1
-          initial={{ scale: 0, x: -200 }}
-          animate={{ scale: 1, x: 0 }}
+          initial={{ scale: 0, y: -100 }}
+          animate={{ scale: 1, y: 0 }}
           transition={{
             type: "spring",
             mass: 1,
@@ -831,7 +831,7 @@ export default function Home() {
             stiffness: 161,
             scale: { type: "spring", mass: 1, damping: 18, stiffness: 100 },
           }}
-          className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2 w-full"
+          className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2"
         >
           PalMirror
         </motion.h1>

@@ -37,7 +37,27 @@ import { CharacterData } from "@/types/CharacterData";
 
 import TypingIndication from "@/components/Typing"
 
-
+function fixEmphasisStyling(): void {
+  const elements = document.querySelectorAll<HTMLElement>(".markdown-content em");
+  elements.forEach(em => {
+    const parent = em.parentElement;
+    if (!parent) return;
+    const parentText = parent.textContent || "";
+    const emText = em.textContent || "";
+    let insideQuotes = false;
+    const regex = /"([^"]*)"/g;
+    let match;
+    while ((match = regex.exec(parentText)) !== null) {
+      if (match[1].includes(emText)) {
+        insideQuotes = true;
+        break;
+      }
+    }
+    if (insideQuotes) {
+      em.classList.add("no-newline");
+    }
+  });
+}
 interface MessageCardProps {
   index: number;
   content: string;
@@ -270,6 +290,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   }, [showAltDrawer])
  
   useEffect(() => {
+    fixEmphasisStyling();
     try {
     setStatuses(extractStatusData(content));
     if (characterData.plmex.invocations.length > 0) {

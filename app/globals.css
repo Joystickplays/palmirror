@@ -97,9 +97,18 @@ body {
   /* background: linear-gradient(to left, rgb(255, 255, 255), rgba(255, 255, 255, 0.63));  */
 }
 
-em::after {
+.markdown-content em::after {
   content: "\A";
   white-space: pre;
+}
+
+.markdown-content em.no-newline::after {
+  content: "";
+}
+
+.markdown-content em.no-newline {
+  opacity: 1;
+  font-weight: 500;
 }
 
 @keyframes gradientShift {
@@ -256,3 +265,20 @@ em::after {
     transform: translateY(0);
   }
 }
+
+/* Custom toast styling */
+
+.Toastify__toast-container {
+  padding: 16px !important;
+  gap: 1rem;
+}
+
+.Toastify__toast {
+  background-color: #1a1a1a !important;
+  color: white !important;
+  border-radius: 16px !important;
+  font-family: 'Inter', sans-serif;
+  margin-bottom: 1rem;
+}
+
+
