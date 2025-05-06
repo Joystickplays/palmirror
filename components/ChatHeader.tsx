@@ -205,7 +205,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
           <DrawerTrigger asChild>
             <Button variant="outline" className={`p-3 size-8 z-[2] ${currentTheme.assistantBg}`}><Settings /></Button>
           </DrawerTrigger>
-          <DrawerContent className={`w-auto max-h-[88vh] max-w-[350px] text-center sm:max-h-auto ml-auto mr-3 mb-4 rounded-xl overflow-y-hidden overflow-x-hidden font-sans ${showSecureDialog && "blur-sm"}`}
+          <DrawerContent className={`w-auto max-h-[88vh] max-w-[350px] sm:max-h-auto ml-10 sm:ml-auto mr-3 mb-4 rounded-xl overflow-x-hidden font-sans ${showSecureDialog && "blur-sm"}`}
           style={{ '--initial-transform': 'calc(100% + 16px)' } as React.CSSProperties}>
             <div className="overflow-y-auto overflow-x-hidden">
             <DrawerHeader>
