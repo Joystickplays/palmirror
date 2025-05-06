@@ -172,7 +172,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     });
 
     apiScaleSpring.start({
-      scale: down ? (isRegenerateAction ? 0.8 : x.to(val => 1 + (val / 2000))) : 1,
+      scale: down ? (isRegenerateAction ? 0.8 : 0.95) : 1,
     });
   
     if (((vx > 2 && mx < 0) || mx < dragThreshold) && !down && isEligibleForRegenerate) {

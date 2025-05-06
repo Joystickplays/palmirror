@@ -843,7 +843,7 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: passkeyOngoing ? 0.8 : 1, filter: passkeyOngoing ? 'blur(10px)' : 'blur(0px)'}}
-              exit={{ opacity: 0, scale: 0.5 }}
+              exit={{ opacity: 0, scale: 0.3, y: -130, filter: 'blur(5px)' }}
               transition={{
                 type: "spring",
                 mass: 1,
@@ -851,6 +851,7 @@ export default function Home() {
                 stiffness: 161,
               }}
               className="flex items-center justify-center gap-2 flex-col flex-grow"
+              key="passkeyNeed"
             >
               <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight pb-2 text-center">
                 {tagline}
@@ -897,6 +898,7 @@ export default function Home() {
                 stiffness: 161,
               }}
               className="w-full"
+              key="chatList"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow w-full justify-center items-start ">
                 <AnimatePresence mode="popLayout">
