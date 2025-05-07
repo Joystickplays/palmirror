@@ -459,8 +459,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
         {role === "user" ? `${currentTheme.showUserName ? characterData.userName || "Y/N" : ""}` : characterData.name || "Character"}
       </animated.p>
       <Drawer  open={showAltDrawer}  onOpenChange={(open) => { setShowAltDrawer(open) }} > {/* Alternate messages Drawer */}
-         <DrawerContent className="w-auto max-h-[80vh] max-w-[100vw] min-w-[90vw] font-sans">
-          <div className="overflow-y-auto">
+         <DrawerContent className="w-auto max-h-[80vh] max-w-[100vw] min-w-[90vw] font-sans overflow-y-visible">
+          <div className="overflow-y-visible">
           <DrawerHeader>
             <DrawerTitle className="mb-8">Choose an alternate initial message</DrawerTitle>
             {/* <Select>
