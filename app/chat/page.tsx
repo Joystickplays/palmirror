@@ -269,9 +269,9 @@ const ChatPage = () => {
     const lastMessage = messagesList[messagesList.length - 1];
     if (lastMessage?.role === "assistant") {
        finalStructuredMessages.push({
-          role: "system",
-          content: "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter).]",
-          name: "system",
+          role: "user",
+          content: "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter). ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
+          name: "user",
        });
     }
 
