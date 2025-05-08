@@ -388,13 +388,12 @@ export default function Home() {
   const [isSecureReady, setIsSecureReady] = useState(false);
   const [PLMSecurePass, setPLMSecurePass] = useState("");
   const PLMsecureContext = useContext(PLMSecureContext);
-  const [passkeyOngoing, setPasskeyOngoing] = useState(false)
- 
+  const [passkeyOngoing, setPasskeyOngoing] = useState(false);
 
   const [tagline, setTagline] = useState("");
 
   const [chatList, setChatList] = useState<Array<ChatMetadata>>([]);
-  const [chatsLoading, setChatsLoading] = useState(true)
+  const [chatsLoading, setChatsLoading] = useState(true);
 
   const taglines = [
     "password plz",
@@ -678,7 +677,9 @@ export default function Home() {
   const PLMSecureAttemptUnlock = (key?: string) => {
     toast.promise(
       new Promise<void>(async (resolve, reject) => {
-        const setKeySuccessful = await PLMsecureContext?.setKey(key ?? PLMSecurePass);
+        const setKeySuccessful = await PLMsecureContext?.setKey(
+          key ?? PLMSecurePass,
+        );
         setPLMSecurePass("");
         if (!setKeySuccessful) {
           reject();
@@ -731,35 +732,34 @@ export default function Home() {
     isPalMirrorSecureActivated().then((activated) => {
       setIsSecureActivated(activated);
       console.log(isSecureActivated);
-
     });
   }, []);
 
-   const authPasskey = async () => {
-      if (PLMsecureContext?.hasCredential && !(PLMsecureContext?.isSecureReady())) {
-        try {
-          setPasskeyOngoing(true)
-          console.log("PLM Secure - Attempting passkey authentication")
-          const returnedKey = await PLMsecureContext?.authenticateCredential()
-          const decoder = new TextDecoder('utf-8')
-          PLMSecureAttemptUnlock(decoder.decode(returnedKey))
-          setPasskeyOngoing(false)
-        } catch (error) {
-          console.error(error)
-          toast.error("Passkey dialog cancelled?")
-          setPasskeyOngoing(false)
-        }
-      }    
+  const authPasskey = async () => {
+    if (PLMsecureContext?.hasCredential && !PLMsecureContext?.isSecureReady()) {
+      try {
+        setPasskeyOngoing(true);
+        console.log("PLM Secure - Attempting passkey authentication");
+        const returnedKey = await PLMsecureContext?.authenticateCredential();
+        const decoder = new TextDecoder("utf-8");
+        PLMSecureAttemptUnlock(decoder.decode(returnedKey));
+        setPasskeyOngoing(false);
+      } catch (error) {
+        console.error(error);
+        toast.error("Passkey dialog cancelled?");
+        setPasskeyOngoing(false);
+      }
     }
+  };
 
   const throttledAuthPasskey = useDebounce((data) => {
-    authPasskey()
+    authPasskey();
   }, 500);
 
   useEffect(() => {
-      throttledAuthPasskey(authPasskey);
+    throttledAuthPasskey(authPasskey);
   }, [PLMsecureContext?.hasCredential, PLMsecureContext?.isSecureReady]);
- 
+
   useEffect(() => {
     if (PLMsecureContext) {
       setIsSecureReady(PLMsecureContext?.isSecureReady());
@@ -783,13 +783,17 @@ export default function Home() {
             const chatData = await PLMsecureContext?.getSecureData(key);
             return chatData;
           });
-          Promise.all(chatListPromises).then(resolvedChatList => {
-            if (chatListPromises.length < 3) { setChatList(resolvedChatList); setChatsLoading(false); return; }
-            setTimeout(() => {
-              setChatsLoading(false)
+          Promise.all(chatListPromises).then((resolvedChatList) => {
+            if (chatListPromises.length < 3) {
               setChatList(resolvedChatList);
-            }, 200) 
-          })
+              setChatsLoading(false);
+              return;
+            }
+            setTimeout(() => {
+              setChatsLoading(false);
+              setChatList(resolvedChatList);
+            }, 0);
+          });
         }
       }
     };
@@ -806,17 +810,20 @@ export default function Home() {
     } else if (PLMSecurePass.length < secureLength) {
       setPLMSecurePass((prev) => prev + key);
     } else {
-//      PLMSecureAttemptUnlock();
+      //      PLMSecureAttemptUnlock();
     }
   };
 
   useEffect(() => {
     const secureMetadata = localStorage.getItem("secureMetadata");
     const secureLength = secureMetadata ? JSON.parse(secureMetadata).length : 0;
-    if (localStorage.getItem("secureMetadata") && PLMSecurePass.length === secureLength) {    
+    if (
+      localStorage.getItem("secureMetadata") &&
+      PLMSecurePass.length === secureLength
+    ) {
       setTimeout(PLMSecureAttemptUnlock, 200);
     }
-  }, [PLMSecurePass])
+  }, [PLMSecurePass]);
 
   return isSecureActivated ? (
     <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
@@ -840,17 +847,22 @@ export default function Home() {
       <div className="flex flex-grow w-full">
         <AnimatePresence mode="popLayout">
           {!isSecureReady && (
+          <div className="overflow-hidden w-screen h-[80vh] relative">
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: passkeyOngoing ? 0.8 : 1, filter: passkeyOngoing ? 'blur(10px)' : 'blur(0px)'}}
-              exit={{ opacity: 0, scale: 0.3, y: -130, filter: 'blur(5px)' }}
+              initial={{ opacity: 0, scale: 0.8, x: '-50%', y: '-50%' }}
+              animate={{
+                opacity: 1,
+                scale: passkeyOngoing ? 0.9 : 1,
+                filter: passkeyOngoing ? "blur(5px)" : "blur(0px)",
+              }}
+              exit={{ y: 'calc(100vh + 100px)', }}
               transition={{
                 type: "spring",
                 mass: 1,
                 damping: 19,
                 stiffness: 161,
               }}
-              className="flex items-center justify-center gap-2 flex-col flex-grow"
+              className="flex items-center justify-center gap-2 flex-col flex-grow absolute top-1/2 left-1/2 w-full"
               key="passkeyNeed"
             >
               <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight pb-2 text-center">
@@ -863,7 +875,7 @@ export default function Home() {
                 {localStorage.getItem("secureMetadata") ? (
                   <div className="w-full">
                     <PinDisplay input={PLMSecurePass} show={false} />
-                    <Keypad onKeyPress={handleKeyPressPin}/>
+                    <Keypad onKeyPress={handleKeyPressPin} />
                   </div>
                 ) : (
                   <div className="flex gap-2 w-full max-w-screen-sm">
@@ -880,11 +892,14 @@ export default function Home() {
                       type="password"
                       className="flex-grow"
                     />
-                    <Button onClick={() => PLMSecureAttemptUnlock()}>Unlock</Button>
+                    <Button onClick={() => PLMSecureAttemptUnlock()}>
+                      Unlock
+                    </Button>
                   </div>
                 )}
               </div>
             </motion.div>
+          </div>
           )}
           {/* chats list */}
           {isSecureReady && (
@@ -905,12 +920,19 @@ export default function Home() {
                   {chatList.length > 0 ? (
                     sortByLastUpdated(chatList).map((chat, index) => (
                       <motion.div
-                        initial={{
-                          opacity: 0,
-                          scale: 0.7,
-                          y: 100,
-                          filter: "blur(3px)",
-                        }}
+                        initial={
+                          window.innerWidth < 640 && index < 4 || window.innerWidth > 640
+                            ? {
+                                opacity: 0,
+                                scale: 0.7,
+                                y: -600,
+                                filter: "blur(3px)",
+                              }
+                            : {
+                                opacity: 0,
+                                scale: 1.1,
+                              }
+                        }
                         animate={{
                           opacity: 1,
                           scale: 1,
@@ -928,8 +950,9 @@ export default function Home() {
                           y: {
                             type: "spring",
                             mass: 1,
-                            damping: 13,
+                            damping: 17,
                             stiffness: 97,
+                            delay: index * 0.05,
                           },
                         }}
                         key={chat.lastUpdated}
@@ -938,11 +961,14 @@ export default function Home() {
                       >
                         {chat.image && (
                           <div>
-                          <img
-                            src={chat.image}
-                            className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-[200px] h-full rounded-xl object-cover object-[50%_30%] pointer-events-none"
-                            style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 1), transparent)' }}
-                          />
+                            <img
+                              src={chat.image}
+                              className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-[200px] h-full rounded-xl object-cover object-[50%_30%] pointer-events-none"
+                              style={{
+                                maskImage:
+                                  "linear-gradient(to right, rgba(0, 0, 0, 1), transparent)",
+                              }}
+                            />
                           </div>
                         )}
                         <h2 className="font-bold ml-auto">{chat.name}</h2>
@@ -977,7 +1003,11 @@ export default function Home() {
                       </motion.div>
                     ))
                   ) : (
-                    <p className="opacity-50 text-sm">{chatsLoading ? 'Loading your chats...' : 'No chats found.'}</p>
+                    <p className="opacity-50 text-sm">
+                      {chatsLoading
+                        ? "Loading your chats..."
+                        : "No chats found."}
+                    </p>
                   )}
                 </AnimatePresence>
               </div>
@@ -990,7 +1020,13 @@ export default function Home() {
         <motion.div
           initial={{ opacity: 0, y: 200 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring", mass: 1, damping: 19, stiffness: 161 }}
+          transition={{
+            type: "spring",
+            mass: 1,
+            damping: 19,
+            stiffness: 161,
+            delay: 0.1,
+          }}
           className="fixed bottom-0 translate-x-1/2 pb-7"
         >
           <div className="flex items-center content-center justify-center gap-2 sm:gap-4 max-w-fit">
