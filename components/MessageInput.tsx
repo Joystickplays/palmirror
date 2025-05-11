@@ -75,26 +75,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
     setRudderRot((p) => p + Math.floor(Math.random() * 91) - 90);
   };
 
-  const [height, setHeight] = useState("auto");
-  const measureRef = useRef(null);
-
-  useEffect(() => {
-    if (!measureRef.current) return;
-    // If ThirdPartyDialogContent forwards its ref, you can attach directly.
-    // Otherwise wrap it in a plain <div ref={measureRef}>…
-    const target = measureRef.current;
-    const ro = new ResizeObserver(([entry]) => {
-      setHeight(entry.contentRect.height);
-    });
-    ro.observe(target);
-    // initialize
-    setHeight(target.getBoundingClientRect().height);
-    console.log(target);
-    console.log(target.getBoundingClientRect().height);
-    return () => {
-      ro.disconnect();
-    };
-  }, [modalSteer, activeSteers]);
 
   useEffect(() => {
     setLocalMessage(newMessage);
