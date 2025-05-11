@@ -7,21 +7,23 @@ import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
 import TokenCounter from "@/components/TokenCounter";
 import NewcomerDrawer from "@/components/NewcomerDrawer";
-import { useThrottle } from "@/utils/useThrottle"
-import { useTheme } from '@/components/PalMirrorThemeProvider';
+import { useThrottle } from "@/utils/useThrottle";
+import { useTheme } from "@/components/PalMirrorThemeProvider";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/components/systemMessageGeneration";
 import OpenAI from "openai";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
-import { PLMSecureContext } from '@/context/PLMSecureContext';
-import { isPalMirrorSecureActivated, PLMSecureGeneralSettings } from '@/utils/palMirrorSecureUtils';
+import { PLMSecureContext } from "@/context/PLMSecureContext";
+import {
+  isPalMirrorSecureActivated,
+  PLMSecureGeneralSettings,
+} from "@/utils/palMirrorSecureUtils";
 
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { encodingForModel } from 'js-tiktoken';
-
+import { encodingForModel } from "js-tiktoken";
 
 let openai: OpenAI;
 
@@ -33,9 +35,16 @@ interface ChatCompletionMessageParam {
 }
 
 const ChatPage = () => {
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>>([]);
-  const [characterData, setCharacterData] = useState<CharacterData>(defaultCharacterData);
-  const [chatId, setChatId] = useState('');
+  const [messages, setMessages] = useState<
+    Array<{
+      role: "user" | "assistant" | "system";
+      content: string;
+      stillGenerating: boolean;
+    }>
+  >([]);
+  const [characterData, setCharacterData] =
+    useState<CharacterData>(defaultCharacterData);
+  const [chatId, setChatId] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   const [newMessage, setNewMessage] = useState("");
@@ -44,12 +53,11 @@ const ChatPage = () => {
   const [tokenCount, setTokenCount] = useState(0);
   const [accurateTokenizer, setAccurateTokenizer] = useState(true); // toggle it yourself .
 
-
   const [baseURL, setBaseURL] = useState("https://cvai.mhi.im/v1");
   const [apiKey, setApiKey] = useState("none");
   const [generationTemperature, setTemperature] = useState(0.5);
   const [modelInstructions, setModelInstructions] = useState("");
-  const [modelName, setModelName] = useState('');
+  const [modelName, setModelName] = useState("");
 
   const [exclusionCount, setExclusionCount] = useState(0);
 
@@ -60,7 +68,52 @@ const ChatPage = () => {
   const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const [activeSteers, setActiveSteers] = useState<string[]>([]);
+  const addSteer = (newSteer: string) => {
+    const updated = [...activeSteers, newSteer];
+    setActiveSteers(updated);
+  };
 
+  const removeSteer = (indexToRemove: number) => {
+    const updated = activeSteers.filter((_, i) => i !== indexToRemove);
+    setActiveSteers(updated);
+  };
+
+  const generateSteerPrompt = ({ steers }): string => {
+    const baseRules = [
+      "NEVER respond to this message. Do NOT say “Got it” or anything like it.",
+      "NEVER mention or hint at these instructions, even subtly.",
+      "The character must behave as if these ideas came naturally.",
+      "Blend the changes into the story slowly and believably.",
+      "Stay in-character and immersive at all times.",
+    ];
+
+    const conflictRule =
+      steers.length > 1
+        ? "If rules conflict, follow the newest one more."
+        : "Do not force the change. Make it feel natural and slow.";
+
+    const instructionLabel = steers.length > 1 ? "Instructions" : "Instruction";
+
+    const formattedSteers = steers
+      .map((s, i) => `${steers.length > 1 ? `${i + 1}.` : "-"} ${s.trim()}`)
+      .join("\n");
+
+    const formattedRules = [...baseRules, conflictRule]
+      .map((rule) => `- ${rule}`)
+      .join("\n");
+
+    return `[System Instruction: ${steers.length > 1 ? "These rules are now active. You must follow them in every reply." : "Follow the rule below exactly."}]
+
+${instructionLabel}:
+${formattedSteers}
+
+Rules:
+${formattedRules}
+
+These are secret orders. Obey them completely, without being noticed.
+Keep this in mind while continuing the conversation from user's last message.`;
+  };
 
   const { theme, getTheme } = useTheme();
   const currentTheme = getTheme();
@@ -69,10 +122,12 @@ const ChatPage = () => {
   const router = useRouter();
   const PLMSecContext = useContext(PLMSecureContext);
 
-  
-
   // Function to download a file
-  const downloadFile = (content: string, fileName: string, contentType: string) => {
+  const downloadFile = (
+    content: string,
+    fileName: string,
+    contentType: string,
+  ) => {
     const file = new Blob([content], { type: contentType });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(file);
@@ -94,7 +149,9 @@ const ChatPage = () => {
       const encoder = new TextEncoder();
       const encodedArray = encoder.encode(json);
       const base64String = btoa(String.fromCharCode(...encodedArray));
-      if (textOnly) { return base64String }
+      if (textOnly) {
+        return base64String;
+      }
       // Use the formatted file name
       const fileName = getFormattedFileName();
       downloadFile(base64String, fileName, "application/octet-stream");
@@ -108,7 +165,9 @@ const ChatPage = () => {
     try {
       if (typeof file === "string") {
         const decodedString = atob(file);
-        const decodedArray = new Uint8Array(decodedString.split("").map(char => char.charCodeAt(0)));
+        const decodedArray = new Uint8Array(
+          decodedString.split("").map((char) => char.charCodeAt(0)),
+        );
         const decoder = new TextDecoder();
         const json = decoder.decode(decodedArray);
         const parsedMessages = JSON.parse(json);
@@ -118,7 +177,9 @@ const ChatPage = () => {
       }
       const fileContent = await file.text(); // Read the file content
       const decodedString = atob(fileContent);
-      const decodedArray = new Uint8Array(decodedString.split("").map(char => char.charCodeAt(0)));
+      const decodedArray = new Uint8Array(
+        decodedString.split("").map((char) => char.charCodeAt(0)),
+      );
       const decoder = new TextDecoder();
       const json = decoder.decode(decodedArray);
       const parsedMessages = JSON.parse(json);
@@ -144,17 +205,17 @@ const ChatPage = () => {
   };
 
   const loadSettingsFromLocalStorage = () => {
-    const settings = localStorage.getItem('Proxy_settings');
+    const settings = localStorage.getItem("Proxy_settings");
     if (settings) {
       const parsedSettings = JSON.parse(settings);
-      setBaseURL(parsedSettings.baseURL || '');
-      setModelName(parsedSettings.modelName || '');
+      setBaseURL(parsedSettings.baseURL || "");
+      setModelName(parsedSettings.modelName || "");
       setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
-      setModelInstructions(parsedSettings.modelInstructions || '')
+      setModelInstructions(parsedSettings.modelInstructions || "");
     } else {
-      setBaseURL("https://cvai.mhi.im/v1")
+      setBaseURL("https://cvai.mhi.im/v1");
     }
-  }
+  };
 
   useEffect(() => {
     loadSettingsFromLocalStorage();
@@ -163,32 +224,49 @@ const ChatPage = () => {
       baseURL: baseURL ?? undefined,
       dangerouslyAllowBrowser: true,
       defaultHeaders: {
-        "HTTP-Referer": "https://palm.goteamst.com",
+        "HTTP-Referer": "https://palmirror.vercel.app",
         "X-Title": "PalMirror",
-      }
+      },
     });
   }, [apiKey, baseURL]);
 
   useEffect(() => {
     const loadSecureSettings = async () => {
-      if (PLMSecContext && await isPalMirrorSecureActivated() && PLMSecContext.isSecureReady()) {
-        const proxySettings = await PLMSecContext.getSecureData('generalSettings') as PLMSecureGeneralSettings;
+      if (
+        PLMSecContext &&
+        (await isPalMirrorSecureActivated()) &&
+        PLMSecContext.isSecureReady()
+      ) {
+        const proxySettings = (await PLMSecContext.getSecureData(
+          "generalSettings",
+        )) as PLMSecureGeneralSettings;
         setApiKey(proxySettings.proxy.api_key);
       }
     };
     loadSecureSettings();
-    
-  }, [])
+  }, []);
 
   const vibrate = (duration: number) => {
     if ("vibrate" in navigator) navigator.vibrate(duration);
   };
 
-  const checkAndTrimMessages = (messagesList: Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>) => {
-    let totalLength = messagesList.reduce((acc, msg) => acc + msg.content.length, 0);
+  const checkAndTrimMessages = (
+    messagesList: Array<{
+      role: "user" | "assistant" | "system";
+      content: string;
+      stillGenerating: boolean;
+    }>,
+  ) => {
+    let totalLength = messagesList.reduce(
+      (acc, msg) => acc + msg.content.length,
+      0,
+    );
     while (totalLength > 16000 && messagesList.length > 0) {
       messagesList.shift();
-      totalLength = messagesList.reduce((acc, msg) => acc + msg.content.length, 0);
+      totalLength = messagesList.reduce(
+        (acc, msg) => acc + msg.content.length,
+        0,
+      );
     }
     return messagesList;
   };
@@ -198,16 +276,16 @@ const ChatPage = () => {
     force = false,
     regenerate = false,
     optionalMessage = "",
-    userMSGaddOnList = true
+    userMSGaddOnList = true,
   ) => {
     // Prevent default behavior if Enter key is pressed
     if (e && e.key === "Enter") {
       try {
         e.preventDefault();
-      } catch { }
+      } catch {}
     }
     // Return early if not forced, and Enter key not pressed
-    if (!force && ((e && e.key !== "Enter"))) return;
+    if (!force && e && e.key !== "Enter") return;
 
     loadSettingsFromLocalStorage();
     if (!baseURL.includes("http")) {
@@ -217,26 +295,33 @@ const ChatPage = () => {
 
     let regenerationMessage: string | undefined;
     if (regenerate) {
-      const userMessage = messages.slice().reverse().find(message => message.role === 'user');
+      const userMessage = messages
+        .slice()
+        .reverse()
+        .find((message) => message.role === "user");
       regenerationMessage = userMessage?.content;
     }
 
     let messagesList = [...messages]; // Create a copy to avoid direct mutation, and because how React states work
-     if (regenerate) {
-       messagesList = [
-         ...messagesList.slice(0, -1),
-       ]
-       setMessages(messagesList);
-     };
+    if (regenerate) {
+      messagesList = [...messagesList.slice(0, -1)];
+      setMessages(messagesList);
+    }
 
-    const userMessageContent = regenerate ? (regenerationMessage ? regenerationMessage : "") : (optionalMessage !== "" ? optionalMessage.trim() : newMessage.trim());
+    const userMessageContent = regenerate
+      ? regenerationMessage
+        ? regenerationMessage
+        : ""
+      : optionalMessage !== ""
+        ? optionalMessage.trim()
+        : newMessage.trim();
 
     if (userMessageContent && userMSGaddOnList) {
       // Add user message to the message list
       messagesList = [
         ...messagesList,
-        { role: "user", content: userMessageContent, stillGenerating: false }
-      ]
+        { role: "user", content: userMessageContent, stillGenerating: false },
+      ];
       // Update the messages state
       setMessages(messagesList);
       // Clear the input field
@@ -248,32 +333,53 @@ const ChatPage = () => {
     //messagesList = checkAndTrimMessages(messagesList);
 
     setIsThinking(true);
-    const systemMessageContent = getSystemMessage(characterData, modelInstructions);
+    const systemMessageContent = getSystemMessage(
+      characterData,
+      modelInstructions,
+    );
     const finalStructuredMessages: ChatCompletionMessageParam[] = [
-	  { role: "system", content: systemMessageContent, name: "system" },
-	  ...messagesList.map((msg, index) => {
-	    const { stillGenerating, ...messageWithoutStillGenerating } = msg;
-	    return {
-	      ...messageWithoutStillGenerating,
-	      name: "-",
-	      role: msg.role as "user" | "assistant" | "system",
-	      content: index === 1 && msg.role === "user" && characterData.plmex.dynamicStatuses.length > 0
-	        ? msg.content + " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
-	        : msg.content
-	    };
-	  }),
-	  ...(userMSGaddOnList || regenerate ? [] : [{ role: "user", content: userMessageContent, name: "-" }] as const),
-          
-	];
+      { role: "system", content: systemMessageContent, name: "system" },
+      ...messagesList.map((msg, index) => {
+        const { stillGenerating, ...messageWithoutStillGenerating } = msg;
+        return {
+          ...messageWithoutStillGenerating,
+          name: "-",
+          role: msg.role as "user" | "assistant" | "system",
+          content:
+            index === 1 &&
+            msg.role === "user" &&
+            characterData.plmex.dynamicStatuses.length > 0
+              ? msg.content +
+                " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
+              : msg.content,
+        };
+      }),
+      ...(userMSGaddOnList || regenerate
+        ? []
+        : ([
+            { role: "user", content: userMessageContent, name: "-" },
+          ] as const)),
+    ];
 
     const lastMessage = messagesList[messagesList.length - 1];
     if (lastMessage?.role === "assistant") {
-       finalStructuredMessages.push({
-          role: "user",
-          content: "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter). ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
-          name: "user",
-       });
+      finalStructuredMessages.push({
+        role: "user",
+        content:
+          "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter). ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
+        name: "user",
+      });
     }
+
+    if (activeSteers.length > 0) {
+      finalStructuredMessages.push({
+        role: "user",
+        content: generateSteerPrompt({ steers: activeSteers }),
+        name: "user",
+      });
+    }
+
+    console.log(finalStructuredMessages)
 
     try {
       abortController.current = new AbortController();
@@ -286,9 +392,9 @@ const ChatPage = () => {
 
       let assistantMessage = "";
       // Add a placeholder message while waiting for the response
-      setMessages(prevMessages => [
+      setMessages((prevMessages) => [
         ...prevMessages,
-        { role: "assistant", content: "", stillGenerating: true }
+        { role: "assistant", content: "", stillGenerating: true },
       ]);
 
       for await (const chunk of comp) {
@@ -309,17 +415,33 @@ const ChatPage = () => {
         // Update the message with the latest chunk
         setMessages((prevMessages) => [
           ...prevMessages.slice(0, -1),
-          { role: "assistant", content: assistantMessage, stillGenerating: true },
+          {
+            role: "assistant",
+            content: assistantMessage,
+            stillGenerating: true,
+          },
         ]);
         vibrate(10);
       }
     } catch (error) {
       if (!abortController.current?.signal.aborted) {
-        if (error instanceof Error && error.message.includes("reduce the length")) {
-          handleSendMessage(e, force, regenerate, optionalMessage, userMSGaddOnList);
+        if (
+          error instanceof Error &&
+          error.message.includes("reduce the length")
+        ) {
+          handleSendMessage(
+            e,
+            force,
+            regenerate,
+            optionalMessage,
+            userMSGaddOnList,
+          );
           return; // Exit early to avoid setting isThinking to false
         } else {
-          toast.error("Error: " + (error instanceof Error ? error.message : String(error)));
+          toast.error(
+            "Error: " +
+              (error instanceof Error ? error.message : String(error)),
+          );
         }
       }
     } finally {
@@ -355,7 +477,10 @@ const ChatPage = () => {
 
   const suggestReply = async () => {
     setUserPromptThinking(true);
-    const systemMessageContent = getSystemMessage(characterData, modelInstructions);
+    const systemMessageContent = getSystemMessage(
+      characterData,
+      modelInstructions,
+    );
 
     const messagesList = checkAndTrimMessages([...messages]);
 
@@ -366,7 +491,11 @@ const ChatPage = () => {
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
           ...messagesList.map((msg) => ({ ...msg, name: "-" })),
-          { role: "user", content: `[SYSTEM NOTE]: Detach from the character personality, and create a quick answer for {{user}} in accordance to ${characterData.userName}'s personality. Answer must be thoughtful and quick.`, name: "user" },
+          {
+            role: "user",
+            content: `[SYSTEM NOTE]: Detach from the character personality, and create a quick answer for {{user}} in accordance to ${characterData.userName}'s personality. Answer must be thoughtful and quick.`,
+            name: "user",
+          },
         ],
         stream: true,
         temperature: generationTemperature,
@@ -381,15 +510,21 @@ const ChatPage = () => {
         assistantMessage += chunkContent;
 
         // Update the message input box
-        setNewMessage(assistantMessage)
+        setNewMessage(assistantMessage);
         vibrate(10);
       }
     } catch (error) {
       if (!abortController.current?.signal.aborted) {
-        if (error instanceof Error && error.message.includes("reduce the length")) {
+        if (
+          error instanceof Error &&
+          error.message.includes("reduce the length")
+        ) {
           suggestReply();
         } else {
-          toast.error("Error: " + (error instanceof Error ? error.message : String(error)));
+          toast.error(
+            "Error: " +
+              (error instanceof Error ? error.message : String(error)),
+          );
           setUserPromptThinking(false);
         }
       }
@@ -402,7 +537,10 @@ const ChatPage = () => {
 
   const rewriteMessage = async (base: string) => {
     setUserPromptThinking(true);
-    const systemMessageContent = getSystemMessage(characterData, modelInstructions);
+    const systemMessageContent = getSystemMessage(
+      characterData,
+      modelInstructions,
+    );
 
     const messagesList = checkAndTrimMessages([...messages]);
 
@@ -413,7 +551,11 @@ const ChatPage = () => {
         messages: [
           { role: "system", content: systemMessageContent, name: "system" },
           ...messagesList.map((msg) => ({ ...msg, name: "-" })),
-          { role: "user", content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${base}\`\nYour enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`, name: "user" },
+          {
+            role: "user",
+            content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${base}\`\nYour enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`,
+            name: "user",
+          },
         ],
         stream: true,
         temperature: generationTemperature,
@@ -428,15 +570,21 @@ const ChatPage = () => {
         assistantMessage += chunkContent;
 
         // Update the message input box
-        setNewMessage(assistantMessage)
+        setNewMessage(assistantMessage);
         vibrate(10);
       }
     } catch (error) {
       if (!abortController.current?.signal.aborted) {
-        if (error instanceof Error && error.message.includes("reduce the length")) {
+        if (
+          error instanceof Error &&
+          error.message.includes("reduce the length")
+        ) {
           rewriteMessage(base);
         } else {
-          toast.error("Error: " + (error instanceof Error ? error.message : String(error)));
+          toast.error(
+            "Error: " +
+              (error instanceof Error ? error.message : String(error)),
+          );
           setUserPromptThinking(false);
         }
       }
@@ -447,65 +595,76 @@ const ChatPage = () => {
     }
   };
 
-
   const cancelRequest = () => {
     if (abortController.current) abortController.current.abort();
     setUserPromptThinking(false);
     setIsThinking(false);
   };
 
-
   const extractStatusData = (input: string): StatusData => {
     const statusRegex = /---\s*STATUS:\s*((?:.+?\s*[=:]\s*.+(?:\n|$))*)/i;
     const match = input.match(statusRegex);
-  
+
     if (match && match[1]) {
       const keyValuePairs = match[1]
         .trim()
-        .split('\n')
-        .filter((line) => line.includes('=') || line.includes(':'));
-  
+        .split("\n")
+        .filter((line) => line.includes("=") || line.includes(":"));
+
       const data: StatusData = keyValuePairs.map((pair) => {
         const [key, ...valueParts] = pair.split(/[:=]/);
         return {
           key: key.trim(),
-          value: valueParts.join('=').trim(),
+          value: valueParts.join("=").trim(),
         };
       });
-  
+
       return data;
     }
-  
+
     return [];
   };
-  
+
   const removeStatusSection = (input: string): string => {
     const statusRegex = /---\s*STATUS:\s*((?:.+?\s*[=:]\s*.+(?:\n|$))*)/i;
-    return input.replace(statusRegex, '').trim();
+    return input.replace(statusRegex, "").trim();
   };
-  
+
   const buildStatusSection = (data: StatusData): string => {
     if (!data || data.length === 0) {
-      return '';
+      return "";
     }
-  
+
     const statusLines = data.map(({ key, value }) => `${key}=${value}`);
-    return `\n\n---\nSTATUS:\n${statusLines.join('\n')}`;
+    return `\n\n---\nSTATUS:\n${statusLines.join("\n")}`;
   };
-  
-  const changeStatus = (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => {
+
+  const changeStatus = (
+    changingStatus: string,
+    changingStatusValue: string,
+    changingStatusCharReacts: boolean,
+    changingStatusReason: string,
+  ) => {
     if (!changingStatusCharReacts) {
-      setMessages(prevMessages => {
+      setMessages((prevMessages) => {
         const updatedMessages = [...prevMessages];
-        const lastAssistantMessageIndex = updatedMessages.slice().reverse().findIndex(msg => msg.role === "assistant");
+        const lastAssistantMessageIndex = updatedMessages
+          .slice()
+          .reverse()
+          .findIndex((msg) => msg.role === "assistant");
         if (lastAssistantMessageIndex !== -1) {
-          const actualIndex = updatedMessages.length - 1 - lastAssistantMessageIndex;
+          const actualIndex =
+            updatedMessages.length - 1 - lastAssistantMessageIndex;
           const lastMessage = updatedMessages[actualIndex].content;
           const statusData = extractStatusData(lastMessage);
-          const updatedStatusData = statusData.map(status => 
-            status.key === changingStatus ? { ...status, value: changingStatusValue } : status
+          const updatedStatusData = statusData.map((status) =>
+            status.key === changingStatus
+              ? { ...status, value: changingStatusValue }
+              : status,
           );
-          updatedMessages[actualIndex].content = removeStatusSection(lastMessage) + buildStatusSection(updatedStatusData);
+          updatedMessages[actualIndex].content =
+            removeStatusSection(lastMessage) +
+            buildStatusSection(updatedStatusData);
         }
         return updatedMessages;
       });
@@ -530,15 +689,23 @@ const ChatPage = () => {
     });
   }, []);
 
-
   // Initial Assistant Message
   useEffect(() => {
     if (messages.length === 0 && characterData.initialMessage) {
-      const statusData: StatusData = characterData.plmex.dynamicStatuses.map(status => ({
-        key: status.name,
-        value: status.defaultValue
-      }));
-      setMessages([{ role: "assistant", content: characterData.initialMessage + buildStatusSection(statusData), stillGenerating: false }]);
+      const statusData: StatusData = characterData.plmex.dynamicStatuses.map(
+        (status) => ({
+          key: status.name,
+          value: status.defaultValue,
+        }),
+      );
+      setMessages([
+        {
+          role: "assistant",
+          content:
+            characterData.initialMessage + buildStatusSection(statusData),
+          stillGenerating: false,
+        },
+      ]);
     }
   }, [characterData.initialMessage]);
 
@@ -547,66 +714,75 @@ const ChatPage = () => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-
   // Load from chat ID if any (and if PalMirror Secure active)
   useEffect(() => {
     const load = async () => {
-      if (await isPalMirrorSecureActivated() && PLMSecContext && PLMSecContext.isSecureReady()) {
-        const chatId = sessionStorage.getItem("chatSelect")
+      if (
+        (await isPalMirrorSecureActivated()) &&
+        PLMSecContext &&
+        PLMSecContext.isSecureReady()
+      ) {
+        const chatId = sessionStorage.getItem("chatSelect");
         if (chatId) {
           setChatId(chatId);
 
-          const chatMetadata = await PLMSecContext.getSecureData(`METADATA${chatId}`);
+          const chatMetadata = await PLMSecContext.getSecureData(
+            `METADATA${chatId}`,
+          );
           if (chatMetadata) {
-            const {id, lastUpdated, ...charData} = chatMetadata
+            const { id, lastUpdated, ...charData } = chatMetadata;
             setCharacterData(charData);
           }
 
           const chatData = await PLMSecContext.getSecureData(chatId);
           if (chatData) {
             //setTimeout(() => {
-              decodeMessages(chatData);
-              console.log("loaded chat")
-              setLoaded(true);
+            decodeMessages(chatData);
+            console.log("loaded chat");
+            setLoaded(true);
             //}, 500)
           }
         } else {
-          setChatId(crypto.randomUUID())
+          setChatId(crypto.randomUUID());
           setLoaded(true);
         }
       } else {
         setLoaded(true);
       }
-    }
+    };
     load();
-  }, [])
+  }, []);
 
   // Save chat to chat ID if any (and if PalMirror Secure active)
   useEffect(() => {
     const save = async () => {
-      if (await isPalMirrorSecureActivated() && PLMSecContext && PLMSecContext.isSecureReady() && chatId !== "") {
+      if (
+        (await isPalMirrorSecureActivated()) &&
+        PLMSecContext &&
+        PLMSecContext.isSecureReady() &&
+        chatId !== ""
+      ) {
         await PLMSecContext.setSecureData(chatId, encodeMessages(true));
         await PLMSecContext.setSecureData(`METADATA${chatId}`, {
           ...characterData,
           id: chatId,
-          lastUpdated: new Date().toISOString()
+          lastUpdated: new Date().toISOString(),
         });
-        console.log("saved chat")
+        console.log("saved chat");
       }
-    }
+    };
     save();
-  }, [messages])
+  }, [messages]);
 
   // Show newcomer drawer if new ..
   useEffect(() => {
     if (!localStorage.getItem("NewcomerDrawer")) {
       // setShowingNewcomerDrawer(true);
     }
-  }, [])
+  }, []);
 
-  
   // Token counting (this was way too laggy so scrapped)
-  
+
   // const tokenizer = encodingForModel('gpt-3.5-turbo');
 
   // const estimateTokens = (messages: Array<{ role: "user" | "assistant" | "system"; content: string; stillGenerating: boolean }>): number => {
@@ -632,9 +808,7 @@ const ChatPage = () => {
 
   // useEffect(() => {
   //   throttledCountTokens(messages);
-  // }, [messages, throttledCountTokens]);  
-
-  
+  // }, [messages, throttledCountTokens]);
 
   return (
     <div className={`grid place-items-center ${currentTheme.bg}`}>
@@ -649,12 +823,25 @@ const ChatPage = () => {
         theme="dark"
       />
       <motion.div
-      initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
-      animate={loaded ? { opacity: 1, scale: 1, filter: 'blur(0px)' } : false}
-      transition={{ type: 'spring', mass: 1, damping: 25, stiffness: 161, filter: { type: 'spring', mass: 1, damping: 38, stiffness: 161 } }}
-      className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4">
-        <ChatHeader characterData={characterData} getExportedMessages={() => { encodeMessages(false); }} importMessages={openFilePicker} />
-        <div className="overflow-y-auto overflow-x-hidden">
+        initial={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
+        animate={loaded ? { opacity: 1, scale: 1, filter: "blur(0px)" } : false}
+        transition={{
+          type: "spring",
+          mass: 1,
+          damping: 25,
+          stiffness: 161,
+          filter: { type: "spring", mass: 1, damping: 38, stiffness: 161 },
+        }}
+        className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto"
+      >
+        <ChatHeader
+          characterData={characterData}
+          getExportedMessages={() => {
+            encodeMessages(false);
+          }}
+          importMessages={openFilePicker}
+        />
+        <div className="overflow-y-auto overflow-x-hidden max-w-[40rem]">
           <div className="flex flex-col justify-end min-h-full">
             <div style={{ height: "60vh" }}></div>
             <div>
@@ -662,11 +849,23 @@ const ChatPage = () => {
                 {messages.map((message, index) => {
                   const isSecondLast = index === messages.length - 2;
                   return (
-                    <motion.div key={index} ref={isSecondLast ? secondLastMessageRef : null} className={`${message.role === "user" ? "origin-bottom-right" : "origin-bottom-left"} overflow-hidden`}
-                      initial={{ scale: 0.8, opacity: 0, x: message.role === "user" ? 100 : -100, }}
+                    <motion.div
+                      key={index}
+                      ref={isSecondLast ? secondLastMessageRef : null}
+                      className={`${message.role === "user" ? "origin-bottom-right" : "origin-bottom-left"} overflow-hidden`}
+                      initial={{
+                        scale: 0.8,
+                        opacity: 0,
+                        x: message.role === "user" ? 100 : -100,
+                      }}
                       animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
-                      exit={{ height: 0, opacity: 0, filter: 'blur(5px)' }}
-                      transition={{ type: "spring", stiffness: 215, damping: 25 }}>
+                      exit={{ height: 0, opacity: 0, filter: "blur(5px)" }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 215,
+                        damping: 25,
+                      }}
+                    >
                       <MessageCard
                         index={index}
                         role={message.role}
@@ -699,6 +898,9 @@ const ChatPage = () => {
           userPromptThinking={userPromptThinking}
           suggestReply={suggestReply}
           rewriteMessage={rewriteMessage}
+          activeSteers={activeSteers}
+          addSteer={addSteer}
+          removeSteer={removeSteer}
         />
       </motion.div>
       <TokenCounter tokenCount={tokenCount} />
@@ -709,7 +911,13 @@ const ChatPage = () => {
         style={{ display: "none" }}
         onChange={handleFileInput}
       />
-      <NewcomerDrawer close={() => {localStorage.setItem("NewcomerDrawer", "ok"); setShowingNewcomerDrawer(false);}} open={showingNewcomerDrawer} />
+      <NewcomerDrawer
+        close={() => {
+          localStorage.setItem("NewcomerDrawer", "ok");
+          setShowingNewcomerDrawer(false);
+        }}
+        open={showingNewcomerDrawer}
+      />
     </div>
   );
 };

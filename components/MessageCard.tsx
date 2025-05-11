@@ -38,21 +38,50 @@ import { CharacterData } from "@/types/CharacterData";
 import TypingIndication from "@/components/Typing"
 
 function fixEmphasisStyling(): void {
+
+  const nestedEms = document.querySelectorAll<HTMLElement>(".markdown-content em em");
+  nestedEms.forEach(innerEm => {
+    const parentEm = innerEm.parentElement;
+
+    if (parentEm && parentEm.tagName === 'EM') {
+
+      const textNode = document.createTextNode(innerEm.textContent || "");
+
+      parentEm.replaceChild(textNode, innerEm);
+    }
+  });
+
   const elements = document.querySelectorAll<HTMLElement>(".markdown-content em");
   elements.forEach(em => {
     const parent = em.parentElement;
     if (!parent) return;
+
+    if (parent.nodeType !== Node.ELEMENT_NODE) return;
+
     const parentText = parent.textContent || "";
     const emText = em.textContent || "";
+
+    if (!emText.trim()) return;
+
     let insideQuotes = false;
     const regex = /"([^"]*)"/g;
     let match;
+
     while ((match = regex.exec(parentText)) !== null) {
       if (match[1].includes(emText)) {
-        insideQuotes = true;
-        break;
+
+        const emStartIndexInParent = parentText.indexOf(emText);
+
+        if (emStartIndexInParent !== -1) {
+
+          if (emStartIndexInParent > match.index && (emStartIndexInParent + emText.length) < (match.index + match[0].length)) {
+            insideQuotes = true;
+            break;
+          }
+        }
       }
     }
+
     if (insideQuotes) {
       em.classList.add("no-newline");
     }

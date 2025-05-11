@@ -52,6 +52,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 
@@ -173,8 +174,9 @@ export default function Home() {
             <Button>Setup PalMirror Secure</Button>
           </DialogTrigger>
           <DialogContent className="font-sans">
+          <AnimateChangeInHeight>
             <DialogHeader>
-              <DialogTitle>Setup PalMirror Secure</DialogTitle>
+              <DialogTitle className="mb-4">Setup PalMirror Secure</DialogTitle>
             </DialogHeader>
             <Tabs
               defaultValue="password"
@@ -271,6 +273,7 @@ export default function Home() {
                 </motion.div>
               </TabsContent>
             </Tabs>
+            </AnimateChangeInHeight>
           </DialogContent>
         </Dialog>
       )}
