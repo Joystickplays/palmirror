@@ -295,7 +295,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     return;
   }
 
-  let messagesList: Array<{ role: string; content: string; stillGenerating?: boolean }> = [];
+  let messagesList = [];
   let userMessageContent = "";
 
   if (mode === 'send') {
@@ -340,7 +340,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
   if (mode === 'suggest') {
     finalMessages = [
-      { role: 'system', content: systemPrompt, name: 'system' },
+      { role: 'system' as 'user' | 'assistant' | 'system', content: systemPrompt, name: 'system' },
       ...messagesList.map((m) => ({ ...m, name: '-' })),
       { role: 'user', name: 'user', content:
         `[SYSTEM NOTE]: Detach from the character personality, and create a quick answer for {{user}} in accordance to ${characterData.userName}'s personality. Answer must be thoughtful and quick.`
@@ -348,7 +348,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     ];
   } else if (mode === 'rewrite') {
     finalMessages = [
-      { role: 'system', content: systemPrompt, name: 'system' },
+      { role: 'system' as 'user' | 'assistant' | 'system', content: systemPrompt, name: 'system' },
       ...messagesList.map((m) => ({ ...m, name: '-' })),
       { role: 'user', name: 'user', content:
         `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${rewriteBase}\`
@@ -356,15 +356,15 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
     ];
   } else if (mode === 'call-steer') {
     finalMessages = [
-      { role: 'system', content: systemPrompt, name: 'system' },
+      { role: 'system'  as 'user' | 'assistant' | 'system', content: systemPrompt, name: 'system' },
       ...messagesList.map((m) => ({ ...m, name: '-' })),
-      { role: 'user', name: 'user', content:
+      { role: 'user' as 'user' | 'assistant' | 'system', name: 'user', content:
         `[call-instructions].`
       }
     ];
   } else {
     finalMessages = [
-      { role: 'system', content: systemPrompt, name: 'system' },
+      { role: 'system'  as 'user' | 'assistant' | 'system', content: systemPrompt, name: 'system' },
       ...messagesList.map((msg, i) => {
         const { stillGenerating, ...m } = msg;
         return {
@@ -377,14 +377,14 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
             : msg.content
         };
       }),
-      ...(userMSGaddOnList || regenerate ? [] : [{ role: 'user', content: userMessageContent, name: '-' }]),
+      ...(userMSGaddOnList || regenerate ? [] : [{ role: 'user'  as 'user' | 'assistant' | 'system', content: userMessageContent, name: '-' }]),
       ...(messagesList.at(-1)?.role === 'assistant'
-        ? [{ role: 'user', name: 'user', content:
+        ? [{ role: 'user' as 'user' | 'assistant' | 'system', name: 'user', content:
             '[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter). ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]'
           }]
         : []),
       ...(activeSteers.length > 0 && steerApplyMethod === 'posthistory'
-        ? [{ role: 'user', name: 'user', content: generateSteerPrompt({ steers: activeSteers }) }]
+        ? [{ role: 'user' as 'user' | 'assistant' | 'system', name: 'user', content: generateSteerPrompt({ steers: activeSteers }) }]
         : [])
     ];
   }
