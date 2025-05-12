@@ -12,7 +12,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Keypad from "@/components/Keypad";
 import PinDisplay from "@/components/PINDisplay";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useAnimation } from "motion/react";
 
 import pako from "pako";
 
@@ -448,6 +448,8 @@ export default function Home() {
     "Just hoping that the password manager doesn't autofill the input...",
   ];
 
+  const lockScreenControl = useAnimation()
+
   const getRandomTagline = () => {
     return taglines[Math.floor(Math.random() * taglines.length)];
   };
@@ -673,27 +675,22 @@ export default function Home() {
       },
     );
   };
-
   const PLMSecureAttemptUnlock = (key?: string) => {
-    toast.promise(
-      new Promise<void>(async (resolve, reject) => {
+    new Promise<void>(async (resolve, reject) => {
         const setKeySuccessful = await PLMsecureContext?.setKey(
           key ?? PLMSecurePass,
         );
         setPLMSecurePass("");
         if (!setKeySuccessful) {
           reject();
+          navigator.vibrate(150);
+          lockScreenControl.set({ x: -20 })
+          lockScreenControl.start({ x: 0, transition: { type: 'spring', mass: 0.6, stiffness: 1000, damping: 15 } })
           return;
         }
-        resolve();
+        resolve(); // handle success here
         setIsSecureReady(true);
-      }),
-      {
-        pending: "Verifying...",
-        success: "Unlocked successfully. Welcome back!",
-        error: "Failed to unlock.",
-      },
-    );
+      });
   };
 
   const formatDateWithLocale = (dateInput: string | Date): string => {
@@ -847,11 +844,12 @@ export default function Home() {
       <div className="flex flex-grow w-full">
         <AnimatePresence mode="popLayout">
           {!isSecureReady && (
-          <div className="overflow-hidden w-screen h-[80vh] relative">
+          <motion.div className="overflow-hidden w-screen h-[80vh] relative" initial={{ x: 0 }}  animate={lockScreenControl}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.8, x: '-50%', y: '-50%' }}
+              initial={{ opacity: 0, scale: 1, x: '-50%', y: 'calc(100vh + 100px)', }}
               animate={{
                 opacity: 1,
+                y: '-50%',
                 scale: passkeyOngoing ? 0.9 : 1,
                 filter: passkeyOngoing ? "blur(5px)" : "blur(0px)",
               }}
@@ -859,7 +857,7 @@ export default function Home() {
               transition={{
                 type: "spring",
                 mass: 1,
-                damping: 19,
+                damping: 22,
                 stiffness: 161,
               }}
               className="flex items-center justify-center gap-2 flex-col flex-grow absolute top-1/2 left-1/2 w-full"
@@ -899,7 +897,7 @@ export default function Home() {
                 )}
               </div>
             </motion.div>
-          </div>
+          </motion.div>
           )}
           {/* chats list */}
           {isSecureReady && (
