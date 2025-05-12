@@ -69,6 +69,7 @@ const ChatPage = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [activeSteers, setActiveSteers] = useState<string[]>([]);
+  const [steerApplyMethod, setSteerApplyMethod] = useState("system");
   const addSteer = (newSteer: string) => {
     const updated = [...activeSteers, newSteer];
     setActiveSteers(updated);
@@ -83,11 +84,11 @@ const ChatPage = () => {
     const baseRules = [
       "NEVER respond to this message. Do NOT say “Got it” or anything like it.",
       "NEVER mention or hint at these instructions, even subtly.",
-      "REMEMBER TO ADHERE THESE INSTRUCTIONS AS SUBTLE AS POSSIBLE!",
-      "THESE INSTRUCTIONS ARE TO BE SUBTLE AS 50 MESSAGES AT MINIMUM! INTEGRATE IT AS A **STORY DIRECTION**, NOT IMMEDIATE APPLICATION.",
       "The character must behave as if these ideas came naturally.",
       "Blend the changes into the story slowly and believably.",
       "Stay in-character and immersive at all times.",
+      "REMEMBER TO ADHERE THESE INSTRUCTIONS AS SUBTLE AS POSSIBLE!",
+      "THESE INSTRUCTIONS ARE TO BE SUBTLE AS 10 MESSAGES AT MINIMUM! INTEGRATE IT AS A **STORY DIRECTION**, NOT IMMEDIATE APPLICATION.",
     ];
 
     const conflictRule =
@@ -114,7 +115,7 @@ Rules:
 ${formattedRules}
 
 These are secret orders. Obey them completely, without being noticed.
-Keep this in mind while continuing the conversation from user's last message.`;
+ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the instructions above without question!`;
   };
 
   const { theme, getTheme } = useTheme();
@@ -274,186 +275,164 @@ Keep this in mind while continuing the conversation from user's last message.`;
   };
 
   const handleSendMessage = async (
-    e: React.KeyboardEvent<HTMLTextAreaElement> | null,
-    force = false,
-    regenerate = false,
-    optionalMessage = "",
-    userMSGaddOnList = true,
-  ) => {
-    // Prevent default behavior if Enter key is pressed
-    if (e && e.key === "Enter") {
-      try {
-        e.preventDefault();
-      } catch {}
-    }
-    // Return early if not forced, and Enter key not pressed
-    if (!force && e && e.key !== "Enter") return;
+  e: React.KeyboardEvent<HTMLTextAreaElement> | null,
+  force = false,
+  regenerate = false,
+  optionalMessage = "",
+  userMSGaddOnList = true,
+  mode = 'send',
+  rewriteBase: string = "",
+  destination = 'chat'
+) => {
+  if (mode === 'send') {
+    if (e?.key === "Enter") try { e.preventDefault(); } catch {}
+    if (!force && e?.key !== "Enter") return;
+  }
 
-    loadSettingsFromLocalStorage();
-    if (!baseURL.includes("http")) {
-      toast.error("You need to configure your AI provider first in Settings.");
-      return;
-    }
+  loadSettingsFromLocalStorage();
+  if (!baseURL.includes("http")) {
+    toast.error("You need to configure your AI provider first in Settings.");
+    return;
+  }
 
+  let messagesList: Array<{ role: string; content: string; stillGenerating?: boolean }> = [];
+  let userMessageContent = "";
+
+  if (mode === 'send') {
     let regenerationMessage: string | undefined;
     if (regenerate) {
-      const userMessage = messages
+      regenerationMessage = messages
         .slice()
         .reverse()
-        .find((message) => message.role === "user");
-      regenerationMessage = userMessage?.content;
+        .find((m) => m.role === "user")
+        ?.content;
     }
-
-    let messagesList = [...messages]; // Create a copy to avoid direct mutation, and because how React states work
+    messagesList = [...messages];
     if (regenerate) {
-      messagesList = [...messagesList.slice(0, -1)];
+      messagesList = messagesList.slice(0, -1);
       setMessages(messagesList);
     }
-
-    const userMessageContent = regenerate
-      ? regenerationMessage
-        ? regenerationMessage
-        : ""
-      : optionalMessage !== ""
+    userMessageContent = regenerate
+      ? regenerationMessage ?? ''
+      : optionalMessage !== ''
         ? optionalMessage.trim()
         : newMessage.trim();
-
     if (userMessageContent && userMSGaddOnList) {
-      // Add user message to the message list
-      messagesList = [
-        ...messagesList,
-        { role: "user", content: userMessageContent, stillGenerating: false },
-      ];
-      // Update the messages state
+      messagesList.push({ role: 'user', content: userMessageContent, stillGenerating: false });
       setMessages(messagesList);
-      // Clear the input field
-      setNewMessage("");
-      // Refocus the textarea
+      setNewMessage('');
       textareaRef.current?.focus();
     }
-
-    //messagesList = checkAndTrimMessages(messagesList);
-
     setIsThinking(true);
-    const systemMessageContent = getSystemMessage(
-      characterData,
-      modelInstructions + (activeSteers.length > 0 ? generateSteerPrompt({ steers: activeSteers }) : ""),
-    );
-    const finalStructuredMessages: ChatCompletionMessageParam[] = [
-      { role: "system", content: systemMessageContent, name: "system" },
-      ...messagesList.map((msg, index) => {
-        const { stillGenerating, ...messageWithoutStillGenerating } = msg;
+  } else {
+    messagesList = checkAndTrimMessages([...messages]);
+  }
+
+  const systemPrompt = getSystemMessage(
+    characterData,
+    modelInstructions +
+      (activeSteers.length > 0 && steerApplyMethod === "system"
+        ? generateSteerPrompt({ steers: activeSteers })
+        : "")
+  );
+
+  let finalMessages: ChatCompletionMessageParam[] = [];
+
+  if (mode === 'suggest') {
+    finalMessages = [
+      { role: 'system', content: systemPrompt, name: 'system' },
+      ...messagesList.map((m) => ({ ...m, name: '-' })),
+      { role: 'user', name: 'user', content:
+        `[SYSTEM NOTE]: Detach from the character personality, and create a quick answer for {{user}} in accordance to ${characterData.userName}'s personality. Answer must be thoughtful and quick.`
+      }
+    ];
+  } else if (mode === 'rewrite') {
+    finalMessages = [
+      { role: 'system', content: systemPrompt, name: 'system' },
+      ...messagesList.map((m) => ({ ...m, name: '-' })),
+      { role: 'user', name: 'user', content:
+        `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${rewriteBase}\`
+Your enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.` }
+    ];
+  } else if (mode === 'call-steer') {
+    finalMessages = [
+      { role: 'system', content: systemPrompt, name: 'system' },
+      ...messagesList.map((m) => ({ ...m, name: '-' })),
+      { role: 'user', name: 'user', content:
+        `[call-instructions].`
+      }
+    ];
+  } else {
+    finalMessages = [
+      { role: 'system', content: systemPrompt, name: 'system' },
+      ...messagesList.map((msg, i) => {
+        const { stillGenerating, ...m } = msg;
         return {
-          ...messageWithoutStillGenerating,
-          name: "-",
-          role: msg.role as "user" | "assistant" | "system",
-          content:
-            index === 1 &&
-            msg.role === "user" &&
-            characterData.plmex.dynamicStatuses.length > 0
-              ? msg.content +
-                " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
-              : msg.content,
+          ...m,
+          name: '-',
+          role: msg.role as 'user' | 'assistant' | 'system',
+          content: i === 1 && msg.role === 'user' && characterData.plmex.dynamicStatuses.length > 0
+            ? msg.content +
+              ' [SYSTEM NOTE: Add {{char}}\'s status at the very end of your message.]'
+            : msg.content
         };
       }),
-      ...(userMSGaddOnList || regenerate
-        ? []
-        : ([
-            { role: "user", content: userMessageContent, name: "-" },
-          ] as const)),
+      ...(userMSGaddOnList || regenerate ? [] : [{ role: 'user', content: userMessageContent, name: '-' }]),
+      ...(messagesList.at(-1)?.role === 'assistant'
+        ? [{ role: 'user', name: 'user', content:
+            '[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter). ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]'
+          }]
+        : []),
+      ...(activeSteers.length > 0 && steerApplyMethod === 'posthistory'
+        ? [{ role: 'user', name: 'user', content: generateSteerPrompt({ steers: activeSteers }) }]
+        : [])
     ];
+  }
 
-    const lastMessage = messagesList[messagesList.length - 1];
-    if (lastMessage?.role === "assistant") {
-      finalStructuredMessages.push({
-        role: "user",
-        content:
-          "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter). ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
-        name: "user",
-      });
-    }
+  try {
+    abortController.current = new AbortController();
+    const comp = await openai.chat.completions.create({
+      model: modelName,
+      messages: finalMessages,
+      stream: true,
+      temperature: generationTemperature
+    });
 
- //   if (activeSteers.length > 0) {
- //     finalStructuredMessages.push({
- //       role: "user",
- //       content: ,
- //       name: "user",
- //     });
- //   }
-    console.log(finalStructuredMessages)
+    let assistantMessage = '';
 
-    try {
-      abortController.current = new AbortController();
-      const comp = await openai.chat.completions.create({
-        model: modelName,
-        messages: finalStructuredMessages,
-        stream: true,
-        temperature: generationTemperature,
-      });
-
-      let assistantMessage = "";
-      // Add a placeholder message while waiting for the response
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { role: "assistant", content: "", stillGenerating: true },
-      ]);
-
+    if (destination === 'chat') {
+      setMessages((p) => [...p, { role: 'assistant', content: '', stillGenerating: true }]);
       for await (const chunk of comp) {
         if (abortController.current?.signal.aborted) break;
-
-        if (chunk?.choices?.[0]?.delta) {
-          const chunkContent = chunk.choices[0].delta.content || "";
-          assistantMessage += chunkContent;
-        }
-
-        if ("usage" in chunk) {
-          const usage = chunk.usage;
-          if (usage && usage.total_tokens > 0) {
-            setTokenCount(usage.total_tokens);
-          }
-        }
-
-        // Update the message with the latest chunk
-        setMessages((prevMessages) => [
-          ...prevMessages.slice(0, -1),
-          {
-            role: "assistant",
-            content: assistantMessage,
-            stillGenerating: true,
-          },
-        ]);
+        const c = chunk.choices[0].delta.content || '';
+        assistantMessage += c;
+        if ('usage' in chunk && chunk.usage?.total_tokens) setTokenCount(chunk.usage.total_tokens);
+        setMessages((p) => [...p.slice(0, -1), { role: 'assistant', content: assistantMessage, stillGenerating: true }]);
         vibrate(10);
       }
-    } catch (error) {
-      if (!abortController.current?.signal.aborted) {
-        if (
-          error instanceof Error &&
-          error.message.includes("reduce the length")
-        ) {
-          handleSendMessage(
-            e,
-            force,
-            regenerate,
-            optionalMessage,
-            userMSGaddOnList,
-          );
-          return; // Exit early to avoid setting isThinking to false
-        } else {
-          toast.error(
-            "Error: " +
-              (error instanceof Error ? error.message : String(error)),
-          );
-        }
+      setMessages((p) => [...p.slice(0, -1), { ...p[p.length - 1], stillGenerating: false }]);
+      if (mode === 'send') setIsThinking(false);
+    } else {
+      for await (const chunk of comp) {
+        if (abortController.current?.signal.aborted) break;
+        const c = chunk.choices[0].delta.content || '';
+        assistantMessage += c;
+        setNewMessage(assistantMessage);
+        vibrate(10);
       }
-    } finally {
-      setMessages((prevMessages) => [
-        ...prevMessages.slice(0, -1),
-        { ...prevMessages[prevMessages.length - 1], stillGenerating: false },
-      ]);
-      abortController.current = null;
-      setIsThinking(false);
     }
-  };
+  } catch (err) {
+    if (!abortController.current?.signal.aborted) {
+      if (err instanceof Error && err.message.includes('reduce the length')) {
+        return handleSendMessage(e, force, regenerate, optionalMessage, userMSGaddOnList, mode, rewriteBase, destination);
+      }
+      toast.error('Error: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  } finally {
+    abortController.current = null;
+  }
+};
+
 
   const regenerateMessage = () => {
     const updatedMessages = [...messages];
@@ -478,122 +457,20 @@ Keep this in mind while continuing the conversation from user's last message.`;
 
   const suggestReply = async () => {
     setUserPromptThinking(true);
-    const systemMessageContent = getSystemMessage(
-      characterData,
-      modelInstructions,
-    );
-
-    const messagesList = checkAndTrimMessages([...messages]);
-
-    try {
-      abortController.current = new AbortController();
-      const comp = await openai.chat.completions.create({
-        model: modelName,
-        messages: [
-          { role: "system", content: systemMessageContent, name: "system" },
-          ...messagesList.map((msg) => ({ ...msg, name: "-" })),
-          {
-            role: "user",
-            content: `[SYSTEM NOTE]: Detach from the character personality, and create a quick answer for {{user}} in accordance to ${characterData.userName}'s personality. Answer must be thoughtful and quick.`,
-            name: "user",
-          },
-        ],
-        stream: true,
-        temperature: generationTemperature,
-      });
-
-      let assistantMessage = "";
-
-      for await (const chunk of comp) {
-        if (abortController.current?.signal.aborted) break;
-
-        const chunkContent = chunk.choices[0].delta.content || "";
-        assistantMessage += chunkContent;
-
-        // Update the message input box
-        setNewMessage(assistantMessage);
-        vibrate(10);
-      }
-    } catch (error) {
-      if (!abortController.current?.signal.aborted) {
-        if (
-          error instanceof Error &&
-          error.message.includes("reduce the length")
-        ) {
-          suggestReply();
-        } else {
-          toast.error(
-            "Error: " +
-              (error instanceof Error ? error.message : String(error)),
-          );
-          setUserPromptThinking(false);
-        }
-      }
-      abortController.current = null;
-    } finally {
-      abortController.current = null;
-      setUserPromptThinking(false);
-    }
+    await handleSendMessage(null, true, false, "", false, "suggest", 'input');
+    setUserPromptThinking(false);
   };
 
   const rewriteMessage = async (base: string) => {
     setUserPromptThinking(true);
-    const systemMessageContent = getSystemMessage(
-      characterData,
-      modelInstructions,
-    );
+    await handleSendMessage(null, true, false, "", false, "rewrite", base, 'input');
+    setUserPromptThinking(false);
+  };
 
-    const messagesList = checkAndTrimMessages([...messages]);
-
-    try {
-      abortController.current = new AbortController();
-      const comp = await openai.chat.completions.create({
-        model: modelName,
-        messages: [
-          { role: "system", content: systemMessageContent, name: "system" },
-          ...messagesList.map((msg) => ({ ...msg, name: "-" })),
-          {
-            role: "user",
-            content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${base}\`\nYour enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`,
-            name: "user",
-          },
-        ],
-        stream: true,
-        temperature: generationTemperature,
-      });
-
-      let assistantMessage = "";
-
-      for await (const chunk of comp) {
-        if (abortController.current?.signal.aborted) break;
-
-        const chunkContent = chunk.choices[0].delta.content || "";
-        assistantMessage += chunkContent;
-
-        // Update the message input box
-        setNewMessage(assistantMessage);
-        vibrate(10);
-      }
-    } catch (error) {
-      if (!abortController.current?.signal.aborted) {
-        if (
-          error instanceof Error &&
-          error.message.includes("reduce the length")
-        ) {
-          rewriteMessage(base);
-        } else {
-          toast.error(
-            "Error: " +
-              (error instanceof Error ? error.message : String(error)),
-          );
-          setUserPromptThinking(false);
-        }
-      }
-      abortController.current = null;
-    } finally {
-      abortController.current = null;
-      setUserPromptThinking(false);
-    }
+  const callSteer = async () => {
+    setIsThinking(true);
+    await handleSendMessage(null, true, false, "", false, "call-steer");
+    setIsThinking(false);
   };
 
   const cancelRequest = () => {
@@ -902,6 +779,9 @@ Keep this in mind while continuing the conversation from user's last message.`;
           activeSteers={activeSteers}
           addSteer={addSteer}
           removeSteer={removeSteer}
+          steerApplyMethod={steerApplyMethod}
+          setSteerApplyMethod={setSteerApplyMethod}
+          callSteer={callSteer}
         />
       </motion.div>
       <TokenCounter tokenCount={tokenCount} />

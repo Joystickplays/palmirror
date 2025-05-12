@@ -22,6 +22,14 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useTheme } from "@/components/PalMirrorThemeProvider";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 import { AnimatePresence, motion } from "framer-motion";
@@ -47,6 +55,9 @@ interface MessageInputProps {
   activeSteers: string[];
   addSteer: (steer: string) => void;
   removeSteer: (index: number) => void;
+  steerApplyMethod: string;
+  setSteerApplyMethod: React.Dispatch<React.SetStateAction<string>>;
+  callSteer: () => void;
 }
 
 const MotionButton = motion(Button);
@@ -63,6 +74,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
   activeSteers,
   addSteer,
   removeSteer,
+  steerApplyMethod,
+  setSteerApplyMethod,
+  callSteer,
 }) => {
   const [localMessage, setLocalMessage] = useState(newMessage);
   const localMessageRef = useRef<string>("");
@@ -74,7 +88,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const rotateRudder = () => {
     setRudderRot((p) => p + Math.floor(Math.random() * 91) - 90);
   };
-
 
   useEffect(() => {
     setLocalMessage(newMessage);
@@ -129,12 +142,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
       emptyMessage();
     }
   };
- 
+
   useEffect(() => {
     if (modalSteer) return;
     let i = 0;
     const id = setInterval(() => {
-      document.body.style.pointerEvents = 'auto';
+      document.body.style.pointerEvents = "auto";
       if (++i >= 10) clearInterval(id);
     }, 200);
     return () => clearInterval(id);
@@ -150,20 +163,30 @@ const MessageInput: React.FC<MessageInputProps> = ({
             animate={{ scale: 1, height: "fit-content", marginBottom: 8 }}
             exit={{ height: 0, opacity: 0, margin: 0, padding: 0 }}
             transition={{ type: "spring", stiffness: 100, damping: 16 }}
-            className="opacity-50 text-sm px-4 mb-2 flex gap-2 items-center origin-bottom overflow-y-hidden"
+            className="opacity-50 text-sm px-2 mb-2 flex gap-2 items-center origin-bottom overflow-y-hidden"
           >
             <ShipWheel />
             <p>
               {activeSteers.length} Steer{activeSteers.length > 1 ? "s" : ""}{" "}
               {activeSteers.length > 1 ? "are" : "is"} active
             </p>
+            <div className="flex overflow-x-auto gap-2 block ml-auto sm:max-w-[500px] max-w-[180px]">
             <Button
               variant="outline"
-              className="h-6 px-2 py-0 text-xs opacity-75 block ml-auto"
+              className="h-6 px-2 py-0 text-xs opacity-75"
               onClick={() => setModalSteer(true)}
             >
               MANAGE STEERING
             </Button>
+            <Button
+              variant="outline"
+              className="h-6 px-2 py-0 text-xs opacity-75"
+              disabled={isThinking || userPromptThinking}
+              onClick={() => callSteer()}
+            >
+              CALL STEER
+            </Button>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -185,7 +208,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
               Steer the story towards your direction in a way that&apos;s subtle
               and non-intrusive.
             </p>
-              <p className="opacity-50 italic text-xs text-center mt-3">Steers do not save!</p>
+            <p className="opacity-50 italic text-xs text-center mt-3">
+              Steers do not save!
+            </p>
 
             <h1 className="opacity-50 font-bold mt-6 mb-2">STEERS</h1>
             <div className="flex flex-col gap-2">
@@ -235,7 +260,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                       className="border rounded-xl p-4 flex gap-2 justify-between items-center flex-grow"
                       layout
                     >
-                      <p>{steer}</p>
+                      <p className="break-words">{steer}</p>
                       <Button
                         size="icon"
                         variant="outline"
@@ -243,6 +268,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                           removeSteer(index);
                           rotateRudder();
                         }}
+                        className="min-w-10 ml-2"
                       >
                         <Trash />
                       </Button>
@@ -250,6 +276,29 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   );
                 })}
               </AnimatePresence>
+              <h1 className="opacity-50 font-bold mt-6 mb-2">ADVANCED</h1>
+              <p className="text-xs mb-1">Apply method</p>
+              <Select
+                value={steerApplyMethod}
+                onValueChange={(s) => setSteerApplyMethod(s)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Apply method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="system">System instruction</SelectItem>
+                  <SelectItem value="posthistory">
+                    Post-history user message
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="opacity-50 text-xs">
+                {steerApplyMethod == "system"
+                  ? "Injects the instructions on the FIRST system message at the top. More subtle but less effective on bigger chats."
+                  : steerApplyMethod == "posthistory"
+                    ? "Injects the instructions as a system message at the very bottom of the chat history. Applies steers more efficiently but may be too noticeable/quick."
+                    : "idk lol"}
+              </p>
             </div>
           </AnimateChangeInHeight>
         </MotionDialogContent>
