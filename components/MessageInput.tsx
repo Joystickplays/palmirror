@@ -242,13 +242,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
                         y: 50,
                         opacity: 0,
                         scale: 0.8,
-                        filter: "blur(10px)",
                       }}
                       animate={{
                         y: 0,
                         opacity: 1,
                         scale: 1,
-                        filter: "blur(0px)",
                       }}
                       exit={{ scale: 0.8, opacity: 0 }}
                       transition={{
