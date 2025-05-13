@@ -5,6 +5,7 @@ import React from "react";
 import MessageCard from "@/components/MessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
+import SteerBar from "@/components/SteerBar";
 import TokenCounter from "@/components/TokenCounter";
 import NewcomerDrawer from "@/components/NewcomerDrawer";
 import { useThrottle } from "@/utils/useThrottle";
@@ -69,6 +70,8 @@ const ChatPage = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [activeSteers, setActiveSteers] = useState<string[]>([]);
+  const [manageSteerModal, setManageSteerModal] = useState(false);
+
   const [steerApplyMethod, setSteerApplyMethod] = useState("system");
   const addSteer = (newSteer: string) => {
     const updated = [...activeSteers, newSteer];
@@ -106,7 +109,11 @@ const ChatPage = () => {
       .map((rule) => `- ${rule}`)
       .join("\n");
 
-    return `[System Instruction: ${steers.length > 1 ? "These rules are now active. You must follow them in every reply." : "Follow the rule below exactly."}]
+    return `[System Instruction: ${
+      steers.length > 1
+        ? "These rules are now active. You must follow them in every reply."
+        : "Follow the rule below exactly."
+    }]
 
 ${instructionLabel}:
 ${formattedSteers}
@@ -129,7 +136,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
   const downloadFile = (
     content: string,
     fileName: string,
-    contentType: string,
+    contentType: string
   ) => {
     const file = new Blob([content], { type: contentType });
     const link = document.createElement("a");
@@ -169,7 +176,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       if (typeof file === "string") {
         const decodedString = atob(file);
         const decodedArray = new Uint8Array(
-          decodedString.split("").map((char) => char.charCodeAt(0)),
+          decodedString.split("").map((char) => char.charCodeAt(0))
         );
         const decoder = new TextDecoder();
         const json = decoder.decode(decodedArray);
@@ -181,7 +188,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       const fileContent = await file.text(); // Read the file content
       const decodedString = atob(fileContent);
       const decodedArray = new Uint8Array(
-        decodedString.split("").map((char) => char.charCodeAt(0)),
+        decodedString.split("").map((char) => char.charCodeAt(0))
       );
       const decoder = new TextDecoder();
       const json = decoder.decode(decodedArray);
@@ -241,7 +248,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         PLMSecContext.isSecureReady()
       ) {
         const proxySettings = (await PLMSecContext.getSecureData(
-          "generalSettings",
+          "generalSettings"
         )) as PLMSecureGeneralSettings;
         setApiKey(proxySettings.proxy.api_key);
       }
@@ -258,181 +265,256 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       role: "user" | "assistant" | "system";
       content: string;
       stillGenerating: boolean;
-    }>,
+    }>
   ) => {
     let totalLength = messagesList.reduce(
       (acc, msg) => acc + msg.content.length,
-      0,
+      0
     );
     while (totalLength > 16000 && messagesList.length > 0) {
       messagesList.shift();
       totalLength = messagesList.reduce(
         (acc, msg) => acc + msg.content.length,
-        0,
+        0
       );
     }
     return messagesList;
   };
 
   const handleSendMessage = async (
-  e: React.KeyboardEvent<HTMLTextAreaElement> | null,
-  force = false,
-  regenerate = false,
-  optionalMessage = "",
-  userMSGaddOnList = true,
-  mode = 'send',
-  rewriteBase: string = "",
-  destination = 'chat'
-) => {
-  if (mode === 'send') {
-    if (e?.key === "Enter") try { e.preventDefault(); } catch {}
-    if (!force && e?.key !== "Enter") return;
-  }
+    e: React.KeyboardEvent<HTMLTextAreaElement> | null,
+    force = false,
+    regenerate = false,
+    optionalMessage = "",
+    userMSGaddOnList = true,
+    mode = "send",
+    rewriteBase: string = "",
+    destination = "chat"
+  ) => {
+    if (mode === "send") {
+      if (e?.key === "Enter")
+        try {
+          e.preventDefault();
+        } catch {}
+      if (!force && e?.key !== "Enter") return;
+    }
 
-  loadSettingsFromLocalStorage();
-  if (!baseURL.includes("http")) {
-    toast.error("You need to configure your AI provider first in Settings.");
-    return;
-  }
+    loadSettingsFromLocalStorage();
+    if (!baseURL.includes("http")) {
+      toast.error("You need to configure your AI provider first in Settings.");
+      return;
+    }
 
-  let messagesList = [];
-  let userMessageContent = "";
+    let messagesList = [];
+    let userMessageContent = "";
 
-  if (mode === 'send') {
-    let regenerationMessage: string | undefined;
-    if (regenerate) {
-      regenerationMessage = messages
+    if (mode === "send") {
+      let regenerationMessage: string | undefined;
+      if (regenerate) {
+        regenerationMessage = messages
         .slice()
         .reverse()
-        .find((m) => m.role === "user")
-        ?.content;
-    }
-    messagesList = [...messages];
-    if (regenerate) {
-      messagesList = messagesList.slice(0, -1);
-      setMessages(messagesList);
-    }
-    userMessageContent = regenerate
-      ? regenerationMessage ?? ''
-      : optionalMessage !== ''
+        .find((m) => m.role === "user")?.content;
+      }
+      messagesList = [...messages];
+      if (regenerate) {
+        messagesList = messagesList.slice(0, -1);
+        setMessages(messagesList);
+      }
+      userMessageContent = regenerate
+        ? regenerationMessage ?? ""
+        : optionalMessage !== ""
         ? optionalMessage.trim()
         : newMessage.trim();
-    if (userMessageContent && userMSGaddOnList) {
-      messagesList.push({ role: 'user', content: userMessageContent, stillGenerating: false });
-      setMessages(messagesList);
-      setNewMessage('');
-      textareaRef.current?.focus();
-    }
-    setIsThinking(true);
-  } else {
-    messagesList = checkAndTrimMessages([...messages]);
-  }
-
-  const systemPrompt = getSystemMessage(
-    characterData,
-    modelInstructions +
-      (activeSteers.length > 0 && steerApplyMethod === "system"
-        ? generateSteerPrompt({ steers: activeSteers })
-        : "")
-  );
-
-  let finalMessages: ChatCompletionMessageParam[] = [];
-
-  if (mode === 'suggest') {
-    finalMessages = [
-      { role: 'system' as 'user' | 'assistant' | 'system', content: systemPrompt, name: 'system' },
-      ...messagesList.map((m) => ({ ...m, name: '-' })),
-      { role: 'user', name: 'user', content:
-        `[SYSTEM NOTE]: Detach from the character personality, and create a quick answer for {{user}} in accordance to ${characterData.userName}'s personality. Answer must be thoughtful and quick.`
+      if (userMessageContent && userMSGaddOnList) {
+        messagesList.push({
+          role: "user",
+          content: userMessageContent,
+          stillGenerating: false,
+        });
+        setMessages(messagesList);
+        setNewMessage("");
+        textareaRef.current?.focus();
       }
-    ];
-  } else if (mode === 'rewrite') {
-    finalMessages = [
-      { role: 'system' as 'user' | 'assistant' | 'system', content: systemPrompt, name: 'system' },
-      ...messagesList.map((m) => ({ ...m, name: '-' })),
-      { role: 'user', name: 'user', content:
-        `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${rewriteBase}\`
-Your enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.` }
-    ];
-  } else if (mode === 'call-steer') {
-    finalMessages = [
-      { role: 'system'  as 'user' | 'assistant' | 'system', content: systemPrompt, name: 'system' },
-      ...messagesList.map((m) => ({ ...m, name: '-' })),
-      { role: 'user' as 'user' | 'assistant' | 'system', name: 'user', content:
-        `[call-instructions].`
-      }
-    ];
-  } else {
-    finalMessages = [
-      { role: 'system'  as 'user' | 'assistant' | 'system', content: systemPrompt, name: 'system' },
-      ...messagesList.map((msg, i) => {
-        const { stillGenerating, ...m } = msg;
-        return {
-          ...m,
-          name: '-',
-          role: msg.role as 'user' | 'assistant' | 'system',
-          content: i === 1 && msg.role === 'user' && characterData.plmex.dynamicStatuses.length > 0
-            ? msg.content +
-              ' [SYSTEM NOTE: Add {{char}}\'s status at the very end of your message.]'
-            : msg.content
-        };
-      }),
-      ...(userMSGaddOnList || regenerate ? [] : [{ role: 'user'  as 'user' | 'assistant' | 'system', content: userMessageContent, name: '-' }]),
-      ...(messagesList.at(-1)?.role === 'assistant'
-        ? [{ role: 'user' as 'user' | 'assistant' | 'system', name: 'user', content:
-            '[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter). ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]'
-          }]
-        : []),
-      ...(activeSteers.length > 0 && steerApplyMethod === 'posthistory'
-        ? [{ role: 'user' as 'user' | 'assistant' | 'system', name: 'user', content: generateSteerPrompt({ steers: activeSteers }) }]
-        : [])
-    ];
-  }
-
-  try {
-    abortController.current = new AbortController();
-    const comp = await openai.chat.completions.create({
-      model: modelName,
-      messages: finalMessages,
-      stream: true,
-      temperature: generationTemperature
-    });
-
-    let assistantMessage = '';
-
-    if (destination === 'chat') {
-      setMessages((p) => [...p, { role: 'assistant', content: '', stillGenerating: true }]);
-      for await (const chunk of comp) {
-        if (abortController.current?.signal.aborted) break;
-        const c = chunk.choices[0].delta.content || '';
-        assistantMessage += c;
-        if ('usage' in chunk && chunk.usage?.total_tokens) setTokenCount(chunk.usage.total_tokens);
-        setMessages((p) => [...p.slice(0, -1), { role: 'assistant', content: assistantMessage, stillGenerating: true }]);
-        vibrate(10);
-      }
-      setMessages((p) => [...p.slice(0, -1), { ...p[p.length - 1], stillGenerating: false }]);
-      if (mode === 'send') setIsThinking(false);
+      setIsThinking(true);
     } else {
-      for await (const chunk of comp) {
-        if (abortController.current?.signal.aborted) break;
-        const c = chunk.choices[0].delta.content || '';
-        assistantMessage += c;
-        setNewMessage(assistantMessage);
-        vibrate(10);
-      }
+      messagesList = checkAndTrimMessages([...messages]);
     }
-  } catch (err) {
-    if (!abortController.current?.signal.aborted) {
-      if (err instanceof Error && err.message.includes('reduce the length')) {
-        return handleSendMessage(e, force, regenerate, optionalMessage, userMSGaddOnList, mode, rewriteBase, destination);
-      }
-      toast.error('Error: ' + (err instanceof Error ? err.message : String(err)));
-    }
-  } finally {
-    abortController.current = null;
-  }
-};
 
+    const systemPrompt = getSystemMessage(
+      characterData,
+      modelInstructions +
+        (activeSteers.length > 0 && steerApplyMethod === "system"
+          ? generateSteerPrompt({ steers: activeSteers })
+          : "")
+    );
+
+    let finalMessages: ChatCompletionMessageParam[] = [];
+
+    if (mode === "suggest") {
+      finalMessages = [
+        {
+          role: "system" as "user" | "assistant" | "system",
+          content: systemPrompt,
+          name: "system",
+        },
+        ...messagesList.map((m) => ({ ...m, name: "-" })),
+        {
+          role: "user",
+          name: "user",
+          content: `[SYSTEM NOTE]: Detach from the character personality, and create a quick answer for {{user}} in accordance to ${characterData.userName}'s personality. Answer must be thoughtful and quick.`,
+        },
+      ];
+    } else if (mode === "rewrite") {
+      finalMessages = [
+        {
+          role: "system" as "user" | "assistant" | "system",
+          content: systemPrompt,
+          name: "system",
+        },
+        ...messagesList.map((m) => ({ ...m, name: "-" })),
+        {
+          role: "user",
+          name: "user",
+          content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${rewriteBase}\`
+Your enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`,
+        },
+      ];
+    } else if (mode === "call-steer") {
+      finalMessages = [
+        {
+          role: "system" as "user" | "assistant" | "system",
+          content: systemPrompt,
+          name: "system",
+        },
+        ...messagesList.map((m) => ({ ...m, name: "-" })),
+        {
+          role: "user" as "user" | "assistant" | "system",
+          name: "user",
+          content: `[call-instructions].`,
+        },
+      ];
+    } else {
+      finalMessages = [
+        {
+          role: "system" as "user" | "assistant" | "system",
+          content: systemPrompt,
+          name: "system",
+        },
+        ...messagesList.map((msg, i) => {
+          const { stillGenerating, ...m } = msg;
+          return {
+            ...m,
+            name: "-",
+            role: msg.role as "user" | "assistant" | "system",
+            content:
+              i === 1 &&
+              msg.role === "user" &&
+              characterData.plmex.dynamicStatuses.length > 0
+                ? msg.content +
+                  " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
+                : msg.content,
+          };
+        }),
+        ...(userMSGaddOnList || regenerate
+          ? []
+          : [
+              {
+                role: "user" as "user" | "assistant" | "system",
+                content: userMessageContent,
+                name: "-",
+              },
+            ]),
+        ...(messagesList.at(-1)?.role === "assistant"
+          ? [
+              {
+                role: "user" as "user" | "assistant" | "system",
+                name: "user",
+                content:
+                  "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter). ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
+              },
+            ]
+          : []),
+        ...(activeSteers.length > 0 && steerApplyMethod === "posthistory"
+          ? [
+              {
+                role: "user" as "user" | "assistant" | "system",
+                name: "user",
+                content: generateSteerPrompt({ steers: activeSteers }),
+              },
+            ]
+          : []),
+      ];
+    }
+
+    try {
+      abortController.current = new AbortController();
+      const comp = await openai.chat.completions.create({
+        model: modelName,
+        messages: finalMessages,
+        stream: true,
+        temperature: generationTemperature,
+      });
+
+      let assistantMessage = "";
+
+      if (destination === "chat") {
+        setMessages((p) => [
+          ...p,
+          { role: "assistant", content: "", stillGenerating: true },
+        ]);
+        for await (const chunk of comp) {
+          if (abortController.current?.signal.aborted) break;
+          const c = chunk.choices[0].delta.content || "";
+          assistantMessage += c;
+          if ("usage" in chunk && chunk.usage?.total_tokens)
+            setTokenCount(chunk.usage.total_tokens);
+          setMessages((p) => [
+            ...p.slice(0, -1),
+            {
+              role: "assistant",
+              content: assistantMessage,
+              stillGenerating: true,
+            },
+          ]);
+          vibrate(10);
+        }
+        setMessages((p) => [
+          ...p.slice(0, -1),
+          { ...p[p.length - 1], stillGenerating: false },
+        ]);
+        if (mode === "send") setIsThinking(false);
+      } else {
+        for await (const chunk of comp) {
+          if (abortController.current?.signal.aborted) break;
+          const c = chunk.choices[0].delta.content || "";
+          assistantMessage += c;
+          setNewMessage(assistantMessage);
+          vibrate(10);
+        }
+      }
+    } catch (err) {
+      if (!abortController.current?.signal.aborted) {
+        if (err instanceof Error && err.message.includes("reduce the length")) {
+          return handleSendMessage(
+            e,
+            force,
+            regenerate,
+            optionalMessage,
+            userMSGaddOnList,
+            mode,
+            rewriteBase,
+            destination
+          );
+        }
+        toast.error(
+          "Error: " + (err instanceof Error ? err.message : String(err))
+        );
+      }
+    } finally {
+      abortController.current = null;
+    }
+  };
 
   const regenerateMessage = () => {
     const updatedMessages = [...messages];
@@ -457,13 +539,31 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
 
   const suggestReply = async () => {
     setUserPromptThinking(true);
-    await handleSendMessage(null, true, false, "", false, "suggest", '', 'input');
+    await handleSendMessage(
+      null,
+      true,
+      false,
+      "",
+      false,
+      "suggest",
+      "",
+      "input"
+    );
     setUserPromptThinking(false);
   };
 
   const rewriteMessage = async (base: string) => {
     setUserPromptThinking(true);
-    await handleSendMessage(null, true, false, "", false, "rewrite", base, 'input');
+    await handleSendMessage(
+      null,
+      true,
+      false,
+      "",
+      false,
+      "rewrite",
+      base,
+      "input"
+    );
     setUserPromptThinking(false);
   };
 
@@ -521,7 +621,7 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
     changingStatus: string,
     changingStatusValue: string,
     changingStatusCharReacts: boolean,
-    changingStatusReason: string,
+    changingStatusReason: string
   ) => {
     if (!changingStatusCharReacts) {
       setMessages((prevMessages) => {
@@ -538,7 +638,7 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
           const updatedStatusData = statusData.map((status) =>
             status.key === changingStatus
               ? { ...status, value: changingStatusValue }
-              : status,
+              : status
           );
           updatedMessages[actualIndex].content =
             removeStatusSection(lastMessage) +
@@ -574,7 +674,7 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
         (status) => ({
           key: status.name,
           value: status.defaultValue,
-        }),
+        })
       );
       setMessages([
         {
@@ -605,7 +705,7 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
           setChatId(chatId);
 
           const chatMetadata = await PLMSecContext.getSecureData(
-            `METADATA${chatId}`,
+            `METADATA${chatId}`
           );
           if (chatMetadata) {
             const { id, lastUpdated, ...charData } = chatMetadata;
@@ -730,7 +830,11 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
                     <motion.div
                       key={index}
                       ref={isSecondLast ? secondLastMessageRef : null}
-                      className={`${message.role === "user" ? "origin-bottom-right" : "origin-bottom-left"} overflow-hidden`}
+                      className={`${
+                        message.role === "user"
+                          ? "origin-bottom-right"
+                          : "origin-bottom-left"
+                      } overflow-hidden`}
                       initial={{
                         scale: 0.8,
                         opacity: 0,
@@ -767,6 +871,17 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
           </div>
         </div>
 
+        <SteerBar
+          activeSteers={activeSteers}
+          addSteer={addSteer}
+          removeSteer={removeSteer}
+          steerApplyMethod={steerApplyMethod}
+          setSteerApplyMethod={setSteerApplyMethod}
+          callSteer={callSteer}
+          isThinking={isThinking}
+          manageSteerModal={manageSteerModal}
+          setManageSteerModal={setManageSteerModal}
+        />
         <MessageInput
           newMessage={newMessage}
           setNewMessage={setNewMessage}
@@ -776,12 +891,7 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
           userPromptThinking={userPromptThinking}
           suggestReply={suggestReply}
           rewriteMessage={rewriteMessage}
-          activeSteers={activeSteers}
-          addSteer={addSteer}
-          removeSteer={removeSteer}
-          steerApplyMethod={steerApplyMethod}
-          setSteerApplyMethod={setSteerApplyMethod}
-          callSteer={callSteer}
+          showSteerModal={() => setManageSteerModal(true)}
         />
       </motion.div>
       <TokenCounter tokenCount={tokenCount} />
