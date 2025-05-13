@@ -319,6 +319,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       messagesList = [...messages];
       if (regenerate) {
         messagesList = messagesList.slice(0, -1);
+        
         setMessages(messagesList);
       }
       userMessageContent = regenerate
@@ -444,6 +445,33 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
               },
             ]
           : []),
+        ...(messagesList.length == 0 && regenerate
+          ? [
+            {
+              role: "user" as "user" | "assistant" | "system",
+              name: "user",
+              content:  `
+You are generating the **first greeting message** for the character provided — but instead of a simple "hi," this should feel like a **scene starter**. Begin with a natural moment, event, or setting that draws the user in and encourages them to respond. It can feel like they've just entered the character's world or the character has just noticed them.
+
+Your goal is to:
+• Pull the user into an unfolding moment (e.g. a question, event, emotion, or dramatic situation)
+• Show the character's personality, style, and tone immediately
+• Avoid exposition; make it feel like the scene is already in motion
+• Be immersive, with vivid wording if the character's style allows
+• Write in THIRD PERSON.
+• If possible, end with a close-ended question
+${characterData.plmex.dynamicStatuses.length > 0 ? "• Include the status tags in the format provided above. This is NOT optional and **MANDATORY**." : ""}
+
+It should be 3-5 lengthy (lengthy to paint a more detailed picture) paragraphs (or less if the character is terse or mysterious), but never robotic or generic.
+
+Do **not** mention AI, chats, or being a character — stay fully in-world.
+
+Only output the greeting message itself. No extra explanation.
+`,
+            }
+          ]
+          : []
+        )
       ];
     }
 
@@ -821,7 +849,13 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
         />
         <div className="overflow-y-auto overflow-x-hidden max-w-[40rem]">
           <div className="flex flex-col justify-end min-h-full">
-            <div style={{ height: "60vh" }}></div>
+            <div style={{ height:  "60vh" }}></div>
+            {characterData.name.length < 1 ? (
+              <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{duration:1, delay:10}}>
+                <p className="block mt-auto text-sm">but no one came</p>
+              </motion.div>
+              )
+              : (<></>)} {/* i just wanna do this for shits and giggles ok long live undertale */}
             <div>
               <AnimatePresence>
                 {messages.map((message, index) => {

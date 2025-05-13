@@ -488,16 +488,17 @@ const MessageCard: React.FC<MessageCardProps> = ({
         {role === "user" ? `${currentTheme.showUserName ? characterData.userName || "Y/N" : ""}` : characterData.name || "Character"}
       </animated.p>
       <Drawer  open={showAltDrawer}  onOpenChange={(open) => { setShowAltDrawer(open) }} > {/* Alternate messages Drawer */}
-         <DrawerContent className="w-auto max-w-[100vw] min-w-[90vw] font-sans overflow-y-visible">
+         <DrawerContent className="w-auto max-w-[750px] min-w-[50vw] font-sans overflow-y-visible">
           <div className="max-h-[80vh] overflow-y-auto">
           <div>
           <DrawerHeader>
-            <DrawerTitle className="mb-8">Choose an alternate initial message</DrawerTitle>
+            <DrawerTitle className="mb-2 text-center">Choose an alternate initial message</DrawerTitle>
             {/* <Select>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Choose an alternate initial message" />
               </SelectTrigger>
               <SelectContent> */}
+            <p className="opacity-75 text-xs mb-8 palmirror-exc-text text-center !font-normal">Swipe left to generate a new initial message!</p>
             {characterData.alternateInitialMessages && [...(characterData.alternateInitialMessages)].map((message: AlternateInitialMessage | string, index) => {
               message = typeof message == "string" ? message : message?.initialMessage ?? "";
               return (
