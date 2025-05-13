@@ -457,7 +457,7 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
 
   const suggestReply = async () => {
     setUserPromptThinking(true);
-    await handleSendMessage(null, true, false, "", false, "suggest", 'input');
+    await handleSendMessage(null, true, false, "", false, "suggest", '', 'input');
     setUserPromptThinking(false);
   };
 
