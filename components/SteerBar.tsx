@@ -55,43 +55,48 @@ const SteerBar: React.FC<SteerBarProps> = ({
   }, [manageSteerModal]);
 
   return (
-    <div className="relative w-full">
-      <AnimatePresence>
-        {activeSteers.length > 0 && (
-          <motion.div
-            key="steerBar"
-            initial={{ scale: 0, height: 0, margin: 0 }}
-            animate={{ scale: 1, height: "fit-content"}}
-            exit={{ height: 0, opacity: 0, margin: 0, padding: 0 }}
-            transition={{ type: "spring", stiffness: 100, damping: 16 }}
-            className="opacity-50 text-sm px-2 flex gap-2 items-center origin-bottom overflow-y-hidden"
-          >
-            <ShipWheel />
-            <p>
-              {activeSteers.length} Steer{activeSteers.length > 1 ? "s" : ""}{" "}
-              {activeSteers.length > 1 ? "are" : "is"} active
-            </p>
-            <div className="flex overflow-x-auto gap-2 ml-auto">
-              <Button
-                variant="outline"
-                className="h-6 px-2 py-0 text-xs opacity-75"
-                onClick={() => setManageSteerModal(true)}
+    <>
+      {activeSteers.length > 0 /* then exit animation is just GONE. bleh */ ? (
+        <div className="relative w-full">
+          <AnimatePresence>
+            {activeSteers.length > 0 && (
+              <motion.div
+                key="steerBar"
+                initial={{ scale: 0, height: 0, margin: 0 }}
+                animate={{ scale: 1, height: "fit-content" }}
+                exit={{ height: 0, opacity: 0, margin: 0, padding: 0 }}
+                transition={{ type: "spring", stiffness: 100, damping: 16 }}
+                className="opacity-50 text-sm px-2 flex gap-2 items-center origin-bottom overflow-y-hidden"
               >
-                MANAGE STEERING
-              </Button>
-              <Button
-                variant="outline"
-                className="h-6 px-2 py-0 text-xs opacity-75"
-                disabled={isThinking}
-                onClick={callSteer}
-              >
-                CALL STEER
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+                <ShipWheel />
+                <p>
+                  {activeSteers.length} Steer{activeSteers.length > 1 ? "s" : ""}{" "}
+                  {activeSteers.length > 1 ? "are" : "is"} active
+                  {/* english(tm) */}
+                </p>
+                <div className="flex overflow-x-auto gap-2 ml-auto max-w-[170px]">
+                  <Button
+                    variant="outline"
+                    className="h-6 px-2 py-0 text-xs opacity-75"
+                    onClick={() => setManageSteerModal(true)}
+                  >
+                    MANAGE STEERING
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-6 px-2 py-0 text-xs opacity-75"
+                    disabled={isThinking}
+                    onClick={callSteer}
+                  >
+                    CALL STEER
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ) : null}
+      <div>
       <Dialog open={manageSteerModal} onOpenChange={setManageSteerModal}>
         <DialogContent className="max-h-[90vh] overflow-y-auto p-0 py-8">
           <AnimateChangeInHeight className="p-8 py-0">
@@ -101,7 +106,12 @@ const SteerBar: React.FC<SteerBarProps> = ({
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1, rotate: rudderRot }}
-              transition={{ type: "spring", stiffness: 50, damping: 8, scale: { type: 'spring', stiffness: 100, damping: 15 } }}
+              transition={{
+                type: "spring",
+                stiffness: 50,
+                damping: 8,
+                scale: { type: "spring", stiffness: 100, damping: 15 },
+              }}
             >
               <ShipWheel className="h-32 w-32 mx-auto" />
             </motion.div>
@@ -184,14 +194,15 @@ const SteerBar: React.FC<SteerBarProps> = ({
                 {steerApplyMethod === "system"
                   ? "Injects instructions at the top as system message. More subtle and natural."
                   : steerApplyMethod === "posthistory"
-                  ? "Injects instructions as a user message at the bottom of the chat history. Stronger effects."
-                  : "idfk"}
+                    ? "Injects instructions as a user message at the bottom of the chat history. Stronger effects."
+                    : "idfk"}
               </p>
             </div>
           </AnimateChangeInHeight>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 

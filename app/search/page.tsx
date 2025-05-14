@@ -153,7 +153,7 @@ export default function Search() {
     try {
       window.scrollTo(0, 0); // Scroll to the top
       const fetchPromises = apiProviders.map(provider =>
-        fetch(provider.query(extractedTags.clean || "", page, (initial ? "NSFW,RPG" : exclusionTopic + (exclusionTopic === "" ? "" : ",") + extractedTags.exclusion), (initial ? "SFW,Male,NovelAI" : extractedTags.inclusion))).then(response => {
+        fetch(provider.query(extractedTags.clean || "", page, (initial ? "NSFW,RPG,Robot" : exclusionTopic + (exclusionTopic === "" ? "" : ",") + extractedTags.exclusion), (initial ? "SFW,Male,NovelAI" : extractedTags.inclusion))).then(response => {
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
