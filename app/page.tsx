@@ -802,12 +802,12 @@ export default function Home() {
   useEffect(() => {
     if (localStorage.getItem("PLMSecureLockUntil")) {
       setPLMSecureLockUntil(
-        parseInt(localStorage.getItem("PLMSecureLockUntil"))
+        parseInt(localStorage.getItem("PLMSecureLockUntil") || "0")
       );
     }
 
     if (localStorage.getItem("PLMSecureAttempts")) {
-      setPLMSecureAttempts(parseInt(localStorage.getItem("PLMSecureAttempts")));
+      setPLMSecureAttempts(parseInt(localStorage.getItem("PLMSecureAttempts") || "0"));
     }
   }, []);
 
