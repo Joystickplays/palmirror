@@ -925,6 +925,7 @@ Only output the greeting message itself. No extra explanation.
           userPromptThinking={userPromptThinking}
           suggestReply={suggestReply}
           rewriteMessage={rewriteMessage}
+          showSkipToSceneModal={() => {return;}}
           showSteerModal={() => setManageSteerModal(true)}
         />
       </motion.div>

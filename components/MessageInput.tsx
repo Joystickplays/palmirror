@@ -33,6 +33,7 @@ interface MessageInputProps {
   userPromptThinking: boolean;
   suggestReply: () => void;
   rewriteMessage: (base: string) => void;
+  showSkipToSceneModal: () => void;
   showSteerModal: () => void;
 }
 
