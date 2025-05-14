@@ -96,7 +96,6 @@ const SteerBar: React.FC<SteerBarProps> = ({
           </AnimatePresence>
         </div>
       ) : null}
-      <div>
       <Dialog open={manageSteerModal} onOpenChange={setManageSteerModal}>
         <DialogContent className="max-h-[90vh] overflow-y-auto p-0 py-8">
           <AnimateChangeInHeight className="p-8 py-0">
@@ -201,7 +200,6 @@ const SteerBar: React.FC<SteerBarProps> = ({
           </AnimateChangeInHeight>
         </DialogContent>
       </Dialog>
-      </div>
     </>
   );
 };
