@@ -715,7 +715,7 @@ export default function Home() {
           localStorage.setItem("PLMSecureLockUntil", lockUntil.toString());
         }
 
-        localStorage.setItem("PLMSecureAttempts", newAttempts);
+        localStorage.setItem("PLMSecureAttempts", newAttempts.toString());
         return;
       }
       resolve();
