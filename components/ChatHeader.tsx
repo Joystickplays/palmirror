@@ -313,7 +313,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                     <p className="text-xs mt-1">Guide generic assistant LLMs to <i>specifically</i> generate for immersive roleplay!</p>
                     <div className="flex flex-col gap-2 w-full mt-4">
                       <Button className="flex-grow" onClick={() => {setModelInstructions(pmPropSysInst); setInputChangedYet(true);}}>Use P3</Button>
-                      <Button variant="outline" size="sm" onClick={() => {setShowPMSysInstSuggestion(false); localStorage.setItem("PMPSIDontShowAgain", "hi everybody")}} >Don't show again</Button>
+                      <Button variant="outline" size="sm" onClick={() => {setShowPMSysInstSuggestion(false); localStorage.setItem("PMPSIDontShowAgain", "hi everybody")}} >Don&apos;t show again</Button>
                     </div>
                   </div>
                   ) : null}
