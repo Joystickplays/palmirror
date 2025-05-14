@@ -12,6 +12,8 @@ import "react-toastify/dist/ReactToastify.css";
 import Keypad from "@/components/Keypad";
 import PinDisplay from "@/components/PINDisplay";
 
+import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
+
 import { AnimatePresence, motion, useAnimation } from "motion/react";
 
 import pako from "pako";
@@ -247,7 +249,7 @@ function SetupCharacter({
   characterData: CharacterData;
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    field: keyof CharacterData,
+    field: keyof CharacterData
   ) => void;
   startChat: () => void;
 }) {
@@ -389,6 +391,8 @@ export default function Home() {
   const [PLMSecurePass, setPLMSecurePass] = useState("");
   const PLMsecureContext = useContext(PLMSecureContext);
   const [passkeyOngoing, setPasskeyOngoing] = useState(false);
+  const [PLMSecureLockUntil, setPLMSecureLockUntil] = useState(0);
+  const [PLMSecureAttempts, setPLMSecureAttempts] = useState(0);
 
   const [tagline, setTagline] = useState("");
 
@@ -448,7 +452,7 @@ export default function Home() {
     "Just hoping that the password manager doesn't autofill the input...",
   ];
 
-  const lockScreenControl = useAnimation()
+  const lockScreenControl = useAnimation();
 
   const getRandomTagline = () => {
     return taglines[Math.floor(Math.random() * taglines.length)];
@@ -477,7 +481,7 @@ export default function Home() {
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    field: keyof CharacterData,
+    field: keyof CharacterData
   ) => {
     const value = event.target.value;
     setCharacterData({ ...characterData, [field]: value });
@@ -505,7 +509,7 @@ export default function Home() {
       !characterData.initialMessage
     ) {
       toast.error(
-        "Please fill in all required fields (name, personality, first message).",
+        "Please fill in all required fields (name, personality, first message)."
       );
       return;
     }
@@ -525,7 +529,7 @@ export default function Home() {
   };
 
   const getCharacterId: (url: string) => string | null = (
-    url: string,
+    url: string
   ): string | null => {
     const match = url.match(/\/chat\/([^\/?]+)/);
     return match ? match[1] : null;
@@ -547,7 +551,10 @@ export default function Home() {
         try {
           const authorName = getChubCharacterAuthor(url);
           const response = await fetch(
-            `https://api.chub.ai/api/characters/${authorName}/${getChubCharacterId(url, authorName || "")}?full=true`,
+            `https://api.chub.ai/api/characters/${authorName}/${getChubCharacterId(
+              url,
+              authorName || ""
+            )}?full=true`
           );
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -590,7 +597,7 @@ export default function Home() {
           resolve();
         } catch (error) {
           reject(
-            new Error(`Failed to fetch character data from chub.ai: ${error}`),
+            new Error(`Failed to fetch character data from chub.ai: ${error}`)
           );
         }
       }),
@@ -598,7 +605,7 @@ export default function Home() {
         pending: "Getting character...",
         success: "Character fetched from chub.ai!",
         error: "Failed to fetch character data from chub.ai.",
-      },
+      }
     );
   };
 
@@ -621,13 +628,13 @@ export default function Home() {
             const firstDelimiterIndex = text.indexOf("\n\n");
             const delimiterIndex = text.indexOf(
               "\n\n",
-              firstDelimiterIndex + 1,
+              firstDelimiterIndex + 1
             );
             if (delimiterIndex === -1) {
               reject(
                 new Error(
-                  "Invalid file format: unable to find the data delimiter.",
-                ),
+                  "Invalid file format: unable to find the data delimiter."
+                )
               );
               return;
             }
@@ -647,7 +654,7 @@ export default function Home() {
               const updatedData = { ...oldCharacterData, ...characterData };
               localStorage.setItem(
                 "characterData",
-                JSON.stringify(updatedData),
+                JSON.stringify(updatedData)
               );
               return updatedData;
             });
@@ -659,8 +666,8 @@ export default function Home() {
           } catch (err) {
             reject(
               new Error(
-                "Failed to import the character. Please check the file format.",
-              ),
+                "Failed to import the character. Please check the file format."
+              )
             );
             console.error("Error while importing character:", err);
           }
@@ -672,25 +679,50 @@ export default function Home() {
         pending: "Processing character file...",
         success: "Character imported successfully.",
         error: "Failed to import the character. Please check the file format.",
-      },
+      }
     );
   };
   const PLMSecureAttemptUnlock = (key?: string) => {
     new Promise<void>(async (resolve, reject) => {
-        const setKeySuccessful = await PLMsecureContext?.setKey(
-          key ?? PLMSecurePass,
-        );
-        setPLMSecurePass("");
-        if (!setKeySuccessful) {
-          reject();
-          navigator.vibrate(150);
-          lockScreenControl.set({ x: -20 })
-          lockScreenControl.start({ x: 0, transition: { type: 'spring', mass: 0.6, stiffness: 1000, damping: 15 } })
-          return;
+      if (Date.now() < PLMSecureLockUntil) {
+        return;
+      }
+      const setKeySuccessful = await PLMsecureContext?.setKey(
+        key ?? PLMSecurePass
+      );
+      setPLMSecurePass("");
+      if (!setKeySuccessful) {
+        reject();
+        navigator.vibrate(150);
+        lockScreenControl.set({ x: -20 });
+        lockScreenControl.start({
+          x: 0,
+          transition: {
+            type: "spring",
+            mass: 0.6,
+            stiffness: 1000,
+            damping: 15,
+          },
+        });
+
+        const newAttempts = PLMSecureAttempts + 1;
+        setPLMSecureAttempts(newAttempts);
+        if (newAttempts % 3 === 0) {
+          const tier = Math.floor(newAttempts / 3);
+          const lockUntil = Date.now() + 30 * 1000 * 2 ** (tier - 1);
+          setPLMSecureLockUntil(lockUntil);
+
+          localStorage.setItem("PLMSecureLockUntil", lockUntil.toString());
         }
-        resolve(); // handle success here
-        setIsSecureReady(true);
-      });
+
+        localStorage.setItem("PLMSecureAttempts", newAttempts);
+        return;
+      }
+      resolve();
+      localStorage.removeItem("PLMSecureAttempts");
+      localStorage.removeItem("PLMSecureLockUntil");
+      setIsSecureReady(true);
+    });
   };
 
   const formatDateWithLocale = (dateInput: string | Date): string => {
@@ -716,11 +748,11 @@ export default function Home() {
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   function sortByLastUpdated(
-    data: { [key: string]: any }[],
+    data: { [key: string]: any }[]
   ): { [key: string]: any }[] {
     return data.sort(
       (a, b) =>
-        new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime(),
+        new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
     );
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -733,7 +765,11 @@ export default function Home() {
   }, []);
 
   const authPasskey = async () => {
-    if (PLMsecureContext?.hasCredential && !PLMsecureContext?.isSecureReady()) {
+    if (
+      PLMsecureContext?.hasCredential &&
+      !PLMsecureContext?.isSecureReady() &&
+      PLMSecureLockUntil < Date.now()
+    ) {
       try {
         setPasskeyOngoing(true);
         console.log("PLM Secure - Attempting passkey authentication");
@@ -764,6 +800,18 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (localStorage.getItem("PLMSecureLockUntil")) {
+      setPLMSecureLockUntil(
+        parseInt(localStorage.getItem("PLMSecureLockUntil"))
+      );
+    }
+
+    if (localStorage.getItem("PLMSecureAttempts")) {
+      setPLMSecureAttempts(parseInt(localStorage.getItem("PLMSecureAttempts")));
+    }
+  }, []);
+
+  useEffect(() => {
     const refreshChatList = async () => {
       if (isSecureReady) {
         let chatStore;
@@ -774,7 +822,7 @@ export default function Home() {
         }
         if (chatStore) {
           const filteredChats = chatStore.filter((key: string) =>
-            key.startsWith("METADATA"),
+            key.startsWith("METADATA")
           );
           const chatListPromises = filteredChats.map(async (key: string) => {
             const chatData = await PLMsecureContext?.getSecureData(key);
@@ -822,6 +870,18 @@ export default function Home() {
     }
   }, [PLMSecurePass]);
 
+  const [, rerenderho] = useState(0);
+  useEffect(() => {
+    const i = setInterval(() => {
+      if (Date.now() < PLMSecureLockUntil || true) {
+        /* sue me */
+        rerenderho(Math.random());
+      }
+    }, 100);
+
+    return () => clearInterval(i);
+  });
+
   return isSecureActivated ? (
     <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
       <div>
@@ -844,60 +904,105 @@ export default function Home() {
       <div className="flex flex-grow w-full">
         <AnimatePresence mode="popLayout">
           {!isSecureReady && (
-          <motion.div className="overflow-hidden w-screen h-[80vh] relative" initial={{ x: 0 }}  animate={lockScreenControl}>
             <motion.div
-              initial={{ opacity: 0, scale: 1, x: '-50%', y: 'calc(100vh + 100px)', }}
-              animate={{
-                opacity: 1,
-                y: '-50%',
-                scale: passkeyOngoing ? 0.9 : 1,
-                filter: passkeyOngoing ? "blur(5px)" : "blur(0px)",
-              }}
-              exit={{ y: 'calc(100vh + 100px)', }}
-              transition={{
-                type: "spring",
-                mass: 1,
-                damping: 22,
-                stiffness: 161,
-              }}
-              className="flex items-center justify-center gap-2 flex-col flex-grow absolute top-1/2 left-1/2 w-full"
-              key="passkeyNeed"
+              className="overflow-hidden w-screen h-[80vh] relative"
+              initial={{ x: 0 }}
+              animate={lockScreenControl}
             >
-              <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight pb-2 text-center">
-                {tagline}
-              </h1>
-              <p>PalMirror Secure is active and encrypted.</p>
-              {/* <Button onClick={authPasskey}>Use passkey</Button> */}
-              <hr className="!m-2 w-full max-w-screen-sm h-px" />
-              <div className="flex gap-2 w-full max-w-screen-sm">
-                {localStorage.getItem("secureMetadata") ? (
-                  <div className="w-full">
-                    <PinDisplay input={PLMSecurePass} show={false} />
-                    <Keypad onKeyPress={handleKeyPressPin} />
-                  </div>
-                ) : (
-                  <div className="flex gap-2 w-full max-w-screen-sm">
-                    <Input
-                      value={PLMSecurePass}
-                      onChange={(e) => setPLMSecurePass(e.target.value)}
-                      onKeyDown={(
-                        e: React.KeyboardEvent<HTMLInputElement> | null,
-                      ) => {
-                        if (e && e.key === "Enter") {
-                          PLMSecureAttemptUnlock();
-                        }
-                      }}
-                      type="password"
-                      className="flex-grow"
-                    />
-                    <Button onClick={() => PLMSecureAttemptUnlock()}>
-                      Unlock
-                    </Button>
-                  </div>
-                )}
-              </div>
+              {Date.now() < PLMSecureLockUntil ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, x: "-50%", y: "-50" }}
+                  animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
+                  transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full text-center"
+                >
+                  <h1 className="font-bold mb-2 text-lg">
+                    Too many incorrect attempts
+                  </h1>
+                  <NumberFlowGroup>
+                    {(PLMSecureLockUntil - Date.now()) / 1000 >= 60 ? (
+                      <NumberFlow
+                        prefix={"Try again in "}
+                        suffix={" minutes and "}
+                        value={Math.floor(
+                          (PLMSecureLockUntil - Date.now()) / 1000 / 60
+                        )}
+                      ></NumberFlow>
+                    ) : null}
+                    <NumberFlow
+                      prefix={
+                        (PLMSecureLockUntil - Date.now()) / 1000 < 60
+                          ? "Try again in "
+                          : ""
+                      }
+                      suffix={" seconds."}
+                      value={
+                        Math.floor((PLMSecureLockUntil - Date.now()) / 1000) %
+                        60
+                      }
+                    ></NumberFlow>
+                  </NumberFlowGroup>
+                  <p className="opacity-25 italic mt-6">take a chill pill!</p>
+                </motion.div>
+              ) : null}
+              <motion.div
+                initial={{ opacity: 0, scale: 1, x: "-50%", y: -50 }}
+                animate={{
+                  opacity: Date.now() < PLMSecureLockUntil ? 0.2 : 1,
+                  y: "-50%",
+                  scale: passkeyOngoing ? 0.9 : 1,
+                  filter:
+                    passkeyOngoing || Date.now() < PLMSecureLockUntil
+                      ? "blur(5px)"
+                      : "blur(0px)",
+                }}
+                exit={{ y: "calc(100vh + 100px)" }}
+                transition={{
+                  type: "spring",
+                  mass: 1,
+                  damping: 22,
+                  stiffness: 161,
+                }}
+                className={`flex items-center justify-center gap-2 flex-col flex-grow absolute top-1/2 left-1/2 w-full ${
+                  Date.now() < PLMSecureLockUntil ? "pointer-events-none" : null
+                }`}
+                key="passkeyNeed"
+              >
+                <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight pb-2 text-center">
+                  {tagline}
+                </h1>
+                <p>PalMirror Secure is active and encrypted.</p>
+                {/* <Button onClick={authPasskey}>Use passkey</Button> */}
+                <hr className="!m-2 w-full max-w-screen-sm h-px" />
+                <div className="flex gap-2 w-full max-w-screen-sm">
+                  {localStorage.getItem("secureMetadata") ? (
+                    <div className="w-full">
+                      <PinDisplay input={PLMSecurePass} show={false} />
+                      <Keypad onKeyPress={handleKeyPressPin} />
+                    </div>
+                  ) : (
+                    <div className="flex gap-2 w-full max-w-screen-sm">
+                      <Input
+                        value={PLMSecurePass}
+                        onChange={(e) => setPLMSecurePass(e.target.value)}
+                        onKeyDown={(
+                          e: React.KeyboardEvent<HTMLInputElement> | null
+                        ) => {
+                          if (e && e.key === "Enter") {
+                            PLMSecureAttemptUnlock();
+                          }
+                        }}
+                        type="password"
+                        className="flex-grow"
+                      />
+                      <Button onClick={() => PLMSecureAttemptUnlock()}>
+                        Unlock
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
           )}
           {/* chats list */}
           {isSecureReady && (
@@ -919,7 +1024,8 @@ export default function Home() {
                     sortByLastUpdated(chatList).map((chat, index) => (
                       <motion.div
                         initial={
-                          window.innerWidth < 640 && index < 4 || window.innerWidth > 640
+                          (window.innerWidth < 640 && index < 4) ||
+                          window.innerWidth > 640
                             ? {
                                 opacity: 0,
                                 scale: 0.7,
@@ -981,8 +1087,8 @@ export default function Home() {
                               PLMsecureContext?.removeKey(`METADATA${chat.id}`);
                               setChatList((prevList) =>
                                 prevList.filter(
-                                  (chatItem) => chatItem.id !== chat.id,
-                                ),
+                                  (chatItem) => chatItem.id !== chat.id
+                                )
                               );
                             }}
                           >
