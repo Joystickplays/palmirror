@@ -37,7 +37,7 @@ import { useRouter } from 'next/navigation';
 import { isPalMirrorSecureActivated, PLMSecureGeneralSettings } from '@/utils/palMirrorSecureUtils';
 import { PLMSecureContext } from '@/context/PLMSecureContext';
 
-
+import { pmPropSysInst } from '@/utils/palmirrorProprietarySysInst'
 
 interface ChatHeaderProps {
   characterData: CharacterData;
@@ -58,6 +58,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
   const [alreadyEncrypted, setAlreadyEncrypted] = useState(false);
 
   const [showReloadSuggestion, setShowReloadSuggestion] = useState(false);
+  
+  const [showPMSysInstSuggestion, setShowPMSysInstSuggestion] = useState(true);
 
   const PLMSecContext = useContext(PLMSecureContext);
 
@@ -89,6 +91,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
       setBaseURL("https://cvai.mhi.im/v1")
     }
   }
+
+  // load AaaaHHHHHHHHHHH leave me alone
+  useEffect(() => {
+    if (localStorage.getItem("PMPSIDontShowAgain")) {
+      setShowPMSysInstSuggestion(false)
+    }
+  }, [])
+
   // load normal localstorage thing
   useEffect(() => {
     loadSettingsFromLocalStorage();
@@ -297,6 +307,16 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
                     value={modelInstructions}
                     onChange={handleModelInstructionsChange}>
                   </Textarea>
+                  {showPMSysInstSuggestion ? (
+                    <div className="border p-4 w-full rounded-xl text-center">
+                    <h1 className="font-extrabold">PalMirror Proprietary Prompt</h1>
+                    <p className="text-xs mt-1">Guide generic assistant LLMs to <i>specifically</i> generate for immersive roleplay!</p>
+                    <div className="flex flex-col gap-2 w-full mt-4">
+                      <Button className="flex-grow" onClick={() => {setModelInstructions(pmPropSysInst); setInputChangedYet(true);}}>Use P3</Button>
+                      <Button variant="outline" size="sm" onClick={() => {setShowPMSysInstSuggestion(false); localStorage.setItem("PMPSIDontShowAgain", "hi everybody")}} >Don't show again</Button>
+                    </div>
+                  </div>
+                  ) : null}
                 </div>
               </div>
               <h2 className="my-4 font-bold">AI generation settings</h2>

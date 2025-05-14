@@ -1,8 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Send, OctagonX, MessageSquareQuote, PenLine, ShipWheel } from "lucide-react";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
+import {
+  Send,
+  OctagonX,
+  MessageSquareQuote,
+  PenLine,
+  ShipWheel,
+  ArrowDownNarrowWide,
+} from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { useTheme } from "@/components/PalMirrorThemeProvider";
 import { AnimatePresence } from "framer-motion";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
@@ -14,7 +26,7 @@ interface MessageInputProps {
     e: React.KeyboardEvent<HTMLTextAreaElement> | null,
     force?: boolean,
     regenerate?: boolean,
-    optionalMessage?: string,
+    optionalMessage?: string
   ) => void;
   onCancel: () => void;
   isThinking: boolean;
@@ -33,6 +45,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   userPromptThinking,
   suggestReply,
   rewriteMessage,
+  showSkipToSceneModal,
   showSteerModal,
 }) => {
   const [localMessage, setLocalMessage] = useState(newMessage);
@@ -57,15 +70,18 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   const localHandleSendMessage = (
-    e: React.KeyboardEvent<HTMLTextAreaElement> | null,
+    e: React.KeyboardEvent<HTMLTextAreaElement> | null
   ) => {
     if (e && e.key === "Enter") {
       e.preventDefault();
       handleSendMessage(
-        { key: "Enter", ctrlKey: false } as React.KeyboardEvent<HTMLTextAreaElement>,
+        {
+          key: "Enter",
+          ctrlKey: false,
+        } as React.KeyboardEvent<HTMLTextAreaElement>,
         false,
         false,
-        localMessageRef.current,
+        localMessageRef.current
       );
       emptyMessage();
     }
@@ -77,10 +93,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
     } else {
       setNewMessage(localMessageRef.current);
       handleSendMessage(
-        { key: "Enter", ctrlKey: false } as React.KeyboardEvent<HTMLTextAreaElement>,
+        {
+          key: "Enter",
+          ctrlKey: false,
+        } as React.KeyboardEvent<HTMLTextAreaElement>,
         false,
         false,
-        localMessageRef.current,
+        localMessageRef.current
       );
       emptyMessage();
     }
@@ -89,7 +108,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
     <div className="relative w-full">
       <Textarea
         id="Message"
-        className={`w-full p-2 ${userPromptThinking ? "text-white/50" : ""} ${currentTheme.assistantBg} rounded-[27px] rounded-t-2xl pr-16 pl-4`}
+        className={`w-full p-2 ${userPromptThinking ? "text-white/50" : ""} ${
+          currentTheme.assistantBg
+        } rounded-[27px] rounded-t-2xl pr-16 pl-4`}
         value={localMessage}
         onChange={handleInputChange}
         onKeyDown={(e) => localHandleSendMessage(e)}
@@ -132,11 +153,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
             </span>
           </ContextMenuItem>
 
-          <ContextMenuItem
-            onClick={showSteerModal}>
+          <ContextMenuItem onClick={showSkipToSceneModal}>
+            <span className="flex items-center gap-2">
+              <ArrowDownNarrowWide className="h-4 w-4" />
+              Skip to scene...
+            </span>
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={showSteerModal}>
             <span className="flex items-center gap-2">
               <ShipWheel className="h-4 w-4" />
-              Manage Steering
+              Steer the story
             </span>
           </ContextMenuItem>
         </ContextMenuContent>
@@ -146,4 +173,3 @@ const MessageInput: React.FC<MessageInputProps> = ({
 };
 
 export default MessageInput;
-
