@@ -154,7 +154,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
             </span>
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={showSkipToSceneModal}>
+          <ContextMenuItem onClick={showSkipToSceneModal}
+            disabled={isThinking || userPromptThinking}>
             <span className="flex items-center gap-2">
               <ArrowDownNarrowWide className="h-4 w-4" />
               Skip to scene...

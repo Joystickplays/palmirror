@@ -8,6 +8,7 @@ import MessageInput from "@/components/MessageInput";
 import SteerBar from "@/components/SteerBar";
 import TokenCounter from "@/components/TokenCounter";
 import NewcomerDrawer from "@/components/NewcomerDrawer";
+import SkipToSceneModal, { skipPromptBuilder } from "@/components/SkipToSceneModal";
 import { useThrottle } from "@/utils/useThrottle";
 import { useTheme } from "@/components/PalMirrorThemeProvider";
 import { ToastContainer, toast } from "react-toastify";
@@ -68,6 +69,8 @@ const ChatPage = () => {
   const messageEndRef = useRef<HTMLDivElement>(null);
   const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [skipToSceneModalState, setSkipToSceneModalState] = useState(false);
 
   const [activeSteers, setActiveSteers] = useState<string[]>([]);
   const [manageSteerModal, setManageSteerModal] = useState(false);
@@ -392,7 +395,21 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
         {
           role: "user" as "user" | "assistant" | "system",
           name: "user",
-          content: `[call-instructions].`,
+          content: `[call-instructions]`,
+        },
+      ];
+    } else if (mode === "skip-scene") {
+      finalMessages = [
+        {
+          role: "system" as "user" | "assistant" | "system",
+          content: systemPrompt,
+          name: "system",
+        },
+        ...messagesList.map((m) => ({ ...m, name: "-" })),
+        {
+          role: "user" as "user" | "assistant" | "system",
+          name: "user",
+          content: skipPromptBuilder(rewriteBase),
         },
       ];
     } else {
@@ -598,6 +615,20 @@ Only output the greeting message itself. No extra explanation.
   const callSteer = async () => {
     setIsThinking(true);
     await handleSendMessage(null, true, false, "", false, "call-steer");
+    setIsThinking(false);
+  };
+
+  const skipToScene = async (base: string) => {
+    setIsThinking(true);
+    await handleSendMessage(
+      null,
+      true,
+      false,
+      "",
+      false,
+      "skip-scene",
+      base,
+    );
     setIsThinking(false);
   };
 
@@ -905,6 +936,8 @@ Only output the greeting message itself. No extra explanation.
           </div>
         </div>
 
+        <SkipToSceneModal modalState={skipToSceneModalState} setModalState={setSkipToSceneModalState} skipToSceneCallback={(b) => skipToScene(b)}/>
+
         <SteerBar
           activeSteers={activeSteers}
           addSteer={addSteer}
@@ -925,7 +958,7 @@ Only output the greeting message itself. No extra explanation.
           userPromptThinking={userPromptThinking}
           suggestReply={suggestReply}
           rewriteMessage={rewriteMessage}
-          showSkipToSceneModal={() => {return;}}
+          showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
           showSteerModal={() => setManageSteerModal(true)}
         />
       </motion.div>
