@@ -81,12 +81,12 @@ export default function Home() {
   };
 
   const setupPLMSecure = async () => {
-    if (selectedMethod === "password" && password.length < 6) {
-      toast.error("Password too short!");
+    if (selectedMethod === "password" && password.length < 5) {
+      toast.error("Password too short! Atleast 6 characters.");
       return;
     }
-    if (selectedMethod === "pin" && pin.length < 6) {
-      toast.error("PIN too short! Atleast 6 digits.");
+    if (selectedMethod === "pin" && pin.length < 3) {
+      toast.error("PIN too short! Atleast 4 digits.");
       return;
     }
     if (selectedMethod === "password" && password !== confirmPassword) {

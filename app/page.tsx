@@ -707,8 +707,8 @@ export default function Home() {
 
         const newAttempts = PLMSecureAttempts + 1;
         setPLMSecureAttempts(newAttempts);
-        if (newAttempts % 3 === 0) {
-          const tier = Math.floor(newAttempts / 3);
+        if (newAttempts % 5 === 0) {
+          const tier = Math.floor(newAttempts / 5);
           const lockUntil = Date.now() + 30 * 1000 * 2 ** (tier - 1);
           setPLMSecureLockUntil(lockUntil);
 
