@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useContext } from "react";
+import { useState, useEffect, useRef, useContext, useLayoutEffect } from "react";
 import React from "react";
 import MessageCard from "@/components/MessageCard";
+import VisualMessageCard from "@/components/VisualMessageCard";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
 import SteerBar from "@/components/SteerBar";
@@ -69,6 +70,18 @@ const ChatPage = () => {
   const messageEndRef = useRef<HTMLDivElement>(null);
   const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [messageFlying, setMessageFlying] = useState(false);
+  const flyingMessageRef = useRef<HTMLTextAreaElement>(null);
+  const [mFlyRects, setMFlyRects] = useState(null);
+
+  useLayoutEffect(() => {
+    if (flyingMessageRef.current && textareaRef.current) {
+      const from = textareaRef.current.getBoundingClientRect();
+      const to = flyingMessageRef.current.getBoundingClientRect();
+      setMFlyRects({ from, to })
+    }
+  }, [])
 
   const [skipToSceneModalState, setSkipToSceneModalState] = useState(false);
 
@@ -818,6 +831,15 @@ Only output the greeting message itself. No extra explanation.
     }
   }, []);
 
+
+
+  useEffect(() => {
+    setMessageFlying(true);
+    setTimeout(() => {
+      setMessageFlying(false);
+    }, 300)
+  }, [messages])
+
   // Token counting (this was way too laggy so scrapped)
 
   // const tokenizer = encodingForModel('gpt-3.5-turbo');
@@ -890,28 +912,40 @@ Only output the greeting message itself. No extra explanation.
             <div>
               <AnimatePresence>
                 {messages.map((message, index) => {
+                  const isLast = index === messages.length - 1
                   const isSecondLast = index === messages.length - 2;
+                  console.log("---")
+                  console.log(message.content)
+                  console.log(isLast)
+                  console.log(message.role === "user")
                   return (
                     <motion.div
                       key={index}
-                      ref={isSecondLast ? secondLastMessageRef : null}
+                      ref={isSecondLast ? secondLastMessageRef : isLast && message.role === "user" && messageFlying ? flyingMessageRef : null}
                       className={`${
                         message.role === "user"
                           ? "origin-bottom-right"
                           : "origin-bottom-left"
                       } overflow-hidden`}
-                      initial={{
+                      initial={isLast && message.role === "user" ? {
+                        height: 0,
+                        opacity: 0,
+                      } : {
                         scale: 0.8,
                         opacity: 0,
                         x: message.role === "user" ? 100 : -100,
                       }}
-                      animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+                      animate={isLast && message.role === "user" && messageFlying ? {
+                        height: 'auto', opacity: 0
+                      } :{ scale: 1, opacity: 1, height: 'auto', x: 0, y: 0 }}
                       exit={{ height: 0, opacity: 0, filter: "blur(5px)" }}
                       transition={{
                         type: "spring",
                         stiffness: 215,
                         damping: 25,
+                        opacity: {duration: isLast && message.role === "user" ? 0 : 0.4}
                       }}
+                      
                     >
                       <MessageCard
                         index={index}
@@ -927,6 +961,8 @@ Only output the greeting message itself. No extra explanation.
                         rewindTo={rewindTo}
                         changeStatus={changeStatus}
                       />
+
+                      {/* <VisualMessageCard role={message.role} content={message.content} characterName={characterData.characterName} /> */}
                     </motion.div>
                   );
                 })}
@@ -949,6 +985,7 @@ Only output the greeting message itself. No extra explanation.
           manageSteerModal={manageSteerModal}
           setManageSteerModal={setManageSteerModal}
         />
+        <div ref={textareaRef}>
         <MessageInput
           newMessage={newMessage}
           setNewMessage={setNewMessage}
@@ -961,6 +998,7 @@ Only output the greeting message itself. No extra explanation.
           showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
           showSteerModal={() => setManageSteerModal(true)}
         />
+        </div>
       </motion.div>
       <TokenCounter tokenCount={tokenCount} />
       <input
@@ -977,6 +1015,9 @@ Only output the greeting message itself. No extra explanation.
         }}
         open={showingNewcomerDrawer}
       />
+
+
+
     </div>
   );
 };
