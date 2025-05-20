@@ -86,8 +86,7 @@ const ChatPage = () => {
   const [flyingMessageData, setFlyingMessageData] = useState<{
     role: "user" | "assistant" | "system";
     content: string;
-    stillGenerating: boolean;
-  }>({ role: "user", content: "", role: "" });
+  }>({ role: "user", content: "" });
   const [mFlyRects, setMFlyRects] = useState(null);
 
   useEffect(() => {
@@ -289,6 +288,14 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
   const vibrate = (duration: number) => {
     if ("vibrate" in navigator) navigator.vibrate(duration);
+  };
+
+  const qHash = (str: string) => {
+    let hash = 69420;
+    for (let i = 0; 1 < str.length; i++) {
+      hash = (hash * 33) ^ str.charCodeAt(i);
+    }
+    return (hash >>> 0).toString(16);
   };
 
   const checkAndTrimMessages = (
@@ -864,12 +871,14 @@ Only output the greeting message itself. No extra explanation.
     }
 
     if (messages.length > prevLength.current) {
-      setMessageFlying(true);
       setFlyingMessageData(messages[messages.length - 1]);
 
+      setMessageFlying(true);
+
       const timer = setTimeout(() => {
+        setFlyingMessageData({ role: "user", content: "" });
         setMessageFlying(false);
-      }, 90);
+      }, 1000);
 
       prevLength.current = messages.length;
       return () => clearTimeout(timer);
@@ -966,6 +975,7 @@ Only output the greeting message itself. No extra explanation.
                   console.log(message.role === "user");
                   return (
                     <motion.div
+                      layoutId={message.content}
                       key={index}
                       ref={
                         isSecondLast
@@ -983,7 +993,7 @@ Only output the greeting message itself. No extra explanation.
                         isLast && message.role === "user"
                           ? {
                               // height: 0,
-                              opacity: 0,
+                              // opacity: 0,
                             }
                           : {
                               scale: 0.8,
@@ -1054,7 +1064,42 @@ Only output the greeting message itself. No extra explanation.
           manageSteerModal={manageSteerModal}
           setManageSteerModal={setManageSteerModal}
         />
-        <div ref={textareaRef}>
+        <div className="relative" ref={textareaRef}>
+          {!messageFlying ? (
+            <motion.div
+              layoutId={flyingMessageData.content}
+              className="absolute"
+              // initial={{
+              //   bottom: 0,
+              //   left: 0,
+              //   right: 'auto',
+              //   x: '1%',
+              //   y: '-5.5vh',
+              //   fontSize: '1.01rem',
+              // }}
+              // animate={{
+              //   bottom: 0,
+              //   left: 'auto',
+              //   right: 0,
+              //   x: '0',
+              //   y: '-12.8vh',
+              //   // width: '100%',
+              // }}
+              transition={{
+                duration: 0.1,
+                ease: "easeOut",
+                y: { duration: 0.1, ease: "easeIn" },
+              }}
+            >
+              <VisualMessageCard
+                role={flyingMessageData.role}
+                content={flyingMessageData.content}
+                characterName={characterData.characterName}
+              />
+            </motion.div>
+          ) : null}{" "}
+          {/* how tf did telegram do this omhmygod */}
+          {/* hm: literally doesnt work on desktops screennN!!!!!!!!!!! */}
           <MessageInput
             newMessage={newMessage}
             setNewMessage={setNewMessage}
@@ -1086,39 +1131,6 @@ Only output the greeting message itself. No extra explanation.
         }}
         open={showingNewcomerDrawer}
       />
-      {messageFlying ? (
-        <motion.div
-  className="absolute max-w-screen"
-  initial={{
-    bottom: 0,
-    left: 0,
-    right: 'auto',
-    x: '1%',
-    y: '-5.5vh',
-    fontSize: '1.01rem',
-  }}
-  animate={{
-    bottom: 0,
-    left: 'auto', 
-    right: 0,
-    x: '0',
-    y: '-12.8vh',
-    // width: '100%',
-  }}
-  transition={{
-    duration: 0.1,
-    ease: 'easeOut',
-    y: { duration: 0.1, ease: 'easeIn' },
-  }}
->
-  <VisualMessageCard
-    role={flyingMessageData.role}
-    content={flyingMessageData.content}
-    characterName={characterData.characterName}
-  />
-</motion.div>
-      ) : null} {/* how tf did telegram do this omhmygod */}
-                {/* hm: literally doesnt work on desktops screennN!!!!!!!!!!! */}
     </div>
   );
 };
