@@ -8,8 +8,14 @@ interface KeypadButtonProps {
   fromBottom: boolean;
 }
 
-const KeypadButton: React.FC<KeypadButtonProps> = ({ btn, delay, onKeyPress, fromBottom }) => {
-  const [initialAnimationComplete, setInitialAnimationComplete] = useState(false);
+const KeypadButton: React.FC<KeypadButtonProps> = ({
+  btn,
+  delay,
+  onKeyPress,
+  fromBottom,
+}) => {
+  const [initialAnimationComplete, setInitialAnimationComplete] =
+    useState(false);
 
   const vib = (duration: number) => {
     if ("vibrate" in navigator) navigator.vibrate(duration);
@@ -17,7 +23,10 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({ btn, delay, onKeyPress, fro
 
   return (
     <motion.button
-      onClick={() => {vib(1); onKeyPress(btn)}}
+      onClick={() => {
+        vib(1);
+        onKeyPress(btn);
+      }}
       variants={{
         hidden: { scale: 0.7, opacity: 0, y: fromBottom ? "30px" : 0 },
         visible: {
@@ -31,16 +40,16 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({ btn, delay, onKeyPress, fro
             damping: 30,
             y: {
               delay: initialAnimationComplete ? 0 : delay * 1.5,
-            type: "spring",
-            stiffness: 180,
-            damping: delay * 50 + 12,
+              type: "spring",
+              stiffness: 180 - delay * 100,
+              damping: delay * 100 + 16,
             },
             opacity: {
               delay: initialAnimationComplete ? 0 : delay * 1.5,
-            type: "spring",
-            stiffness: 180,
-            damping: delay * 50 + 12,
-            }
+              type: "spring",
+              stiffness: 180 - delay * 100,
+              damping: delay * 100 + 16,
+            },
           },
         },
         tap: {
