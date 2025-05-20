@@ -5,9 +5,10 @@ interface KeypadButtonProps {
   btn: string;
   delay: number;
   onKeyPress: (key: string) => void;
+  fromBottom: boolean;
 }
 
-const KeypadButton: React.FC<KeypadButtonProps> = ({ btn, delay, onKeyPress }) => {
+const KeypadButton: React.FC<KeypadButtonProps> = ({ btn, delay, onKeyPress, fromBottom }) => {
   const [initialAnimationComplete, setInitialAnimationComplete] = useState(false);
 
   const vib = (duration: number) => {
@@ -18,15 +19,28 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({ btn, delay, onKeyPress }) =
     <motion.button
       onClick={() => {vib(1); onKeyPress(btn)}}
       variants={{
-        hidden: { scale: 0.7, opacity: 0 },
+        hidden: { scale: 0.7, opacity: 0, y: fromBottom ? "30px" : 0 },
         visible: {
           opacity: 1,
           scale: 1,
+          y: 0,
           transition: {
             delay: initialAnimationComplete ? 0 : delay,
             type: "spring",
             stiffness: 180,
             damping: 30,
+            y: {
+              delay: initialAnimationComplete ? 0 : delay * 1.5,
+            type: "spring",
+            stiffness: 180,
+            damping: delay * 50 + 12,
+            },
+            opacity: {
+              delay: initialAnimationComplete ? 0 : delay * 1.5,
+            type: "spring",
+            stiffness: 180,
+            damping: delay * 50 + 12,
+            }
           },
         },
         tap: {

@@ -244,7 +244,7 @@ export default function Home() {
                   }}
                 >
                   <PinDisplay input={pin} show={showPin} />
-                  <Keypad onKeyPress={handleKeyPressPin} />
+                  <Keypad onKeyPress={handleKeyPressPin} fromBottom={false}/>
                   <div className="flex gap-2 justify-end">
                     <DialogClose asChild>
                       <Button className="w-full" onClick={setupPLMSecure}>
