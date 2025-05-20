@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useContext, useLayoutEffect } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useLayoutEffect,
+} from "react";
 import React from "react";
 import MessageCard from "@/components/MessageCard";
 import VisualMessageCard from "@/components/VisualMessageCard";
@@ -9,7 +15,9 @@ import MessageInput from "@/components/MessageInput";
 import SteerBar from "@/components/SteerBar";
 import TokenCounter from "@/components/TokenCounter";
 import NewcomerDrawer from "@/components/NewcomerDrawer";
-import SkipToSceneModal, { skipPromptBuilder } from "@/components/SkipToSceneModal";
+import SkipToSceneModal, {
+  skipPromptBuilder,
+} from "@/components/SkipToSceneModal";
 import { useThrottle } from "@/utils/useThrottle";
 import { useTheme } from "@/components/PalMirrorThemeProvider";
 import { ToastContainer, toast } from "react-toastify";
@@ -67,21 +75,28 @@ const ChatPage = () => {
   const [showingNewcomerDrawer, setShowingNewcomerDrawer] = useState(false);
 
   const abortController = useRef<AbortController | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [messageFlying, setMessageFlying] = useState(false);
   const flyingMessageRef = useRef<HTMLTextAreaElement>(null);
+  const [flyingMessageData, setFlyingMessageData] = useState<{
+    role: "user" | "assistant" | "system";
+    content: string;
+    stillGenerating: boolean;
+  }>({ role: "user", content: "", role: "" });
   const [mFlyRects, setMFlyRects] = useState(null);
 
-  useLayoutEffect(() => {
-    if (flyingMessageRef.current && textareaRef.current) {
+  useEffect(() => {
+    if (textareaRef.current) {
       const from = textareaRef.current.getBoundingClientRect();
-      const to = flyingMessageRef.current.getBoundingClientRect();
-      setMFlyRects({ from, to })
+      // const to = flyingMessageRef.current.getBoundingClientRect();
+      setMFlyRects({ from });
     }
-  }, [])
+  }, []);
 
   const [skipToSceneModalState, setSkipToSceneModalState] = useState(false);
 
@@ -328,14 +343,14 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       let regenerationMessage: string | undefined;
       if (regenerate) {
         regenerationMessage = messages
-        .slice()
-        .reverse()
-        .find((m) => m.role === "user")?.content;
+          .slice()
+          .reverse()
+          .find((m) => m.role === "user")?.content;
       }
       messagesList = [...messages];
       if (regenerate) {
         messagesList = messagesList.slice(0, -1);
-        
+
         setMessages(messagesList);
       }
       userMessageContent = regenerate
@@ -477,10 +492,10 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
           : []),
         ...(messagesList.length == 0 && regenerate
           ? [
-            {
-              role: "user" as "user" | "assistant" | "system",
-              name: "user",
-              content:  `
+              {
+                role: "user" as "user" | "assistant" | "system",
+                name: "user",
+                content: `
 You are generating the **first greeting message** for the character provided — but instead of a simple "hi," this should feel like a **scene starter**. Begin with a natural moment, event, or setting that draws the user in and encourages them to respond. It can feel like they've just entered the character's world or the character has just noticed them.
 
 Your goal is to:
@@ -490,7 +505,11 @@ Your goal is to:
 • Be immersive, with vivid wording if the character's style allows
 • Write in THIRD PERSON.
 • If possible, end with a close-ended question
-${characterData.plmex.dynamicStatuses.length > 0 ? "• Include the status tags in the format provided above. This is NOT optional and **MANDATORY**." : ""}
+${
+  characterData.plmex.dynamicStatuses.length > 0
+    ? "• Include the status tags in the format provided above. This is NOT optional and **MANDATORY**."
+    : ""
+}
 
 It should be 3-5 lengthy (lengthy to paint a more detailed picture) paragraphs (or less if the character is terse or mysterious), but never robotic or generic.
 
@@ -498,10 +517,9 @@ Do **not** mention AI, chats, or being a character — stay fully in-world.
 
 Only output the greeting message itself. No extra explanation.
 `,
-            }
-          ]
-          : []
-        )
+              },
+            ]
+          : []),
       ];
     }
 
@@ -633,15 +651,7 @@ Only output the greeting message itself. No extra explanation.
 
   const skipToScene = async (base: string) => {
     setIsThinking(true);
-    await handleSendMessage(
-      null,
-      true,
-      false,
-      "",
-      false,
-      "skip-scene",
-      base,
-    );
+    await handleSendMessage(null, true, false, "", false, "skip-scene", base);
     setIsThinking(false);
   };
 
@@ -761,6 +771,18 @@ Only output the greeting message itself. No extra explanation.
 
   // Auto-scroll to Bottom
   useEffect(() => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+
+    const obs = new ResizeObserver(() => {
+      messageEndRef.current?.scrollIntoView({ behavior: "instant" });
+    });
+
+    obs.observe(el);
+
+    return () => obs.disconnect();
+  });
+  useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -831,15 +853,30 @@ Only output the greeting message itself. No extra explanation.
     }
   }, []);
 
-
+  const isFirstRender = useRef(true);
+  const prevLength = useRef(messages.length);
 
   useEffect(() => {
-    setMessageFlying(true);
-    setTimeout(() => {
-      setMessageFlying(false);
-    }, 300)
-  }, [messages])
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      prevLength.current = messages.length;
+      return;
+    }
 
+    if (messages.length > prevLength.current) {
+      setMessageFlying(true);
+      setFlyingMessageData(messages[messages.length - 1]);
+
+      const timer = setTimeout(() => {
+        setMessageFlying(false);
+      }, 90);
+
+      prevLength.current = messages.length;
+      return () => clearTimeout(timer);
+    }
+
+    prevLength.current = messages.length;
+  }, [messages]);
   // Token counting (this was way too laggy so scrapped)
 
   // const tokenizer = encodingForModel('gpt-3.5-turbo');
@@ -870,7 +907,7 @@ Only output the greeting message itself. No extra explanation.
   // }, [messages, throttledCountTokens]);
 
   return (
-    <div className={`grid place-items-center ${currentTheme.bg}`}>
+    <div className={`grid place-items-center ${currentTheme.bg} relative`}>
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -901,51 +938,81 @@ Only output the greeting message itself. No extra explanation.
           importMessages={openFilePicker}
         />
         <div className="overflow-y-auto overflow-x-hidden max-w-[40rem]">
-          <div className="flex flex-col justify-end min-h-full">
-            <div style={{ height:  "60vh" }}></div>
+          <div
+            ref={chatContainerRef}
+            className="flex flex-col justify-end min-h-full"
+          >
+            <div style={{ height: "60vh" }}></div>
             {characterData.name.length < 1 ? (
-              <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{duration:1, delay:10}}>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1, delay: 10 }}
+              >
                 <p className="block mt-auto text-sm">but no one came</p>
               </motion.div>
-              )
-              : (<></>)} {/* i just wanna do this for shits and giggles ok long live undertale */}
+            ) : (
+              <></>
+            )}{" "}
+            {/* i just wanna do this for shits and giggles ok long live undertale */}
             <div>
               <AnimatePresence>
                 {messages.map((message, index) => {
-                  const isLast = index === messages.length - 1
+                  const isLast = index === messages.length - 1;
                   const isSecondLast = index === messages.length - 2;
-                  console.log("---")
-                  console.log(message.content)
-                  console.log(isLast)
-                  console.log(message.role === "user")
+                  console.log("---");
+                  console.log(message.content);
+                  console.log(isLast);
+                  console.log(message.role === "user");
                   return (
                     <motion.div
                       key={index}
-                      ref={isSecondLast ? secondLastMessageRef : isLast && message.role === "user" && messageFlying ? flyingMessageRef : null}
+                      ref={
+                        isSecondLast
+                          ? secondLastMessageRef
+                          : isLast && message.role === "user"
+                          ? lastMessageRef
+                          : null
+                      }
                       className={`${
                         message.role === "user"
                           ? "origin-bottom-right"
                           : "origin-bottom-left"
                       } overflow-hidden`}
-                      initial={isLast && message.role === "user" ? {
+                      initial={
+                        isLast && message.role === "user"
+                          ? {
+                              // height: 0,
+                              opacity: 0,
+                            }
+                          : {
+                              scale: 0.8,
+                              opacity: 0,
+                              x: message.role === "user" ? 100 : -100,
+                            }
+                      }
+                      animate={
+                        isLast && message.role === "user" && messageFlying
+                          ? {
+                              height: "auto",
+                              opacity: 0,
+                            }
+                          : { scale: 1, opacity: 1, height: "auto", x: 0, y: 0 }
+                      }
+                      exit={{
                         height: 0,
                         opacity: 0,
-                      } : {
-                        scale: 0.8,
-                        opacity: 0,
-                        x: message.role === "user" ? 100 : -100,
+                        filter: "blur(7px)",
+                        y: -50,
                       }}
-                      animate={isLast && message.role === "user" && messageFlying ? {
-                        height: 'auto', opacity: 0
-                      } :{ scale: 1, opacity: 1, height: 'auto', x: 0, y: 0 }}
-                      exit={{ height: 0, opacity: 0, filter: "blur(5px)" }}
                       transition={{
                         type: "spring",
                         stiffness: 215,
                         damping: 25,
-                        opacity: {duration: isLast && message.role === "user" ? 0 : 0.4}
+                        opacity: {
+                          duration: isLast && message.role === "user" ? 0 : 0.4,
+                        },
                       }}
-                      
                     >
                       <MessageCard
                         index={index}
@@ -961,8 +1028,6 @@ Only output the greeting message itself. No extra explanation.
                         rewindTo={rewindTo}
                         changeStatus={changeStatus}
                       />
-
-                      {/* <VisualMessageCard role={message.role} content={message.content} characterName={characterData.characterName} /> */}
                     </motion.div>
                   );
                 })}
@@ -972,7 +1037,11 @@ Only output the greeting message itself. No extra explanation.
           </div>
         </div>
 
-        <SkipToSceneModal modalState={skipToSceneModalState} setModalState={setSkipToSceneModalState} skipToSceneCallback={(b) => skipToScene(b)}/>
+        <SkipToSceneModal
+          modalState={skipToSceneModalState}
+          setModalState={setSkipToSceneModalState}
+          skipToSceneCallback={(b) => skipToScene(b)}
+        />
 
         <SteerBar
           activeSteers={activeSteers}
@@ -986,18 +1055,20 @@ Only output the greeting message itself. No extra explanation.
           setManageSteerModal={setManageSteerModal}
         />
         <div ref={textareaRef}>
-        <MessageInput
-          newMessage={newMessage}
-          setNewMessage={setNewMessage}
-          handleSendMessage={handleSendMessage}
-          onCancel={cancelRequest}
-          isThinking={isThinking}
-          userPromptThinking={userPromptThinking}
-          suggestReply={suggestReply}
-          rewriteMessage={rewriteMessage}
-          showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
-          showSteerModal={() => setManageSteerModal(true)}
-        />
+          <MessageInput
+            newMessage={newMessage}
+            setNewMessage={setNewMessage}
+            handleSendMessage={handleSendMessage}
+            onCancel={cancelRequest}
+            isThinking={isThinking}
+            userPromptThinking={userPromptThinking}
+            suggestReply={suggestReply}
+            rewriteMessage={rewriteMessage}
+            showSkipToSceneModal={() => {
+              setSkipToSceneModalState(true);
+            }}
+            showSteerModal={() => setManageSteerModal(true)}
+          />
         </div>
       </motion.div>
       <TokenCounter tokenCount={tokenCount} />
@@ -1015,9 +1086,39 @@ Only output the greeting message itself. No extra explanation.
         }}
         open={showingNewcomerDrawer}
       />
-
-
-
+      {messageFlying ? (
+        <motion.div
+  className="absolute max-w-screen"
+  initial={{
+    bottom: 0,
+    left: 0,
+    right: 'auto',
+    x: '1%',
+    y: '-5.5vh',
+    fontSize: '1.01rem',
+  }}
+  animate={{
+    bottom: 0,
+    left: 'auto', 
+    right: 0,
+    x: '0',
+    y: '-12.8vh',
+    // width: '100%',
+  }}
+  transition={{
+    duration: 0.1,
+    ease: 'easeOut',
+    y: { duration: 0.1, ease: 'easeIn' },
+  }}
+>
+  <VisualMessageCard
+    role={flyingMessageData.role}
+    content={flyingMessageData.content}
+    characterName={characterData.characterName}
+  />
+</motion.div>
+      ) : null} {/* how tf did telegram do this omhmygod */}
+                {/* hm: literally doesnt work on desktops screennN!!!!!!!!!!! */}
     </div>
   );
 };

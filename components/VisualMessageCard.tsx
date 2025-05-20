@@ -14,8 +14,8 @@ const VisualMessageCard: React.FC<VisualMessageCardProps> = ({ content, role, ch
   const theme = getTheme();
 
   const containerClass = role === 'user'
-    ? `${theme.userBg} ml-auto rounded-br-md text-end`
-    : `${theme.assistantBg} mr-auto rounded-bl-md`;
+    ? `${theme.userBg} rounded-br-md text-end`
+    : `${theme.assistantBg} rounded-bl-md`;
 
   return (
     <Card className={`rounded-xl sm:max-w-lg max-w-full w-fit border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"} ${containerClass}`}>  
