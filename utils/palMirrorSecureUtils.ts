@@ -1,4 +1,4 @@
-import { openDB } from 'idb';
+import { openDB, IDBPDatabase } from 'idb';
 import { encryptData, decryptData } from './cryptoUtils';
 
 export const dbName = 'PalMirrorSecure';
@@ -10,31 +10,23 @@ export interface PLMSecureGeneralSettings {
     };
 }
 
-const getDB = async () => {
-    return openDB(dbName, 1, {
+const getDB = async (): Promise<IDBPDatabase> => {
+    const db = await openDB(dbName, 1, {
         upgrade(db) {
-            db.createObjectStore(storeName);
+            if (!db.objectStoreNames.contains(storeName)) {
+                db.createObjectStore(storeName);
+            }
         },
     });
-};
 
-const generateSaltAndIv = () => {
-    const salt = window.crypto.getRandomValues(new Uint8Array(16));
-    const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    return { salt, iv };
-};
-
-export const getSaltAndIv = async () => {
-    const db = await getDB();
-    let storedMetadata = await db.get(storeName, 'PLMSecureMetadata');
-    if (storedMetadata) {
-        return { salt: storedMetadata.salt, iv: storedMetadata.iv };
-    } else {
-        const { salt, iv } = generateSaltAndIv();
-        await db.put(storeName, { salt, iv }, 'PLMSecureMetadata');
-        return { salt, iv };
+    if (navigator.storage && navigator.storage.persist) {
+        await navigator.storage.persist();
+        console.log("PalMirror Secure DB has been requested to be persistent.")
     }
+
+    return db;
 };
+
 
 export const setSecureData = async (
   key: string, 
@@ -88,3 +80,56 @@ export const getAllKeys = async () => {
 };
 
 
+
+
+const generateSaltAndIv = () => {
+    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    return { salt, iv };
+};
+
+export const getSaltAndIv = async () => {
+    const db = await getDB();
+    const storedMetadata = await db.get(storeName, 'PLMSecureMetadata');
+
+    if (storedMetadata) {
+        return { salt: storedMetadata.salt, iv: storedMetadata.iv };
+    } else {
+        const { salt, iv } = generateSaltAndIv();
+        await db.put(storeName, { salt, iv }, 'PLMSecureMetadata');
+        return { salt, iv };
+    }
+};
+
+export const exportSecureData = async (password: string): Promise<Blob> => {
+    const db = await getDB();
+    const keys = await db.getAllKeys(storeName);
+    const data: Record<string, any> = {};
+
+    for (const key of keys) {
+        data[key] = await db.get(storeName, key);
+    }
+
+    const exportBlob = {
+        version: 1,
+        createdAt: Date.now(),
+        data
+    };
+
+    const encrypted = await encryptData(exportBlob, password);
+    const blob = new Blob([JSON.stringify(encrypted)], { type: 'application/json' });
+    return blob;
+};
+
+export const importSecureData = async (file: File, password: string): Promise<void> => {
+    const text = await file.text();
+    const encrypted = JSON.parse(text);
+    const decrypted = await decryptData(encrypted, password);
+
+    const db = await getDB();
+    const tx = db.transaction(storeName, 'readwrite');
+    for (const [key, value] of Object.entries(decrypted.data)) {
+        await tx.store.put(value, key);
+    }
+    await tx.done;
+};
