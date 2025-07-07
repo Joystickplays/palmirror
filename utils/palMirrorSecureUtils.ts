@@ -103,40 +103,40 @@ export const getSaltAndIv = async () => {
 
 
 
-export const exportSecureData = async (password: string): Promise<Blob> => {
-    const db = await getDB();
-    const keys = await db.getAllKeys(storeName);
-    const data: Record<string, any> = {};
+// export const exportSecureData = async (password: string): Promise<Blob> => {
+//     const db = await getDB();
+//     const keys = await db.getAllKeys(storeName);
+//     const data: Record<string, any> = {};
 
-    for (const key of keys) {
-        const strKey = typeof key === 'string' ? key : JSON.stringify(Array.from(new Uint8Array(key as ArrayBuffer)));
-        data[strKey] = await db.get(storeName, key);
-    }
+//     for (const key of keys) {
+//         const strKey = typeof key === 'string' ? key : JSON.stringify(Array.from(new Uint8Array(key as ArrayBuffer)));
+//         data[strKey] = await db.get(storeName, key);
+//     }
 
-    const exportPayload = {
-        version: 1,
-        createdAt: Date.now(),
-        data
-    };
+//     const exportPayload = {
+//         version: 1,
+//         createdAt: Date.now(),
+//         data
+//     };
 
-    const { salt, iv } = await getSaltAndIv();
+//     const { salt, iv } = await getSaltAndIv();
 
-    const encryptedStr = await encryptData(JSON.stringify(exportPayload), password, salt, iv, true);
-    const blob = new Blob([new TextEncoder().encode(encryptedStr)], { type: 'application/json' });
-    return blob;
-};
+//     const encryptedStr = await encryptData(JSON.stringify(exportPayload), password, salt, iv, true);
+//     const blob = new Blob([new TextEncoder().encode(encryptedStr)], { type: 'application/json' });
+//     return blob;
+// };
 
-export const importSecureData = async (file: File, password: string): Promise<void> => {
-    const encryptedText = await file.text();
-    const { salt, iv } = await getSaltAndIv();
+// export const importSecureData = async (file: File, password: string): Promise<void> => {
+//     const encryptedText = await file.text();
+//     const { salt, iv } = await getSaltAndIv();
 
-    const decryptedStr = await decryptData(encryptedText, password, salt, iv, true);
-    const parsed = JSON.parse(decryptedStr);
+//     const decryptedStr = await decryptData(encryptedText, password, salt, iv, true);
+//     const parsed = JSON.parse(decryptedStr);
 
-    const db = await getDB();
-    const tx = db.transaction(storeName, 'readwrite');
-    for (const [key, value] of Object.entries(parsed.data)) {
-        await tx.store.put(value, key);
-    }
-    await tx.done;
-};
+//     const db = await getDB();
+//     const tx = db.transaction(storeName, 'readwrite');
+//     for (const [key, value] of Object.entries(parsed.data)) {
+//         await tx.store.put(value, key);
+//     }
+//     await tx.done;
+// };
