@@ -118,7 +118,9 @@ export const exportSecureData = async (password: string): Promise<Blob> => {
         data
     };
 
-    const encrypted = await encryptData(exportBlob, password);
+
+    const { salt, iv } = await getSaltAndIv();
+    const encrypted = await encryptData(exportBlob, password, salt, iv, true);
     const blob = new Blob([JSON.stringify(encrypted)], { type: 'application/json' });
     return blob;
 };
@@ -126,7 +128,9 @@ export const exportSecureData = async (password: string): Promise<Blob> => {
 export const importSecureData = async (file: File, password: string): Promise<void> => {
     const text = await file.text();
     const encrypted = JSON.parse(text);
-    const decrypted = await decryptData(encrypted, password);
+
+    const { salt, iv } = await getSaltAndIv();
+    const decrypted = await decryptData(encrypted, password, salt, iv, true);
 
     const db = await getDB();
     const tx = db.transaction(storeName, 'readwrite');
