@@ -122,7 +122,7 @@ export const exportSecureData = async (password: string): Promise<Blob> => {
     const { salt, iv } = await getSaltAndIv();
 
     const encryptedStr = await encryptData(JSON.stringify(exportPayload), password, salt, iv, true);
-    const blob = new Blob([encryptedStr], { type: 'application/json' });
+    const blob = new Blob([new TextEncoder().encode(encryptedStr)], { type: 'application/json' });
     return blob;
 };
 
