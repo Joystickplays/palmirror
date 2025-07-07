@@ -102,6 +102,7 @@ export const getSaltAndIv = async () => {
 };
 
 
+
 export const exportSecureData = async (password: string): Promise<Blob> => {
     const db = await getDB();
     const keys = await db.getAllKeys(storeName);
@@ -112,29 +113,25 @@ export const exportSecureData = async (password: string): Promise<Blob> => {
         data[strKey] = await db.get(storeName, key);
     }
 
-    const exportBlob = {
+    const exportPayload = {
         version: 1,
         createdAt: Date.now(),
         data
     };
 
-
-    const { salt, iv } = await getSaltAndIv();
-    const encrypted = await encryptData(exportBlob, password, salt, iv, true);
-    const blob = new Blob([JSON.stringify(encrypted)], { type: 'application/json' });
+    const encryptedStr = await encryptData(JSON.stringify(exportPayload), password);
+    const blob = new Blob([encryptedStr], { type: 'application/json' });
     return blob;
 };
 
 export const importSecureData = async (file: File, password: string): Promise<void> => {
-    const text = await file.text();
-    const encrypted = JSON.parse(text);
-
-    const { salt, iv } = await getSaltAndIv();
-    const decrypted = await decryptData(encrypted, password, salt, iv, true);
+    const encryptedText = await file.text();
+    const decryptedStr = await decryptData(encryptedText, password);
+    const parsed = JSON.parse(decryptedStr);
 
     const db = await getDB();
     const tx = db.transaction(storeName, 'readwrite');
-    for (const [key, value] of Object.entries(decrypted.data)) {
+    for (const [key, value] of Object.entries(parsed.data)) {
         await tx.store.put(value, key);
     }
     await tx.done;
