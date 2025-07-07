@@ -101,13 +101,15 @@ export const getSaltAndIv = async () => {
     }
 };
 
+
 export const exportSecureData = async (password: string): Promise<Blob> => {
     const db = await getDB();
     const keys = await db.getAllKeys(storeName);
     const data: Record<string, any> = {};
 
     for (const key of keys) {
-        data[key] = await db.get(storeName, key);
+        const strKey = typeof key === 'string' ? key : JSON.stringify(Array.from(new Uint8Array(key as ArrayBuffer)));
+        data[strKey] = await db.get(storeName, key);
     }
 
     const exportBlob = {
