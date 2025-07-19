@@ -54,7 +54,7 @@ const exportCharacter = (data) => {
     const credit =
         `// Made FOR the Experience. From the unformed, to the spark.\n` +
         `// Handle with care. It remembers.\n\n` +
-        `// ${timestamp} at https://palm.goteamst.com\n\n`;
+        `// ${timestamp} at https://palmirror.vercel.app\n\n`;
 
     const characterJSON = JSON.stringify(characterData, null, 2);
     const fileContent = credit + characterJSON;
@@ -73,7 +73,7 @@ const exportCharacter = (data) => {
 
 const exportMethod1 = async () => {
     try {
-        const url = new URL(`https://plus.${platform.split(".").slice(-2).join(".")}/chat/character/info/`);
+        const url = new URL(`https://neo.${platform.split(".").slice(-2).join(".")}/character/v1/get_character_info`);
         const charId = charUrl.split("/").slice(-1)[0];
 
         const response = await fetch(url.toString(), {
