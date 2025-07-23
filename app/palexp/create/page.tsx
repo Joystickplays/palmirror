@@ -266,12 +266,12 @@ export default function Home() {
 
                             </div>
                             <Button key="ADDBUTTON" size="sm" variant="outline" onClick={() => {
-                                if (plmex.dynamicStatuses.length < 5) {
+                                // if (plmex.dynamicStatuses.length < 5) {
                                     setCharacterData({ ...characterData, plmex: { ...plmex, dynamicStatuses: [...plmex.dynamicStatuses, { key: Math.floor(Math.random() * 69420), name: "", defaultValue: "" }] } })
 
-                                } else {
-                                    toast.error("Do you really need more than 5?")
-                                }
+                                // } else {
+                                    // toast.error("Do you really need more than 5?")
+                                // }
                             }}><CirclePlus /> Add</Button>
                         </div>
                         <div className="flex flex-col gap-1">

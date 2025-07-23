@@ -41,14 +41,14 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({
             y: {
               delay: initialAnimationComplete ? 0 : delay * 1.5,
               type: "spring",
-              stiffness: 180 - delay * 100,
-              damping: delay * 100 + 16,
+              stiffness: 400 - delay * 100,
+              damping: delay * 100 + 17,
             },
             opacity: {
               delay: initialAnimationComplete ? 0 : delay * 1.5,
               type: "spring",
-              stiffness: 180 - delay * 100,
-              damping: delay * 100 + 16,
+              stiffness: 400 - delay * 100,
+              damping: delay * 100 + 17,
             },
           },
         },

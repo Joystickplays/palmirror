@@ -545,7 +545,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 }}>
                   {renderContent()}
                   {/* Swipe to regenerate overlay */}
-                  <animated.div className="absolute inset-0 bg-black flex gap-2 items-end justify-end z-10 text-white bg-opacity-50 pointer-events-none select-none"
+                  <animated.div className="absolute inset-0 bg-black flex gap-2 items-end justify-end z-10 text-white bg-opacity-0 pointer-events-none select-none"
                    style={{
                      opacity: canRegenerate ? x.to(val => -val / 100) : 0
                    }}>

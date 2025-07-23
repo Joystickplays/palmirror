@@ -12,6 +12,8 @@ import "react-toastify/dist/ReactToastify.css";
 import Keypad from "@/components/Keypad";
 import PinDisplay from "@/components/PINDisplay";
 
+import UserPersonalities from "@/components/UserPersonalities";
+
 import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
 
 import { AnimatePresence, motion, useAnimation } from "motion/react";
@@ -24,6 +26,7 @@ interface ChatMetadata extends CharacterData {
   lastUpdated: Date;
 }
 
+import { usePalRec } from "@/context/PLMRecSystemContext" 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 import { charPalExpScript } from "@/utils/gPECMini";
@@ -53,7 +56,9 @@ import { useRouter } from "next/navigation";
 
 import { useDebounce } from "@/utils/useDebounce";
 
-// New components moved outside Home():
+import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+
+
 function GetFromPlatform({
   router,
   linkChar,
@@ -260,6 +265,8 @@ function SetupCharacter({
           <Button className="mx-auto">Setup character</Button>
         </DialogTrigger>
         <DialogContent className="w-auto max-h-[80vh] overflow-y-auto font-sans">
+          <AnimateChangeInHeight>
+            <div className="px-2">
           <DialogHeader>
             <DialogTitle>Setup character</DialogTitle>
             <div className="palmirror-exc rounded-lg p-3 !my-4">
@@ -338,7 +345,8 @@ function SetupCharacter({
                 />
               </div>
             </div>
-            <Accordion type="single" collapsible className="w-full mb-4">
+            <UserPersonalities></UserPersonalities>
+            { /* <Accordion type="single" collapsible className="w-full mb-4">
               <AccordionItem value="item-1">
                 <AccordionTrigger>Your personality</AccordionTrigger>
                 <AccordionContent>
@@ -366,11 +374,13 @@ function SetupCharacter({
                   </div>
                 </AccordionContent>
               </AccordionItem>
-            </Accordion>
+            </Accordion> */ }
             <Button className="w-80" onClick={startChat}>
               Start chat
             </Button>
           </DialogHeader>
+          </div>
+          </AnimateChangeInHeight>
         </DialogContent>
       </Dialog>
       <PopoverContent asChild className="z-[999999] min-w-80">
@@ -886,7 +896,7 @@ export default function Home() {
     <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
       <div>
         <motion.h1
-          initial={{ scale: 0, y: -100 }}
+          initial={{ scale: 1, y: -100 }}
           animate={{ scale: 1, y: 0 }}
           transition={{
             type: "spring",
@@ -946,7 +956,7 @@ export default function Home() {
                 </motion.div>
               ) : null}
               <motion.div
-                initial={{ opacity: 0, scale: 1, x: "-50%", y: -50 }}
+                initial={{ opacity: 0, scale: 1, x: "-50%", y: '-10%' }}
                 animate={{
                   opacity: Date.now() < PLMSecureLockUntil ? 0.2 : 1,
                   y: "-50%",
