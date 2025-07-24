@@ -264,7 +264,7 @@ function SetupCharacter({
         <DialogTrigger asChild>
           <Button className="mx-auto">Setup character</Button>
         </DialogTrigger>
-        <DialogContent className="w-full max-h-[80vh] overflow-y-auto font-sans">
+        <DialogContent className="w-full max-w-[360px] max-h-[80vh] overflow-y-auto font-sans">
           <AnimateChangeInHeight>
             <div className="px-1">
           <DialogHeader>
