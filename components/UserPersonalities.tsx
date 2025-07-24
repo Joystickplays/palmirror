@@ -6,14 +6,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { CirclePlus, Trash2 } from "lucide-react";
 
 import { v4 as uuidv4 } from "uuid";
-import { Z_UNKNOWN } from "zlib";
+
 
 const MButton = motion(Button);
 
+type UserPersonality = {
+  id: string
+  name: string
+  personality: string
+  using: boolean
+}
+
 const UserPersonalities: React.FC = ({}) => {
-  const [userPersonalities, setUserPersonalities] = useState<
-    Array<{ id: string; name: string; personality: string; using: boolean }>
-  >([]);
+  const [userPersonalities, setUserPersonalities] = useState<UserPersonality[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   const [queueId, setQueueId] = useState(uuidv4());
@@ -37,7 +42,7 @@ const UserPersonalities: React.FC = ({}) => {
       try {
         const parsed = JSON.parse(stored);
 
-        const updated = parsed.map((item: any) => ({
+        const updated = parsed.map((item: UserPersonality) => ({
           ...item,
           id: item.id || uuidv4(),
         }));
