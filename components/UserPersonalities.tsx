@@ -80,9 +80,9 @@ const UserPersonalities: React.FC = ({}) => {
         </div>
         <AnimatePresence mode="popLayout">
           <MButton
-            initial={{ opacity: 0, scale: 1.1 }}
+            initial={{ opacity: 0, scale: 0.7 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 30 }}
+            transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 16 }}
             key={queueId}
             layoutId={queueId}
             onClick={newPersonality}
@@ -98,7 +98,7 @@ const UserPersonalities: React.FC = ({}) => {
             <motion.div
               key={usrPs.id}
               layoutId={usrPs.id}
-              initial={{ scale: 0.7, opacity: 0 }}
+              initial={{ scale: 1, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.7, opacity: 0 }}
               layout
@@ -141,7 +141,7 @@ const UserPersonalities: React.FC = ({}) => {
                       animate={{ opacity: 1, scale: 1.06 }}
                       exit={{ opacity: 0, scale: 0.6 }}
                       transition={{ type: "spring", stiffness: 150, damping: 17, }}
-                      claName="flex-1 w-full"
+                      className="flex-1 w-full"
                     >
                       <Button
                         variant="default"
@@ -165,7 +165,7 @@ const UserPersonalities: React.FC = ({}) => {
                         className="w-full flex-1"
                         onClick={() => setUsing(i)}
                       >
-                        Use this personality
+                        Use this
                       </Button>
                     </motion.div>
                   )}

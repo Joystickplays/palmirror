@@ -91,7 +91,7 @@ export default function Home() {
     }
     if (selectedMethod === "password" && password !== confirmPassword) {
       toast.error("Passwords do not match!");
-      return;
+     return;
     }
 
     try {
@@ -194,6 +194,7 @@ export default function Home() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="password" asChild>
+
                 <motion.div
                   key="password"
                   className="flex flex-col gap-4"

@@ -63,6 +63,8 @@ const ChatPage = () => {
   const [generationTemperature, setTemperature] = useState(0.5);
   const [modelInstructions, setModelInstructions] = useState("");
   const [modelName, setModelName] = useState("");
+  
+  const [userPersonality, setUserPersonality] = useState({ name: "", personality: "" })
 
   const {
     setCharacterTags,
@@ -357,6 +359,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
     const systemPrompt = getSystemMessage(
       characterData,
+      userPersonality,
       modelInstructions +
         (activeSteers.length > 0 && steerApplyMethod === "system"
           ? generateSteerPrompt({ steers: activeSteers })
@@ -728,6 +731,17 @@ Only output the greeting message itself. No extra explanation.
   useEffect(() => {
     const storedData = localStorage.getItem("characterData");
     if (storedData) setCharacterData(JSON.parse(storedData));
+  }, []);
+
+  useEffect(() => {
+    const storedData = localStorage.getItem("userPersonalities");
+    if (storedData) { 
+      const userPrs = JSON.parse(storedData) 
+      const usingPrs = userPrs.find(p => p.using)
+      if (usingPrs) {
+        setUserPersonality({ name: usingPrs.name, personality: usingPrs.personality })
+      };
+    }
   }, []);
 
   useEffect(() => {

@@ -264,9 +264,9 @@ function SetupCharacter({
         <DialogTrigger asChild>
           <Button className="mx-auto">Setup character</Button>
         </DialogTrigger>
-        <DialogContent className="w-auto max-h-[80vh] overflow-y-auto font-sans">
+        <DialogContent className="w-full max-h-[80vh] overflow-y-auto font-sans">
           <AnimateChangeInHeight>
-            <div className="px-2">
+            <div className="px-1">
           <DialogHeader>
             <DialogTitle>Setup character</DialogTitle>
             <div className="palmirror-exc rounded-lg p-3 !my-4">
@@ -731,6 +731,7 @@ export default function Home() {
       resolve();
       localStorage.removeItem("PLMSecureAttempts");
       localStorage.removeItem("PLMSecureLockUntil");
+      navigator.vibrate([50, 100, 50])
       setIsSecureReady(true);
     });
   };
