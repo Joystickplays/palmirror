@@ -146,13 +146,15 @@ export default function Search() {
     let recommendedTags
     try {
       recommendedTags = getRecommendedTags()
-    } catch (e) { console.log(e); recommendedTags = "NSFW,RPG,Robot" }
+    } catch (e) { console.log(e); recommendedTags = ["NSFW","RPG","Robot"] }
 
     setLoading(true);
     try {
       window.scrollTo(0, 0); // Scroll to the top
+      const inclusionTags = initial ? recommendedTags.join(',') : extractedTags.inclusion
+      const exclusionTags = initial ? "NSFW,RPG,Robot,Helpers" : [exclusionTopic, extractedTags.exclusion].filter(Boolean).join(",")
       const fetchPromises = apiProviders.map(provider =>
-        fetch(provider.query(extractedTags.clean || "", page, (initial ? "NSFW,RPG,Robot,Helpers" : exclusionTopic + (exclusionTopic === "" ? "" : ",") + extractedTags.exclusion), (initial ? recommendedTags : extractedTags.inclusion))).then(response => {
+        fetch(provider.query(extractedTags.clean || "", page, exclusionTags, inclusionTags)).then(response => {
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
