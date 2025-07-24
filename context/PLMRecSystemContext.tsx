@@ -161,9 +161,9 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setTagScores({});
     setTagDislikes({});
     setCharHistory({});
-    secure.removeKey('recTagScores');
-    secure.removeKey('recDislikedTags');
-    secure.removeKey('recCharHistory');
+    secure!.removeKey('recTagScores');
+    secure!.removeKey('recDislikedTags');
+    secure!.removeKey('recCharHistory');
   }, [secure]);
 
   const getRecommendedTags = useCallback(
