@@ -146,7 +146,7 @@ export default function Search() {
     let recommendedTags
     try {
       recommendedTags = getRecommendedTags()
-    } catch { recommendedTags = "NSFW,RPG,Robot" }
+    } catch (e) { console.log(e); recommendedTags = "NSFW,RPG,Robot" }
 
     setLoading(true);
     try {

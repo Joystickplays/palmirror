@@ -501,7 +501,7 @@ Only output the greeting message itself. No extra explanation.
         )
       ];
 
-      recChattedAt(Date.now())
+      recChattedAt(chatId, Date.now())
     }
 
     try {
@@ -782,7 +782,7 @@ Only output the greeting message itself. No extra explanation.
             const { id, lastUpdated, ...charData } = chatMetadata;
             setCharacterData(charData);
             setCharacterTags(charData.name, charData.tags ? charData.tags : []);
-            recVisit();
+            recVisit(chatId);
           }
 
           const chatData = await PLMSecContext.getSecureData(chatId);

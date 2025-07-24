@@ -10,10 +10,8 @@ import React, {
 } from 'react';
 import { PLMSecureContext } from '@/context/PLMSecureContext';
 
-// Toggle debugging logs
 const DEBUG = true;
 
-// --- Types ---
 interface CharHistory {
   firstSeen: number;
   lastChattedAt?: number;
@@ -44,7 +42,6 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [tagDislikes, setTagDislikes] = useState<TagScores>({});
   const [charHistory, setCharHistory] = useState<Record<string, CharHistory>>({});
 
-  // Load persisted data on secure context ready
   useEffect(() => {
     if (!secure.isSecureReady()) return;
     if (DEBUG) console.debug('[Rec] Loading persisted recommendation data');
@@ -60,7 +57,6 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   }, [secure]);
 
-  // Persist helper
   const persist = useCallback(
     (key: string, data: any) => {
       if (!secure.isSecureReady()) return;
@@ -70,7 +66,6 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     [secure]
   );
 
-  // Utility to apply decay
   const decayScore = (entry: { score: number; lastSeen: number }) => {
     const days = (Date.now() - entry.lastSeen) / (1000 * 60 * 60 * 24);
     return entry.score * Math.exp(-0.1 * days);
@@ -204,7 +199,6 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { include, exclude };
   }, [getRecommendedTags, getExcludedTags]);
 
-  // --- Expose ---
   const value: RecContextType = {
     setCharacterTags,
     recVisit,
@@ -220,7 +214,6 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return <RecContext.Provider value={value}>{children}</RecContext.Provider>;
 };
 
-// Hook for easy access
 export const usePalRec = (): RecContextType => {
   const ctx = useContext(RecContext);
   if (!ctx) throw new Error('usePalRec must be inside RecProvider');
