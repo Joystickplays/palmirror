@@ -43,7 +43,7 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [charHistory, setCharHistory] = useState<Record<string, CharHistory>>({});
 
   useEffect(() => {
-    if (!secure.isSecureReady()) return;
+    if (!secure?.isSecureReady()) return;
     if (DEBUG) console.debug('[Rec] Loading persisted recommendation data');
     Promise.all([
       secure.getSecureData('recTagScores'),
@@ -59,7 +59,7 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const persist = useCallback(
     (key: string, data: any) => {
-      if (!secure.isSecureReady()) return;
+      if (!secure?.isSecureReady()) return;
       if (DEBUG) console.debug(`[Rec] Persisting ${key}`, data);
       secure.setSecureData(key, data);
     },
