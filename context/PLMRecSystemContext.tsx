@@ -46,9 +46,9 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!secure?.isSecureReady()) return;
     if (DEBUG) console.debug('[Rec] Loading persisted recommendation data');
     Promise.all([
-      secure.getSecureData('recTagScores'),
-      secure.getSecureData('recDislikedTags'),
-      secure.getSecureData('recCharHistory'),
+      secure!.getSecureData('recTagScores'),
+      secure!.getSecureData('recDislikedTags'),
+      secure!.getSecureData('recCharHistory'),
     ]).then(([savedTags, savedDislikes, savedHistory]) => {
       if (savedTags) setTagScores(savedTags);
       if (savedDislikes) setTagDislikes(savedDislikes);
@@ -61,7 +61,7 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     (key: string, data: any) => {
       if (!secure?.isSecureReady()) return;
       if (DEBUG) console.debug(`[Rec] Persisting ${key}`, data);
-      secure.setSecureData(key, data);
+      secure!.setSecureData(key, data);
     },
     [secure]
   );
