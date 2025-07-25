@@ -4,9 +4,9 @@ export const getSystemMessage = (characterData: CharacterData, userPersonality: 
   let userSystemMessage = ""
   if (characterData.userName !== "" && characterData.userPersonality !== "") {
 
-    userSystemMessage = `{{user}} is named ${userPersonality.user}
+    userSystemMessage = `{{user}} is named ${userPersonality.name}
 
-${userPersonality.user}'s personality: ${userPersonality.personality}`
+${userPersonality.name}'s personality: ${userPersonality.personality}`
 
   }
 
