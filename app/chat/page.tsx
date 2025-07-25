@@ -39,6 +39,14 @@ interface ChatCompletionMessageParam {
   name?: string;
 }
 
+type UserPersonality = {
+  id: string;
+  name: string;
+  personality: string;
+  using: boolean;
+};
+
+
 const ChatPage = () => {
   const [messages, setMessages] = useState<
     Array<{
@@ -737,7 +745,7 @@ Only output the greeting message itself. No extra explanation.
     const storedData = localStorage.getItem("userPersonalities");
     if (storedData) { 
       const userPrs = JSON.parse(storedData) 
-      const usingPrs = userPrs.find(p => p.using)
+      const usingPrs = userPrs.find((p: UserPersonality) => p.using)
       if (usingPrs) {
         setUserPersonality({ name: usingPrs.name, personality: usingPrs.personality })
       };
