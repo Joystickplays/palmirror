@@ -896,13 +896,14 @@ Only output the greeting message itself. No extra explanation.
         theme="dark"
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.7, filter: "blur(10px)" }}
+        initial={{ opacity: 0, scale: 1.05, filter: "blur(5px)" }}
         animate={loaded ? { opacity: 1, scale: 1, filter: "blur(0px)" } : false}
         transition={{
           type: "spring",
           mass: 1,
-          damping: 20,
+          damping: 27,
           stiffness: 161,
+          restDelta: 0.00001,
           filter: { type: "spring", mass: 1, damping: 38, stiffness: 161 },
         }}
         className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto"
