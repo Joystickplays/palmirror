@@ -896,7 +896,7 @@ Only output the greeting message itself. No extra explanation.
         theme="dark"
       />
       <motion.div
-        initial={{ opacity: 0, scale: 1.05, filter: "blur(5px)" }}
+        initial={{ opacity: 0, scale: 0.9, filter: "blur(5px)" }}
         animate={loaded ? { opacity: 1, scale: 1, filter: "blur(0px)" } : false}
         transition={{
           type: "spring",
