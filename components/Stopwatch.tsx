@@ -11,7 +11,7 @@ const Stopwatch: React.FC<StopwatchProps> = ({ startDate }) => {
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
-    let frameId;
+    let frameId: number
 
     const update = () => {
       setSeconds((Date.now() - startDate.getTime()) / 1000);
