@@ -387,7 +387,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         {
           role: "user",
           name: "user",
-          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality. Reply must be thoughtful and quick. IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* lkBE THE CHARACTER!`,
+          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality. Reply must be thoughtful and quick. IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* BE THE CHARACTER!\n\nPlease note this is an exception to the "No talking as user" rule. I specifically request this.\nAvoid leading with "Understood, here's a...", JUST GENERATE THE REPLY STRAIGHT UP. Now, generate.`,
         },
       ];
     } else if (mode === "rewrite") {

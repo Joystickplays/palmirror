@@ -25,14 +25,14 @@ const Stopwatch: React.FC<StopwatchProps> = ({ startDate }) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 0.5, scale: 1 }}
+      initial={{ opacity: 0, scale: 0 }}
+      animate={{ opacity: 0.3, scale: 1 }}
       transition={{
         type: "spring",
         mass: 1,
         stiffness: 100,
         damping: 30,
-        delay: 3,
+        delay: 10,
       }}
       style={{
         fontSize: "0.7rem",
