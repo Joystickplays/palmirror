@@ -971,8 +971,8 @@ export default function Home() {
                 transition={{
                   type: "spring",
                   mass: 1,
-                  damping: 22,
-                  stiffness: 161,
+                  damping: 39,
+                  stiffness: 400,
                 }}
                 className={`flex items-center justify-center gap-2 flex-col flex-grow absolute top-1/2 left-1/2 w-full ${
                   Date.now() < PLMSecureLockUntil ? "pointer-events-none" : null

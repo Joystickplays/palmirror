@@ -41,20 +41,20 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({
             y: {
               delay: initialAnimationComplete ? 0 : delay * 1.5,
               type: "spring",
-              stiffness: 400 - delay * 100,
-              damping: delay * 250 + 17,
+              stiffness: 200 - delay * 100,
+              damping: delay * 100 + 16,
             },
             opacity: {
               delay: initialAnimationComplete ? 0 : delay * 1.5,
               type: "spring",
-              stiffness: 400 - delay * 100,
-              damping: delay * 250 + 17,
+              stiffness: 200 - delay * 100,
+              damping: delay * 100 + 16,
             },
           },
         },
         tap: {
           scale: 1.1,
-          backgroundColor: "rgba(255, 255, 255, 0.5)",
+          backgroundColor: "rgba(255, 255, 255, 0.3)",
           transition: { delay: 0 },
         },
       }}
@@ -66,6 +66,7 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({
         bg-white/10 rounded-full
         ${btn === "0" ? "col-span-2 justify-self-end" : ""}
         ${btn === "⌫" ? "justify-self-end" : ""}`}
+      style={{ WebkitUserSelect: "none", userSelect: "none", touchAction: "manipulation" }}
     >
       {btn}
     </motion.button>
