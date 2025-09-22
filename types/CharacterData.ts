@@ -25,6 +25,7 @@ export interface CharacterData {
   scenario: string;
   userName: string;
   userPersonality: string;
+  tags: string[];
   alternateInitialMessages: Array<string> | Array<AlternateInitialMessage>;
   plmex: {
     dynamicStatuses: Array<DynamicStatus>;
@@ -40,6 +41,7 @@ export const defaultCharacterData: CharacterData = {
   scenario: "",
   userName: "",
   userPersonality: "",
+  tags: [],
   alternateInitialMessages: [],
   plmex: {
     dynamicStatuses: [],

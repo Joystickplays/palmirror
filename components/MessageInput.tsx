@@ -19,6 +19,8 @@ import { useTheme } from "@/components/PalMirrorThemeProvider";
 import { AnimatePresence } from "framer-motion";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
+import Stopwatch from "@/components/Stopwatch"
+
 interface MessageInputProps {
   newMessage: string;
   setNewMessage: React.Dispatch<React.SetStateAction<string>>;
@@ -58,6 +60,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   const { theme, getTheme, setTheme } = useTheme();
   const currentTheme = getTheme();
+
+  const [firstThinking, setFirstThinking] = useState(new Date)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -105,6 +109,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
       emptyMessage();
     }
   };
+
+  useEffect(() => { if (isThinking) { setFirstThinking(new Date) } }, [isThinking])
+
   return (
     <div className="relative w-full">
       <Textarea
@@ -117,7 +124,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
         onKeyDown={(e) => localHandleSendMessage(e)}
         disabled={userPromptThinking}
       />
-
+      <div className="absolute right-2 top-0 px-2 pt-1">
+        {
+          isThinking && ( <Stopwatch startDate={firstThinking}/> )
+        }
+      </div>
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <Button

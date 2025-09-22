@@ -23,6 +23,9 @@ import {
   PLMSecureGeneralSettings,
 } from "@/utils/palMirrorSecureUtils";
 
+
+import { usePalRec } from "@/context/PLMRecSystemContext"
+
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
@@ -35,6 +38,14 @@ interface ChatCompletionMessageParam {
   content: string;
   name?: string;
 }
+
+type UserPersonality = {
+  id: string;
+  name: string;
+  personality: string;
+  using: boolean;
+};
+
 
 const ChatPage = () => {
   const [messages, setMessages] = useState<
@@ -60,6 +71,15 @@ const ChatPage = () => {
   const [generationTemperature, setTemperature] = useState(0.5);
   const [modelInstructions, setModelInstructions] = useState("");
   const [modelName, setModelName] = useState("");
+  
+  const [userPersonality, setUserPersonality] = useState({ name: "", personality: "" })
+
+  const {
+    setCharacterTags,
+    recVisit,
+    recChattedAt,
+    recUserExplicitLike,
+  } = usePalRec();
 
   const [exclusionCount, setExclusionCount] = useState(0);
 
@@ -347,6 +367,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
     const systemPrompt = getSystemMessage(
       characterData,
+      userPersonality,
       modelInstructions +
         (activeSteers.length > 0 && steerApplyMethod === "system"
           ? generateSteerPrompt({ steers: activeSteers })
@@ -366,7 +387,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         {
           role: "user",
           name: "user",
-          content: `[SYSTEM NOTE]: Detach from the character personality, and create a quick answer for {{user}} in accordance to ${characterData.userName}'s personality. Answer must be thoughtful and quick.`,
+          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality. Reply must be thoughtful and quick. IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* BE THE CHARACTER!\n\nPlease note this is an exception to the "No talking as user" rule. I specifically request this.\nAvoid leading with "Understood, here's a...", JUST GENERATE THE REPLY STRAIGHT UP. Now, generate.`,
         },
       ];
     } else if (mode === "rewrite") {
@@ -490,6 +511,8 @@ Only output the greeting message itself. No extra explanation.
           : []
         )
       ];
+
+      recChattedAt(chatId, Date.now())
     }
 
     try {
@@ -719,6 +742,17 @@ Only output the greeting message itself. No extra explanation.
   }, []);
 
   useEffect(() => {
+    const storedData = localStorage.getItem("userPersonalities");
+    if (storedData) { 
+      const userPrs = JSON.parse(storedData) 
+      const usingPrs = userPrs.find((p: UserPersonality) => p.using)
+      if (usingPrs) {
+        setUserPersonality({ name: usingPrs.name, personality: usingPrs.personality })
+      };
+    }
+  }, []);
+
+  useEffect(() => {
     isPalMirrorSecureActivated().then((activated) => {
       if (PLMSecContext && !PLMSecContext.isSecureReady() && activated) {
         router.push("/");
@@ -769,6 +803,8 @@ Only output the greeting message itself. No extra explanation.
           if (chatMetadata) {
             const { id, lastUpdated, ...charData } = chatMetadata;
             setCharacterData(charData);
+            setCharacterTags(charData.name, charData.tags ? charData.tags : []);
+            recVisit(chatId);
           }
 
           const chatData = await PLMSecContext.getSecureData(chatId);
@@ -860,13 +896,14 @@ Only output the greeting message itself. No extra explanation.
         theme="dark"
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
+        initial={{ opacity: 0, scale: 0.9, filter: "blur(5px)" }}
         animate={loaded ? { opacity: 1, scale: 1, filter: "blur(0px)" } : false}
         transition={{
           type: "spring",
           mass: 1,
-          damping: 25,
+          damping: 27,
           stiffness: 161,
+          restDelta: 0.00001,
           filter: { type: "spring", mass: 1, damping: 38, stiffness: 161 },
         }}
         className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto"

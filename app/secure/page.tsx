@@ -85,13 +85,13 @@ export default function Home() {
       toast.error("Password too short! Atleast 6 characters.");
       return;
     }
-    if (selectedMethod === "pin" && pin.length < 3) {
+    if (selectedMethod === "pin" && pin.length < 4) {
       toast.error("PIN too short! Atleast 4 digits.");
       return;
     }
     if (selectedMethod === "password" && password !== confirmPassword) {
       toast.error("Passwords do not match!");
-      return;
+     return;
     }
 
     try {
@@ -125,6 +125,7 @@ export default function Home() {
   const removePLMSecure = async () => {
     await indexedDB.deleteDatabase("PalMirrorSecure");
     localStorage.removeItem("secureMetadata");
+    await PLMsecureContext?.resetCredential();
     setAlreadyEncrypted(false);
     toast.success("PalMirror Secure removed successfully!");
   };
@@ -193,6 +194,7 @@ export default function Home() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="password" asChild>
+
                 <motion.div
                   key="password"
                   className="flex flex-col gap-4"

@@ -23,7 +23,7 @@ const staggerGroups: string[][] = [
 
 const getDelay = (key: string) => {
   for (let i = 0; i < staggerGroups.length; i++) {
-    if (staggerGroups[i].includes(key)) return i * 0.05;
+    if (staggerGroups[i].includes(key)) return i * 0.04;
   }
   return 0;
 };

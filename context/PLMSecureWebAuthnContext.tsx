@@ -214,7 +214,7 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
       challenge: challenge.buffer,        
       rp: { name: "Local Test App" },        
       user: {        
-        // Dummy values; the browser will ignore these for a platform authenticator.        
+       
         id: new Uint8Array(16),        
         name: "user@example.com",        
         displayName: "Test User",        

@@ -14,6 +14,9 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
+
+import { usePalRec } from "@/context/PLMRecSystemContext"
 
 import AutoScrollContainer from '@/components/AutoScroll';
 
@@ -23,21 +26,11 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [exclusionTopic, setExclusionTopic] = useState("NSFW");
-  const [characterData, setCharacterData] = useState({
-    name: "",
-    personality: "",
-    initialMessage: "",
-    scenario: "",
-    userName: "",
-    userPersonality: "",
-    image: "",
-    alternateInitialMessages: [] as Array<string>,
-    plmex: {
-      dynamicStatuses: []
-    }
-  });
+  const [characterData, setCharacterData] = useState<CharacterData>(defaultCharacterData);
   const router = useRouter();
   const [excludeNSFW, setExcludeNSFW] = useState(true);  
+
+  const { getRecommendedTags } = usePalRec();
 
 
   useEffect(() => {
@@ -93,6 +86,7 @@ export default function Search() {
               alternateInitialMessages: data.node.definition.alternate_greetings && [data.node.definition.first_message, ...data.node.definition.alternate_greetings] || [],
               scenario: data.node.definition.scenario,
               image: imageBase64,
+              tags: data.node.topics,
               plmex: {
                 dynamicStatuses: [],
                 invocations: [],
@@ -149,11 +143,18 @@ export default function Search() {
 
     const extractedTags = extractTags(searchQuery)
 
+    let recommendedTags
+    try {
+      recommendedTags = getRecommendedTags()
+    } catch (e) { console.log(e); recommendedTags = ["NSFW","RPG","Robot"] }
+
     setLoading(true);
     try {
       window.scrollTo(0, 0); // Scroll to the top
+      const inclusionTags = initial ? recommendedTags.join(',') : extractedTags.inclusion
+      const exclusionTags = initial ? "NSFW,RPG,Robot,Helpers" : [exclusionTopic, extractedTags.exclusion].filter(Boolean).join(",")
       const fetchPromises = apiProviders.map(provider =>
-        fetch(provider.query(extractedTags.clean || "", page, (initial ? "NSFW,RPG,Robot" : exclusionTopic + (exclusionTopic === "" ? "" : ",") + extractedTags.exclusion), (initial ? "SFW,Male,NovelAI" : extractedTags.inclusion))).then(response => {
+        fetch(provider.query(extractedTags.clean || "", page, exclusionTags, inclusionTags)).then(response => {
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -240,13 +241,14 @@ export default function Search() {
               <div></div>
             </motion.div>
           ) : (
-            <div>
+            <motion.div
+            exit={{ filter: 'blur(5px)', opacity: 0}}>
                 <motion.div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <AnimatePresence mode="popLayout">
                   {searchResults.map((result, index) => (
                     <motion.div
                       key={index}
-                      initial={{ opacity: 0, scale: 0, filter: 'blur(10px)' }}
+                      initial={{ opacity: 0, scale: 0, filter: 'blur(0px)' }}
                       animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                       exit={{ opacity: 0, scale: 0 }}
                       transition={{ delay: index * 0.1, type: "spring", mass: 1, damping: 15, stiffness: 80 }}
@@ -296,7 +298,7 @@ export default function Search() {
                   </Button>
                 </div>
               )}
-            </div>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

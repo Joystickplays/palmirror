@@ -2,6 +2,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { PMThemeProvider } from "@/components/PalMirrorThemeProvider";
 import { PLMSecureProvider } from "@/context/PLMSecureContext";
 import { WebAuthnProvider } from "@/context/PLMSecureWebAuthnContext";
+import { RecProvider } from "@/context/PLMRecSystemContext";
 // import { AnimatePresence, motion } from 'framer-motion';
 
 import type { Metadata } from "next";
@@ -44,25 +45,27 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <WebAuthnProvider>
         <PLMSecureProvider>
-          <PMThemeProvider>
-            <ThemeProvider attribute="class" defaultTheme="dark">
-              {/* <AnimatePresence>
+          <RecProvider>
+            <WebAuthnProvider>
+              <PMThemeProvider>
+                <ThemeProvider attribute="class" defaultTheme="dark">
+                  {/* <AnimatePresence>
                 <motion.div
-                  key={"h"}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}> */}
+                key={"h"}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}> */}
                   {children}
 
-                {/* </motion.div>
+                  {/* </motion.div>
               </AnimatePresence> */}
-            </ThemeProvider>
-          </PMThemeProvider>
+                </ThemeProvider>
+              </PMThemeProvider>
+            </WebAuthnProvider>
+          </RecProvider>
         </PLMSecureProvider>
-        </WebAuthnProvider>
       </body>
     </html>
   );
