@@ -152,7 +152,7 @@ export default function Search() {
     try {
       window.scrollTo(0, 0); // Scroll to the top
       const inclusionTags = initial ? recommendedTags.join(',') : extractedTags.inclusion
-      const exclusionTags = initial ? "NSFW,RPG,Robot,Helpers" : [exclusionTopic, extractedTags.exclusion].filter(Boolean).join(",")
+      const exclusionTags = initial ? "NSFW,RPG,Robot,Helpers,Milf" : [exclusionTopic, extractedTags.exclusion].filter(Boolean).join(",")
       const fetchPromises = apiProviders.map(provider =>
         fetch(provider.query(extractedTags.clean || "", page, exclusionTags, inclusionTags)).then(response => {
           if (!response.ok) {

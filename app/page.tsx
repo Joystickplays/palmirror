@@ -264,12 +264,12 @@ function SetupCharacter({
         <DialogTrigger asChild>
           <Button className="mx-auto">Setup character</Button>
         </DialogTrigger>
-        <DialogContent className="w-full max-w-[360px] max-h-[80vh] overflow-y-auto font-sans">
+        <DialogContent className="w-full max-w-[360px] xl:max-w-[960px] max-h-[80vh] overflow-y-auto font-sans">
           <AnimateChangeInHeight>
             <div className="px-1">
           <DialogHeader>
             <DialogTitle>Setup character</DialogTitle>
-            <div className="palmirror-exc rounded-lg p-3 !my-4">
+            <div className="palmirror-exc rounded-lg p-3 !my-4 flex flex-col xl:flex-row justify-around items-center">
               <div className="flex justify-center items-center">
                 <h1 className="text-2xl !font-extrabold tracking-tight text-center w-full palmirror-exc-text">
                   PalMirror Experience
@@ -280,7 +280,7 @@ function SetupCharacter({
                   </Button>
                 </PopoverTrigger>
               </div>
-              <div className="flex justify-center items-center gap-2 !mt-2">
+              <div className="flex justify-center items-center gap-2 xl:-order-1 !mt-2 xl:!mt-0">
                 <Button
                   variant="palmirror"
                   onClick={() => {
@@ -299,7 +299,8 @@ function SetupCharacter({
                 </Button>
               </div>
             </div>
-            <div className="py-4">
+            <div className="flex flex-col xl:grid xl:grid-cols-3 xl:gap-4">
+            <div className="py-4 xl:col-span-3">
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="charName">
                   Character name <span className="text-red-500">*</span>
@@ -338,14 +339,18 @@ function SetupCharacter({
             <div className="py-4">
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="charScenario">Scenario</Label>
-                <Input
+                <Textarea
                   id="charScenario"
                   value={characterData.scenario}
                   onChange={(e) => handleInputChange(e, "scenario")}
                 />
               </div>
             </div>
-            <UserPersonalities></UserPersonalities>
+            </div>
+            <div className="max-w-[360px] block mx-auto w-full">
+                        <UserPersonalities></UserPersonalities>
+
+            </div>
             { /* <Accordion type="single" collapsible className="w-full mb-4">
               <AccordionItem value="item-1">
                 <AccordionTrigger>Your personality</AccordionTrigger>
@@ -375,7 +380,7 @@ function SetupCharacter({
                 </AccordionContent>
               </AccordionItem>
             </Accordion> */ }
-            <Button className="w-80" onClick={startChat}>
+            <Button className="w-96 block mx-auto" onClick={startChat}>
               Start chat
             </Button>
           </DialogHeader>
@@ -1181,32 +1186,16 @@ export default function Home() {
       />
     </div>
   ) : (
-    <div className="grid items-center justify-items-center content-center min-h-screen p-8 pb-20 gap-4 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight lg:text-3xl pb-2">
+    <div className="grid items-center justify-items-start content-end min-h-screen p-8 pb-10 gap-4 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight">
         PalMirror
       </h1>
-      <h1 className="text-3xl font-extrabold tracking-tight lg:text-5xl pb-2 text-center w-full">
-        Mirrors your favourite characters.
+      <h1 className="text-3xl font-extrabold tracking-tight lg:text-5xl pb-2 text-start w-full">
+        <span className="opacity-25">Your World.<br /></span>
+        Your Reflection.
       </h1>
 
       <div className="pb-7 w-full">
-        <Button
-          className="block mx-auto"
-          onClick={() => router.push("/search")}
-        >
-          Search for a character
-        </Button>
-        <Accordion type="single" collapsible className="w-full mt-4">
-          <AccordionItem value="item-1">
-            <AccordionTrigger></AccordionTrigger>
-            <AccordionContent>
-              <div className="flex justify-items-center items-center gap-1 flex-col sm:flex-row sm:gap-4">
-                <GetFromPlatform
-                  router={router}
-                  linkChar={linkChar}
-                  setLinkChar={setLinkChar}
-                  getChubaiInfo={getChubaiInfo}
-                />
                 <SetupCharacter
                   router={router}
                   fileInputRef={fileInputRef}
@@ -1214,18 +1203,36 @@ export default function Home() {
                   handleInputChange={handleInputChange}
                   startChat={startChat}
                 />
+        <Accordion type="single" collapsible className="w-fit mt-4">
+          <AccordionItem value="item-1">
+            <AccordionTrigger></AccordionTrigger>
+            <AccordionContent>
+              <div className="flex justify-items-center items-center gap-1 flex-row">
+                <GetFromPlatform
+                  router={router}
+                  linkChar={linkChar}
+                  setLinkChar={setLinkChar}
+                  getChubaiInfo={getChubaiInfo}
+                />
+                        <Button
+          className=""
+          onClick={() => router.push("/search")}
+        >
+          Search for a character
+        </Button>
+        
               </div>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
       </div>
       {/* <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character.</p> */}
-      <p className="text-sm opacity-40 text-center">
-        An{" "}
+      <p className="text-sm opacity-10 text-center">
+        An opinionated, {" "}
         <u>
           <a href="https://github.com/Joystickplays/palmirror">open-source</a>
         </u>{" "}
-        project by GoTeam Studios
+        AI chat client project
       </p>
 
       <ToastContainer
