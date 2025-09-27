@@ -201,7 +201,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
     <Card>
     <Drawer repositionInputs={false} direction={"right"}>
 
-      <CardContent className={`flex relative justify-between items-center p-5 w-full ${currentTheme.bg} overflow-hidden rounded-lg`}>
+      <CardContent className={`flex relative justify-between items-center p-5 w-full ${currentTheme.bg} overflow-hidden`}>
 
         {characterData.image !== "" && (
           <img src={characterData.image !== "" ? characterData.image : undefined}
