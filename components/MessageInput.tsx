@@ -16,7 +16,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useTheme } from "@/components/PalMirrorThemeProvider";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
 import Stopwatch from "@/components/Stopwatch"
@@ -131,17 +131,22 @@ const MessageInput: React.FC<MessageInputProps> = ({
       </div>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <Button
-            className="absolute right-2 bottom-2 p-2 rounded-full"
-            size="icon"
-            onClick={handleButtonClick}
-          >
-            {isThinking || userPromptThinking ? (
-              <OctagonX className="animate-pulse" />
-            ) : (
-              <Send />
-            )}
-          </Button>
+          <motion.div
+          className="absolute right-2 bottom-2"
+          whileTap={{ scale: 0.8 }}
+          transition={{ type: 'spring', mass: 1, stiffness: 200, damping: 11 }}>
+            <Button
+              className=" p-2 rounded-full"
+              size="icon"
+              onClick={handleButtonClick}
+            >
+              {isThinking || userPromptThinking ? (
+                <OctagonX className="animate-pulse" />
+              ) : (
+                <Send />
+              )}
+            </Button>
+          </motion.div>
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-64 font-sans font-semibold">
