@@ -5,9 +5,10 @@ import React, { useEffect, useRef, useState } from 'react'
 interface AnimateChangeInHeightProps {
   children: React.ReactNode
   className?: string
+  style?: React.CSSProperties
 }
 
-export const AnimateChangeInHeight: React.FC<AnimateChangeInHeightProps> = ({ children, className }) => {
+export const AnimateChangeInHeight: React.FC<AnimateChangeInHeightProps> = ({ children, className, style }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [height, setHeight] = useState<number | 'auto'>('auto')
 
@@ -28,7 +29,12 @@ export const AnimateChangeInHeight: React.FC<AnimateChangeInHeightProps> = ({ ch
   }, [])
 
   return (
-    <motion.div className={classNames(className, 'overflow-hidden')} style={{ height }} animate={{ height }} transition={{ type: 'spring', stiffness: 200, damping: 23 }}>
+    <motion.div
+      className={classNames(className, 'overflow-hidden')}
+      style={{ height, ...style }}
+      animate={{ height }}
+      transition={{ type: 'spring', stiffness: 200, damping: 23 }}
+    >
       <div ref={containerRef}>{children}</div>
     </motion.div>
   )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,15 @@ import NumberFlow from '@number-flow/react'
 
 import pako from 'pako';
 import { DynamicStatus, Invocation, AlternateInitialMessage } from '@/types/CharacterData';
+
+import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+
+import { generatePersonalitySysInst } from "@/utils/generatePersonalitySysInst";
+
+import {
+    independentInitOpenAI,
+    generateChatCompletion
+} from "@/utils/portableAi";
 
 interface CharacterData {
     image: string;
@@ -62,6 +71,29 @@ export default function Home() {
 
     // const ButtonButMakeItMove = motion(Button);
     const { name, personality, scenario, initialMessage, alternateInitialMessages, plmex } = characterData;
+    const [personalityFromScratchBlock, setPersonalityFromScratchBlock] = useState("");
+    const [tagsScratch, setTagsScratch] = useState<{ tag: string }[]>([
+        { tag: "name" },
+        { tag: "age" },
+        { tag: "gender" },
+        { tag: "occupation" },
+        { tag: "appearance" },
+        { tag: "personality" },
+        { tag: "traits" },
+        { tag: "clothing style" },
+        { tag: "skills" },
+        { tag: "loves" },
+        { tag: "hates" },
+        { tag: "backstory" },
+        { tag: "goals" },
+        { tag: "romance" },
+        { tag: "quirks" },
+        { tag: "quotes" },
+    ]);
+    const [pfsbIsGenerating, setPfsbIsGenerating] = useState(false);
+    const [pfsbResult, setPfsbResult] = useState("");
+
+    const [pfsbSetupShow, setPfsbSetupShow] = useState(false);
 
     const requiredFields = [characterData.name, characterData.personality, characterData.initialMessage];
 
@@ -97,6 +129,70 @@ export default function Home() {
     //     return result;
     // };
 
+    useEffect(() => {
+        (async () => {
+            await independentInitOpenAI()
+        })();
+    }, [])
+
+    const generatePersonalityBlock = () => {
+        if (personalityFromScratchBlock.trim() === "") {
+            toast.error("Please enter a description for your character.");
+            return;
+        }
+
+        const tags = tagsScratch.filter(tag => tag.tag.trim() !== "");
+
+        const sysInst = generatePersonalitySysInst(tags);
+
+        console.log("generating");
+        (async () => {
+            try {
+                let modelName = "gpt-3.5-turbo"
+                const settings = localStorage.getItem("Proxy_settings");
+                if (settings) {
+                    const settingsParse = JSON.parse(settings)
+                    modelName = settingsParse.modelName
+                }
+                
+                setPfsbResult("")
+                setPfsbIsGenerating(true);
+                const block = await generateChatCompletion({
+                    model: modelName,
+                    temperature: 0.7,
+                    stream: false,
+                    messages: [{
+                        role: "system",
+                        content: sysInst
+                    }, {
+                        role: "user",
+                        content: personalityFromScratchBlock.trim()
+                    }]
+                }).next()
+
+                setPfsbResult(block.value.choices[0].message.content)
+            } catch (e) {
+                console.error("Error generating personality block:", e);
+                toast.error("Failed to generate personality block. Please try again.");
+                setPfsbIsGenerating(false);
+
+            }
+        })();
+
+    }
+
+    const usePersonalityFromPFSB = () => {
+        if (pfsbResult.trim() === "") {
+            toast.error("No generated personality block to use.");
+            return;
+        }
+
+        setCharacterData({ ...characterData, personality: pfsbResult });
+
+        toast.success("Personality has been set!")
+        setPfsbIsGenerating(false);
+        setPfsbSetupShow(false);
+    }
 
     const exportCharacter = () => {
         if (requiredFields.some(field => field.trim() === "")) {
@@ -113,7 +209,7 @@ export default function Home() {
         const credit =
             `// Born from the Experience. A spark only found here.\n` +
             `// Handle with care. It remembers.\n\n` +
-            `// ${timestamp} at https://palm.goteamst.com\n\n`;
+            `// ${timestamp} \n\n`;
 
         const characterJSON = JSON.stringify(simplifiedCharacterData, null, 2);
 
@@ -185,6 +281,133 @@ export default function Home() {
                 <div className="flex flex-col gap-1">
                     <Label htmlFor="personality">Personality <span className="text-sm text-red-500">*</span></Label>
                     <Textarea id="personality" name="personality" value={personality} onChange={handleInputChange} autoComplete="off" />
+                    <AnimateChangeInHeight className={`palmirror-exc rounded-2xl my-4 `}>
+                        <div className={`p-4 px-6  `}>
+                            <h1 className="font-bold text-2xl">Need some help?</h1>
+                            <p className="opacity-50">Use your configured AI to generate a personality block for you. Creative, detailed, dense and SillyTavern-style.</p>
+                            {pfsbSetupShow ? (
+                                <AnimatePresence mode="popLayout">
+                                {pfsbIsGenerating ? (
+                                    <motion.div
+                                    key="genert"
+                                    initial={{ scale: 0.9, x: 100, opacity: 0 }}
+                                    animate={{ scale: 1, x: 0, opacity: 1 }}
+                                    exit={{ scale: 0.9, x: 100, opacity: 0 }}
+                                    transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 16 }}
+                                    className="my-3 flex flex-col gap-2">
+                                        <AnimatePresence mode="popLayout">
+                                            {pfsbResult == "" ? (
+                                                <motion.div
+                                                    key="placeholder"
+                                                    exit={{ opacity: 0 }}
+                                                    className="flex flex-col gap-2 animate-pulse">
+                                                    <div className="h-6 bg-white/50 rounded-lg w-full"></div>
+                                                    <div className="h-6 bg-white/50 rounded-lg w-full"></div>
+                                                    <div className="h-6 bg-white/50 rounded-lg w-full"></div>
+                                                    <div className="h-6 bg-white/50 rounded-lg w-1/2"></div>
+                                                </motion.div>
+                                            ) : (
+                                                <motion.div
+                                                    key="result"
+                                                    initial={{ opacity: 0, filter: 'blur(10px)' }}
+                                                    animate={{ opacity: 1, filter: 'blur(0px)' }}
+                                                    transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 16 }}
+                                                    className="flex flex-col gap-2">
+                                                    <p className="font-bold">Generated Personality:</p>
+                                                    <div className="border border-white/20 rounded-xl max-h-96 overflow-y-scroll p-4">
+                                                        {pfsbResult && (
+                                                            <p className="font-mono text-sm opacity-75 whitespace-pre-wrap">
+                                                                <AnimatePresence>
+                                                                    {pfsbResult.split(/\s+/).map((word, idx) => (
+                                                                        <motion.span
+                                                                            key={idx + word}
+                                                                            initial={{ opacity: 0, y: 10 }}
+                                                                            animate={{ opacity: 1, y: 0 }}
+                                                                            exit={{ opacity: 0, y: 10 }}
+                                                                            transition={{ delay: idx * 0.03, duration: 0.25 }}
+                                                                            style={{ display: "inline-block", marginRight: "0.25em" }}
+                                                                        >
+                                                                            {word}
+                                                                        </motion.span>
+                                                                    ))}
+                                                                </AnimatePresence>
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex gap-2">
+                                                        <Button className="w-full" onClick={usePersonalityFromPFSB}>Use this as personality</Button>
+                                                        <Button className="w-full" onClick={() => setPfsbIsGenerating(false)} variant="outline">Start over</Button>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                    key="initialGen"
+                                    initial={{ scale: 0.9, x: -100, opacity: 0 }}
+                                    animate={{ scale: 1, x: 0, opacity: 1 }}
+                                    exit={{ scale: 0.9, x: -100, opacity: 0 }}
+                                    transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 16 }}
+                                    className="my-3 flex flex-col gap-2">
+                                        <div>
+                                            <Label htmlFor="personalityFromScratch">Describe your character</Label>
+                                            <Textarea id="personalityFromScratch" name="personalityFromScratch" value={personalityFromScratchBlock} onChange={(e) => setPersonalityFromScratchBlock(e.target.value)} autoComplete="off" />
+                                        </div>
+                                        <div className="flex flex-col gap-2 my-2">
+                                            <Label>Attributes</Label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {tagsScratch.map((tag, idx) => (
+                                                    <motion.div 
+                                                    layout
+                                                    initial={{ scale: 0.8, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 16 }}
+                                                    key={idx} className="flex items-center bg-white/10 rounded-full px-3 py-2 gap-1">
+                                                        <input
+                                                            className="bg-transparent border-none outline-none w-14 lg:w-24 text-sm"
+                                                            placeholder={"Attribute name"}
+                                                            value={tag.tag}
+                                                            onChange={e => {
+                                                                const newTags = [...tagsScratch];
+                                                                newTags[idx] = { tag: e.target.value };
+                                                                setTagsScratch(newTags);
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            size="smIcon"
+                                                            variant="ghost"
+                                                            onClick={() => {
+                                                                setTagsScratch(tagsScratch.filter((_, i) => i !== idx));
+                                                            }}
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </motion.div>
+                                                ))}
+
+                                                <motion.div layout transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 16}}>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => setTagsScratch([...tagsScratch, { tag: "" }])}
+                                                        className="rounded-full p-4"
+                                                    >
+                                                        <CirclePlus className="w-4 h-4" /> Add attribute
+                                                    </Button>
+                                                </motion.div>
+                                            </div>
+                                        </div>
+                                        <Button onClick={generatePersonalityBlock}>Start generating</Button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                            ) : (
+                                <Button className="my-4 w-full" onClick={() => setPfsbSetupShow(true)}>Continue</Button>
+                            )}
+                        </div>
+                    </AnimateChangeInHeight>
                 </div>
                 <div className="flex flex-col gap-1">
                     <Label htmlFor="scenario">Scenario</Label>
@@ -225,7 +448,8 @@ export default function Home() {
                     }}><CirclePlus />Add another</Button>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <div className="flex flex-col gap-5 border rounded-lg palmirror-exc p-8"> {/* all glowy because r u kidding?? this is palmirror experience!! */}
+                    <AnimateChangeInHeight className="border rounded-lg palmirror-exc"> {/* all glowy because r u kidding?? this is palmirror experience!! */}
+                        <div className="flex flex-col gap-5  p-8">
                         <div className="flex flex-col gap-1">
                             <h1 className="palmirror-exc-text text-2xl">Dynamic Statuses</h1>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -438,6 +662,7 @@ export default function Home() {
                             }}><CirclePlus /> Add</Button>
                         </div>
                     </div>
+                    </AnimateChangeInHeight>
                 </div>
                 <Button onClick={exportCharacter} className="mt-5 transition-transform hover:scale-105 transform-gpu" variant="palmirror">Export character</Button>
             </div>
