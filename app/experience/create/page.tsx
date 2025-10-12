@@ -670,7 +670,7 @@ export default function Home() {
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="p-3 font-sans">
-                                            <p>Domains are a great way to enhance your character's memory, context awareness and tangibility. Store multiple chats within the same domain, and have memory and attributes cross over them.</p>
+                                            <p>Domains are a great way to enhance your character&apos;s memory, context awareness and tangibility. Store multiple chats within the same domain, and have memory and attributes cross over them.</p>
                                         </PopoverContent>
                                     </Popover>
                                 </div>
