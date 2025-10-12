@@ -17,6 +17,19 @@ export interface AlternateInitialMessage {
     initialMessage: string;
 }
 
+export interface DomainMemoryEntry {
+    key: number;
+    memory: string;
+    state: "remembering" | "forgotten";
+    lifetime: number;
+}
+
+export interface DomainAttributeEntry {
+    key: number;
+    attribute: string;
+    value: string;
+}
+
 export interface CharacterData {
   image: string;
   name: string;
@@ -28,6 +41,11 @@ export interface CharacterData {
   tags: string[];
   alternateInitialMessages: Array<string> | Array<AlternateInitialMessage>;
   plmex: {
+    domain: {
+      active: boolean;
+      memories: Array<DomainMemoryEntry>;
+      attributes: Array<DomainAttributeEntry>;
+    },
     dynamicStatuses: Array<DynamicStatus>;
     invocations: Array<Invocation>;
   };
@@ -44,6 +62,11 @@ export const defaultCharacterData: CharacterData = {
   tags: [],
   alternateInitialMessages: [],
   plmex: {
+    domain: {
+      active: false,
+      memories: [],
+      attributes: [],
+    },
     dynamicStatuses: [],
     invocations: [], 
   }

@@ -533,7 +533,7 @@ export default function Home() {
       const updatedData = {
         ...prevData,
         image: "",
-        plmex: { dynamicStatuses: [], invocations: [] },
+        plmex: defaultCharacterData.plmex,
       };
       localStorage.setItem("characterData", JSON.stringify(updatedData));
       toast.success("Character data saved! Starting chat...");
@@ -598,10 +598,7 @@ export default function Home() {
                 [],
               scenario: data.node.definition.scenario,
               image: imageBase64,
-              plmex: {
-                dynamicStatuses: [],
-                invocations: [],
-              },
+              plmex: defaultCharacterData.plmex,
             };
             localStorage.setItem("characterData", JSON.stringify(updatedData));
             return updatedData;
