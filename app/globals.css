@@ -133,7 +133,7 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: gradientShift 20s ease-in-out infinite;
+  animation: gradientShift 10s ease-in-out infinite;
 
   text-shadow:
     0 0 2px #ffb3c133,
@@ -145,14 +145,53 @@ body {
   0 0 50px #d3f8e772; */
 
 .palmirror-exc {
-  /* background-size: 300% 300% !important;
-  background: linear-gradient(90deg, #ffb3c133, #f0d1f933, #b3e0f533, #f8e1d433, #d3f8e233);
-  animation: gradientShift 10s ease-in-out infinite; */
-  box-shadow:
-    0 0 1px #ff779033,
-    0 0 5px #e481ff33,
-    0 0 15px #6dd1ff33;
+  position: relative;
+  border-radius: 12px;
+  background: transparent;
+  z-index: 0;
 }
+
+.palmirror-exc::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg, #ff8ca1, #ffb3c6, #8cc1e6, #9e8ce6, #ff8ca1);
+  background-size: 300% 300%;
+  animation: gradient-sweep 10s ease-in-out infinite;
+  z-index: -1;
+
+  box-shadow: 
+    0 0 10px 4px rgba(255, 170, 210, 0.1),
+    0 0 20px 10px rgba(150, 190, 255, 0.1),
+    inset 0 0 0 999px rgba(11, 10, 8);
+}
+
+.palmirror-exc::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(255, 140, 161, 0.5), rgba(255, 179, 198, 0.5),
+                              rgba(140, 193, 230, 0.5), rgba(158, 140, 230, 0.5),
+                              rgba(255, 140, 161, 0.5));
+  background-size: 300% 300%;
+  animation: gradient-sweep 10s ease-in-out infinite;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+@keyframes gradient-sweep {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 
 /* 0 0 30px #ffa06977, 
   0 0 40px #73ffab77; */

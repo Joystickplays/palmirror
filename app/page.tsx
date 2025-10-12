@@ -22,9 +22,12 @@ import pako from "pako";
 
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 interface ChatMetadata extends CharacterData {
-  id: string;
-  lastUpdated: Date;
+    id: string;
+    lastUpdated: string;
+    associatedDomain?: string;
+    entryTitle?: string;
 }
+
 
 import { usePalRec } from "@/context/PLMRecSystemContext" 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
@@ -284,7 +287,7 @@ function SetupCharacter({
                 <Button
                   variant="palmirror"
                   onClick={() => {
-                    router.push("/palexp/create");
+                    router.push("/experience/create");
                   }}
                 >
                   Create
@@ -1088,33 +1091,39 @@ export default function Home() {
                             />
                           </div>
                         )}
-                        <h2 className="font-bold ml-auto">{chat.name}</h2>
+                        <h2 className={`font-bold ml-auto ${chat.plmex.domain.active && "palmirror-exc-text"}`}>{chat.name}</h2>
                         <p className="opacity-70 ml-auto text-xs">
                           {formatDateWithLocale(chat.lastUpdated)}
                         </p>
                         <div className="flex justify-end gap-2">
+                          {!chat.plmex.domain.active && (
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                PLMsecureContext?.removeKey(chat.id);
+                                PLMsecureContext?.removeKey(`METADATA${chat.id}`);
+                                setChatList((prevList) =>
+                                  prevList.filter(
+                                    (chatItem) => chatItem.id !== chat.id
+                                  )
+                                );
+                              }}
+                            >
+                              <Trash2 />
+                            </Button>
+                          )}
                           <Button
-                            variant="outline"
-                            onClick={() => {
-                              PLMsecureContext?.removeKey(chat.id);
-                              PLMsecureContext?.removeKey(`METADATA${chat.id}`);
-                              setChatList((prevList) =>
-                                prevList.filter(
-                                  (chatItem) => chatItem.id !== chat.id
-                                )
-                              );
-                            }}
-                          >
-                            <Trash2 />
-                          </Button>
-                          <Button
-                            variant="outline"
+                            variant={chat.plmex.domain.active ? "palmirror" : "outline"}
                             onClick={() => {
                               sessionStorage.setItem("chatSelect", chat.id);
+                              if (chat.plmex.domain.active) {
+                                router.push("/experience/domain")
+                                return;
+                              }
                               router.push(`/chat`);
                             }}
                           >
-                            Continue <ArrowRight />
+                            {chat.plmex.domain.active ? "Enter" : "Continue"} <ArrowRight />
                           </Button>
                         </div>
                       </motion.div>

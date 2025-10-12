@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox"
 import {
     Select,
     SelectContent,
@@ -29,7 +30,6 @@ import { AnimatePresence, motion } from "motion/react"
 import NumberFlow from '@number-flow/react'
 
 import pako from 'pako';
-import { DynamicStatus, Invocation, AlternateInitialMessage } from '@/types/CharacterData';
 
 import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 
@@ -40,33 +40,11 @@ import {
     generateChatCompletion
 } from "@/utils/portableAi";
 
-interface CharacterData {
-    image: string;
-    name: string;
-    personality: string;
-    scenario: string;
-    initialMessage: string;
-    alternateInitialMessages: AlternateInitialMessage[];
-    plmex: {
-        dynamicStatuses: DynamicStatus[];
-        invocations: Invocation[];
-    };
-}
+import { CharacterData, defaultCharacterData, AlternateInitialMessage } from "@/types/CharacterData";
 
 export default function Home() {
     const router = useRouter();
-    const [characterData, setCharacterData] = useState<CharacterData>({
-        image: "",
-        name: "",
-        personality: "",
-        scenario: "",
-        initialMessage: "",
-        alternateInitialMessages: [],
-        plmex: {
-            dynamicStatuses: [],
-            invocations: []
-        }
-    });
+    const [characterData, setCharacterData] = useState<CharacterData>(defaultCharacterData);
     const [isPrefillButtonVisible, setIsPrefillButtonVisible] = useState(true);
 
     // const ButtonButMakeItMove = motion(Button);
@@ -203,7 +181,7 @@ export default function Home() {
 
         const simplifiedCharacterData = {
             ...characterData,
-            alternateInitialMessages: alternateInitialMessages.map(msg => msg.initialMessage)
+            alternateInitialMessages: alternateInitialMessages.map(msg => typeof msg === "string" ? msg : msg.initialMessage)
         };
 
         const timestamp = new Date().toLocaleString();
@@ -430,7 +408,15 @@ export default function Home() {
                     <Label htmlFor="initialMessage">Initial message (Greeting) <span className="text-sm text-red-500">*</span></Label>
                     <Textarea id="initialMessage" name="initialMessage" value={initialMessage} onChange={handleInputChange} autoComplete="off" />
                     <AnimatePresence mode="popLayout">
-                        {alternateInitialMessages.map((altMes, index) => (
+                        {alternateInitialMessages.map((altMes, index) => {
+                            if (typeof altMes === "string") {
+                                altMes = {
+                                    name: `Greeting ${Math.floor(Math.random() * 27631337)}`,
+                                    initialMessage: altMes
+                                } as AlternateInitialMessage;
+                            }
+
+                            return (
                             <motion.div layout key={altMes.name}
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
@@ -441,12 +427,12 @@ export default function Home() {
                                         <div className="flex justify-between gap-2">
                                             <h1>Greeting <NumberFlow value={index + 2}></NumberFlow></h1>
                                             <Button variant="ghost" size="icon" onClick={() => {
-                                                const newAlternateMessages = alternateInitialMessages.filter((_, i) => i !== index);
+                                                const newAlternateMessages = alternateInitialMessages.filter((_, i) => i !== index) as AlternateInitialMessage[];
                                                 setCharacterData({ ...characterData, alternateInitialMessages: newAlternateMessages });
                                             }}><Trash2 /></Button>
                                         </div>
                                         <Textarea id={`altMessage-${index}`} name="initialMessage" value={altMes.initialMessage} onChange={(e) => {
-                                            const newAlternateMessages = [...alternateInitialMessages];
+                                            const newAlternateMessages = [...alternateInitialMessages] as AlternateInitialMessage[];
                                             newAlternateMessages[index] = { ...altMes, initialMessage: e.target.value };
                                             setCharacterData({ ...characterData, alternateInitialMessages: newAlternateMessages });
                                         }} autoComplete="off" />
@@ -454,15 +440,15 @@ export default function Home() {
                                     </CardContent>
                                 </Card>
                             </motion.div>
-                        ))}
+                        )})}
                     </AnimatePresence>
                     <Button variant="outline" onClick={() => {
-                        setCharacterData({ ...characterData, alternateInitialMessages: [...alternateInitialMessages, { name: `Greeting ${Math.floor(Math.random() * 27631337)}`, initialMessage: "" }] })
+                        setCharacterData({ ...characterData, alternateInitialMessages: [...(alternateInitialMessages as AlternateInitialMessage[]), { name: `Greeting ${Math.floor(Math.random() * 27631337)}`, initialMessage: "" }] })
                     }}><CirclePlus />Add another</Button>
                 </div>
                 <div className="flex flex-col gap-1">
                     <AnimateChangeInHeight className="border rounded-lg palmirror-exc"> {/* all glowy because r u kidding?? this is palmirror experience!! */}
-                        <div className="flex flex-col gap-5  p-8">
+                        <div className="flex flex-col gap-9  p-8">
                             <div className="flex flex-col gap-1">
                                 <h1 className="palmirror-exc-text text-2xl">Dynamic Statuses</h1>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -673,6 +659,25 @@ export default function Home() {
                                         toast.error("Anything above 10 will explode your file (in terms of size).")
                                     }
                                 }}><CirclePlus /> Add</Button>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                    <h1 className="palmirror-exc-text text-2xl">Domain</h1>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" size="icon">
+                                                <BadgeInfo />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="p-3 font-sans">
+                                            <p>Domains are a great way to enhance your character's memory, context awareness and tangibility. Store multiple chats within the same domain, and have memory and attributes cross over them.</p>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Checkbox id="enableDomain" checked={plmex.domain.active} onCheckedChange={(checked) => setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...characterData.plmex.domain, active: checked ? true : false } } })}></Checkbox>
+                                    <Label htmlFor="enableDomain">Enable domain</Label>
+                                </div>
                             </div>
                         </div>
                     </AnimateChangeInHeight>

@@ -27,7 +27,7 @@ export interface DomainMemoryEntry {
 export interface DomainAttributeEntry {
     key: number;
     attribute: string;
-    value: string;
+    value: number;
 }
 
 export interface CharacterData {
