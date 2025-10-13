@@ -1091,12 +1091,12 @@ export default function Home() {
                             />
                           </div>
                         )}
-                        <h2 className={`font-bold ml-auto ${chat.plmex.domain.active && "palmirror-exc-text"}`}>{chat.name}</h2>
+                        <h2 className={`font-bold ml-auto ${chat.plmex.domain?.active && "palmirror-exc-text"}`}>{chat.name}</h2>
                         <p className="opacity-70 ml-auto text-xs">
                           {formatDateWithLocale(chat.lastUpdated)}
                         </p>
                         <div className="flex justify-end gap-2">
-                          {!chat.plmex.domain.active && (
+                          {!chat.plmex.domain?.active && (
                             <Button
                               variant="outline"
                               onClick={() => {
@@ -1113,17 +1113,17 @@ export default function Home() {
                             </Button>
                           )}
                           <Button
-                            variant={chat.plmex.domain.active ? "palmirror" : "outline"}
+                            variant={chat.plmex.domain?.active ? "palmirror" : "outline"}
                             onClick={() => {
                               sessionStorage.setItem("chatSelect", chat.id);
-                              if (chat.plmex.domain.active) {
+                              if (chat.plmex.domain?.active) {
                                 router.push("/experience/domain")
                                 return;
                               }
                               router.push(`/chat`);
                             }}
                           >
-                            {chat.plmex.domain.active ? "Enter" : "Continue"} <ArrowRight />
+                            {chat.plmex.domain?.active ? "Enter" : "Continue"} <ArrowRight />
                           </Button>
                         </div>
                       </motion.div>

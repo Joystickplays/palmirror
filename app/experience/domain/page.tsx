@@ -23,7 +23,7 @@ import NumberFlow, { continuous } from '@number-flow/react'
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
-import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
+import { CharacterData, defaultCharacterData, DomainAttributeEntry } from "@/types/CharacterData";
 
 interface ChatMetadata extends CharacterData {
     id: string;
@@ -32,6 +32,30 @@ interface ChatMetadata extends CharacterData {
     entryTitle?: string;
 }
 
+type AttributeProgressProps = {
+  attr: DomainAttributeEntry;
+};
+
+const AttributeProgress: React.FC<AttributeProgressProps> = ({ attr }) => {
+  const [progressValue, setProgressValue] = useState(0);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setProgressValue(attr.value));
+    return () => cancelAnimationFrame(id);
+  }, [attr.value]);
+
+  return (
+    <div className="flex flex-col gap-2 min-w-32">
+      <div className="flex justify-between items-end">
+        <p className="text-sm font-bold">{attr.attribute}</p>
+        <p className="opacity-25 text-xs">
+          <NumberFlow plugins={[continuous]} value={progressValue} />%
+        </p>
+      </div>
+      <Progress className="!h-[12px]" value={progressValue} max={100} />
+    </div>
+  );
+}
 
 const ExperienceDomainPage: React.FC = () => {
     const PLMsecureContext = useContext(PLMSecureContext);
@@ -41,6 +65,7 @@ const ExperienceDomainPage: React.FC = () => {
     const [chatList, setChatList] = useState<Array<ChatMetadata>>([]);
     
     const [showingNewChat, setShowingNewChat] = useState(false);
+    const [newChatName, setNewChatName] = useState("");
 
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>({
@@ -156,25 +181,9 @@ const ExperienceDomainPage: React.FC = () => {
             >
                 <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text">{character.name}</h1>
                 <div className="flex overflow-x-scroll max-w-full pb-2 mt-4 md:pb-0 md:my-0 md:grid md:grid-cols-3 gap-4">
-                    {character.plmex.domain.attributes.map((attr) => {
-                        const [progressValue, setProgressValue] = useState(0);
-
-                        useEffect(() => {
-                            // animate
-                            const id = requestAnimationFrame(() => setProgressValue(attr.value));
-                            return () => cancelAnimationFrame(id);
-                        }, [attr.value]);
-
-                        return (
-                            <div className="flex flex-col gap-2 min-w-32" key={attr.key}>
-                                <div className="flex justify-between items-end">
-                                    <p className="text-sm font-bold">{attr.attribute}</p>
-                                    <p className="opacity-25 text-xs"><NumberFlow plugins={[continuous]} value={progressValue}></NumberFlow>%</p>
-                                </div>
-                                <Progress className="!h-[12px]" value={progressValue} max={100}></Progress>
-                            </div>
-                        );
-                    })}
+                    {character.plmex.domain?.attributes.map(attr => (
+                        <AttributeProgress key={attr.key} attr={attr} />
+                    ))}
                 </div>
             </motion.div>
             <motion.div
@@ -188,6 +197,7 @@ const ExperienceDomainPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow w-full justify-center items-start">
                     {chatList.map((chat) => {
+                        console.log(chat)
                         if (chat.associatedDomain !== domainId) {
                             return null;
                         }
@@ -214,39 +224,22 @@ const ExperienceDomainPage: React.FC = () => {
                                 className="flex flex-col gap-1.5 p-6 border rounded-xl h-full"
                                 layout
                             >
-                                <h2 className={`font-bold ml-auto`}>{chat.name}</h2>
+                                <h2 className={`font-bold ml-auto`}>{chat.entryTitle}</h2>
                                 <p className="opacity-70 ml-auto text-xs">
                                     {formatDateWithLocale(chat.lastUpdated)}
                                 </p>
                                 <div className="flex justify-end gap-2">
-                                    {!chat.plmex.domain.active && (
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => {
-                                                PLMsecureContext?.removeKey(chat.id);
-                                                PLMsecureContext?.removeKey(`METADATA${chat.id}`);
-                                                setChatList((prevList) =>
-                                                    prevList.filter(
-                                                        (chatItem) => chatItem.id !== chat.id
-                                                    )
-                                                );
-                                            }}
-                                        >
-                                            <Trash2 />
-                                        </Button>
-                                    )}
+                                    
                                     <Button
-                                        variant={chat.plmex.domain.active ? "palmirror" : "outline"}
+                                        variant={"outline"}
                                         onClick={() => {
                                             sessionStorage.setItem("chatSelect", chat.id);
-                                            if (chat.plmex.domain.active) {
-                                                router.push("/experience/domain")
-                                                return;
-                                            }
+                                            sessionStorage.setItem("chatAssociatedDomain", domainId);
+                                            sessionStorage.setItem("chatEntryName", chat.entryTitle || "");
                                             router.push(`/chat`);
                                         }}
                                     >
-                                        {chat.plmex.domain.active ? "Enter" : "Continue"} <ArrowRight />
+                                        Continue <ArrowRight />
                                     </Button>
                                 </div>
                             </motion.div>
@@ -259,12 +252,22 @@ const ExperienceDomainPage: React.FC = () => {
             <Dialog open={showingNewChat} onOpenChange={setShowingNewChat}>
                 <DialogContent className="font-sans">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold mb-4">Start a New Chat</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold mb-4">Start a new chat</DialogTitle>
                     </DialogHeader>
                     <Label htmlFor="chat-name">Entry name</Label>
-                    <Input id="chat-name" placeholder="Enter chat entry name" />
+                    <Input value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
 
-                    <Button onClick={() => setShowingNewChat(false)}>Start</Button>
+                    <Button onClick={() => {
+                        setShowingNewChat(false)
+                        if (newChatName.trim() === "") {
+                            return;
+                        }
+
+                        sessionStorage.setItem("chatSelect", "");
+                        sessionStorage.setItem("chatAssociatedDomain", domainId);
+                        sessionStorage.setItem("chatEntryName", newChatName.trim());
+                        router.push(`/chat`);
+                    }}>Start</Button>
                 </DialogContent>
             </Dialog>
         </div>

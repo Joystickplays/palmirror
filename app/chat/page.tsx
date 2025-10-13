@@ -47,6 +47,15 @@ type UserPersonality = {
 };
 
 
+
+interface ChatMetadata extends CharacterData {
+    id: string;
+    lastUpdated: string;
+    associatedDomain?: string;
+    entryTitle?: string;
+}
+
+
 const ChatPage = () => {
   const [messages, setMessages] = useState<
     Array<{
@@ -59,6 +68,9 @@ const ChatPage = () => {
     useState<CharacterData>(defaultCharacterData);
   const [chatId, setChatId] = useState("");
   const [loaded, setLoaded] = useState(false);
+
+  const [associatedDomain, setAssociatedDomain] = useState<string | null>(null);
+  const [entryTitle, setEntryTitle] = useState<string | null>(null);
 
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -836,11 +848,35 @@ Only output the greeting message itself. No extra explanation.
         chatId !== ""
       ) {
         await PLMSecContext.setSecureData(chatId, encodeMessages(true));
-        await PLMSecContext.setSecureData(`METADATA${chatId}`, {
+        const metadata = {
           ...characterData,
           id: chatId,
           lastUpdated: new Date().toISOString(),
-        });
+        } as ChatMetadata;
+
+        // if (associatedDomain && metadata.entryTitle) {
+        //   await PLMSecContext.setSecureData(`METADATA${chatId}`, metadata);
+        //   console.log("saved chat (skip)");
+        //   return;
+        // }
+
+        const domain = sessionStorage.getItem("chatAssociatedDomain") || associatedDomain;
+        if (domain) { 
+          metadata.associatedDomain = domain
+          sessionStorage.removeItem("chatAssociatedDomain")
+        };
+
+        const entryName = sessionStorage.getItem("chatEntryName") || entryTitle;
+        if (entryName) { 
+          metadata.entryTitle = entryName
+          sessionStorage.removeItem("chatEntryName")
+        };
+
+        delete metadata.plmex.domain;
+        console.log("saving")
+        console.log(metadata)
+
+        await PLMSecContext.setSecureData(`METADATA${chatId}`, metadata);
         console.log("saved chat");
       }
     };

@@ -41,7 +41,7 @@ export interface CharacterData {
   tags: string[];
   alternateInitialMessages: Array<string> | Array<AlternateInitialMessage>;
   plmex: {
-    domain: {
+    domain?: {
       active: boolean;
       memories: Array<DomainMemoryEntry>;
       attributes: Array<DomainAttributeEntry>;
