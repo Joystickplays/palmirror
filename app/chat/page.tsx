@@ -69,8 +69,8 @@ const ChatPage = () => {
   const [chatId, setChatId] = useState("");
   const [loaded, setLoaded] = useState(false);
 
-  const [associatedDomain, setAssociatedDomain] = useState<string | null>(null);
-  const [entryTitle, setEntryTitle] = useState<string | null>(null);
+  const [associatedDomain, setAssociatedDomain] = useState<string>("");
+  const [entryTitle, setEntryTitle] = useState<string>("");
 
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -838,51 +838,56 @@ Only output the greeting message itself. No extra explanation.
     load();
   }, []);
 
+  useEffect(() => {
+    const domain = sessionStorage.getItem("chatAssociatedDomain");
+    const entryName = sessionStorage.getItem("chatEntryName");
+
+    if (domain) {
+      setAssociatedDomain(domain);
+      sessionStorage.removeItem("chatAssociatedDomain");
+    }
+
+    if (entryName) {
+      setEntryTitle(entryName);
+      sessionStorage.removeItem("chatEntryName");
+    }
+  }, []);
+
+
   // Save chat to chat ID if any (and if PalMirror Secure active)
   useEffect(() => {
-    const save = async () => {
-      if (
-        (await isPalMirrorSecureActivated()) &&
-        PLMSecContext &&
-        PLMSecContext.isSecureReady() &&
-        chatId !== ""
-      ) {
-        await PLMSecContext.setSecureData(chatId, encodeMessages(true));
-        const metadata = {
-          ...characterData,
-          id: chatId,
-          lastUpdated: new Date().toISOString(),
-        } as ChatMetadata;
+  const save = async () => {
+    const active = await isPalMirrorSecureActivated();
+    if (
+      active &&
+      PLMSecContext &&
+      PLMSecContext.isSecureReady() &&
+      chatId !== ""
+    ) {
+      await PLMSecContext.setSecureData(chatId, encodeMessages(true));
 
-        // if (associatedDomain && metadata.entryTitle) {
-        //   await PLMSecContext.setSecureData(`METADATA${chatId}`, metadata);
-        //   console.log("saved chat (skip)");
-        //   return;
-        // }
+      const metadata: ChatMetadata = {
+        ...characterData,
+        id: chatId,
+        lastUpdated: new Date().toISOString(),
+        associatedDomain,
+        entryTitle,
+      };
 
-        const domain = sessionStorage.getItem("chatAssociatedDomain") || associatedDomain;
-        if (domain) { 
-          metadata.associatedDomain = domain
-          sessionStorage.removeItem("chatAssociatedDomain")
-        };
+      delete metadata.plmex?.domain;
 
-        const entryName = sessionStorage.getItem("chatEntryName") || entryTitle;
-        if (entryName) { 
-          metadata.entryTitle = entryName
-          sessionStorage.removeItem("chatEntryName")
-        };
+      console.log("saving metadata:", metadata);
 
-        delete metadata.plmex.domain;
-        console.log("saving")
-        console.log(metadata)
+      await PLMSecContext.setSecureData(`METADATA${chatId}`, metadata);
+      console.log("saved chat");
+    }
+  };
 
-        await PLMSecContext.setSecureData(`METADATA${chatId}`, metadata);
-        console.log("saved chat");
-      }
-    };
-    save();
-  }, [messages]);
+  save();
+}, [messages, associatedDomain, entryTitle]);
 
+
+  
   // Show newcomer drawer if new ..
   useEffect(() => {
     if (!localStorage.getItem("NewcomerDrawer")) {

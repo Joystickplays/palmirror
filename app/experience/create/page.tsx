@@ -40,7 +40,7 @@ import {
     generateChatCompletion
 } from "@/utils/portableAi";
 
-import { CharacterData, defaultCharacterData, AlternateInitialMessage } from "@/types/CharacterData";
+import { CharacterData, defaultCharacterData, AlternateInitialMessage, DomainAttributeEntry } from "@/types/CharacterData";
 
 export default function Home() {
     const router = useRouter();
@@ -675,8 +675,40 @@ export default function Home() {
                                     </Popover>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Checkbox id="enableDomain" checked={plmex.domain.active} onCheckedChange={(checked) => setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...characterData.plmex.domain, active: checked ? true : false } } })}></Checkbox>
+                                    <Checkbox
+                                        id="enableDomain"
+                                        checked={plmex.domain?.active ?? false}
+                                        onCheckedChange={(checked) =>
+                                            setCharacterData({
+                                                ...characterData,
+                                                plmex: {
+                                                ...plmex,
+                                                domain: {
+                                                    active: !!checked,
+                                                    memories: plmex.domain?.memories ?? defaultCharacterData.plmex.domain!.memories,
+                                                    attributes: plmex.domain?.attributes ?? defaultCharacterData.plmex.domain!.attributes,
+                                                },
+                                                },
+                                            })
+                                        }
+
+                                    />
+
                                     <Label htmlFor="enableDomain">Enable domain</Label>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <h2 className="font-bold text-md">Attributes</h2>
+                                    {characterData.plmex.domain?.attributes.map((attr: DomainAttributeEntry) => (
+                                        <div key={attr.key} className="flex items-center gap-2">
+                                            <h3 className="font-semibold">{attr.attribute}</h3>
+                                            <p>{attr.value}</p>
+                                        </div>
+                                    ))}
+                                    <Button variant="outline" onClick={() => {
+                                        const newAttributes = characterData.plmex.domain?.attributes ? [...characterData.plmex.domain.attributes] : [];
+                                        newAttributes.push({ key: Math.floor(Math.random() * 69420), attribute: "", value: 0 }); //copilot did the 69420 i kid u not
+                                        setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...(plmex.domain ?? { active: false, memories: [], attributes: [] }), attributes: newAttributes } } });
+                                    }}>Add Attribute</Button>
                                 </div>
                             </div>
                         </div>

@@ -19,6 +19,8 @@ import { CirclePlus, Trash2, ArrowRight } from 'lucide-react';
 
 import NumberFlow, { continuous } from '@number-flow/react'
 
+import { ToastContainer, toast } from "react-toastify";
+
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
@@ -68,30 +70,7 @@ const ExperienceDomainPage: React.FC = () => {
     const [newChatName, setNewChatName] = useState("");
 
     const [isSecureReady, setIsSecureReady] = useState(false);
-    const [character, setCharacter] = useState<CharacterData>({
-        name: "Some cool character",
-        personality: "",
-        initialMessage: "",
-        scenario: "",
-        userName: "",
-        userPersonality: "",
-        tags: [],
-        alternateInitialMessages: [],
-        image: "",
-        plmex: {
-            domain: {
-                active: false,
-                memories: [],
-                attributes: [{
-                    key: 1,
-                    attribute: "Trust",
-                    value: 76,
-                }],
-            },
-            dynamicStatuses: [],
-            invocations: [],
-        }
-    });
+    const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
 
     useEffect(() => {
         if (sessionStorage.getItem("chatSelect")) {
@@ -105,8 +84,22 @@ const ExperienceDomainPage: React.FC = () => {
             router.push('/');
         } else {
             setIsSecureReady(true);
+            if (domainId && PLMsecureContext) {
+                PLMsecureContext.getSecureData(`METADATA${domainId}`).then((data) => {
+                    if (data) {
+                        setCharacter(data as CharacterData);
+                        console.log("load char")
+                        console.log(data)
+                    } else {
+                        toast.error("Domain data not found. Returning to home.");
+                        setTimeout(() => {
+                            router.push('/');
+                        }, 3000);
+                    }
+                });
+            }
         }
-    }, []);
+    }, [domainId]);
 
     useEffect(() => {
         const refreshChatList = async () => {
@@ -229,7 +222,20 @@ const ExperienceDomainPage: React.FC = () => {
                                     {formatDateWithLocale(chat.lastUpdated)}
                                 </p>
                                 <div className="flex justify-end gap-2">
-                                    
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                        PLMsecureContext?.removeKey(chat.id);
+                                        PLMsecureContext?.removeKey(`METADATA${chat.id}`);
+                                        setChatList((prevList) =>
+                                            prevList.filter(
+                                            (chatItem) => chatItem.id !== chat.id
+                                            )
+                                        );
+                                        }}
+                                    >
+                                        <Trash2 />
+                                    </Button>
                                     <Button
                                         variant={"outline"}
                                         onClick={() => {
@@ -270,6 +276,16 @@ const ExperienceDomainPage: React.FC = () => {
                     }}>Start</Button>
                 </DialogContent>
             </Dialog>
+            <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                theme="dark"
+            />
         </div>
     );
 };
