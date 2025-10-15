@@ -660,7 +660,7 @@ export default function Home() {
                                     }
                                 }}><CirclePlus /> Add</Button>
                             </div>
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-5">
                                 <div className="flex items-center gap-2">
                                     <h1 className="palmirror-exc-text text-2xl">Domain</h1>
                                     <Popover>
@@ -699,16 +699,16 @@ export default function Home() {
                                 <div className="flex flex-col gap-2">
                                     <h2 className="font-bold text-md">Attributes</h2>
                                     {characterData.plmex.domain?.attributes.map((attr: DomainAttributeEntry) => (
-                                        <div key={attr.key} className="flex items-center gap-2">
-                                            <h3 className="font-semibold">{attr.attribute}</h3>
-                                            <p>{attr.value}</p>
+                                        <div key={attr.key} className="flex flex-col items-center gap-2 border border-white/20 rounded-xl w-fit p-2 min-h-24">
+                                            <Input placeholder="Attribute name" className="font-semibold" value={attr.attribute}></Input>
+                                            <Input placeholder="Attribute starting value" className="font-semibold" value={attr.value}></Input><p>%</p>
                                         </div>
                                     ))}
-                                    <Button variant="outline" onClick={() => {
+                                    <Button className="w-fit" variant="outline" onClick={() => {
                                         const newAttributes = characterData.plmex.domain?.attributes ? [...characterData.plmex.domain.attributes] : [];
                                         newAttributes.push({ key: Math.floor(Math.random() * 69420), attribute: "", value: 0 }); //copilot did the 69420 i kid u not
                                         setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...(plmex.domain ?? { active: false, memories: [], attributes: [] }), attributes: newAttributes } } });
-                                    }}>Add Attribute</Button>
+                                    }}><CirclePlus /> Add Attribute</Button>
                                 </div>
                             </div>
                         </div>

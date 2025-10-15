@@ -664,6 +664,10 @@ export default function Home() {
               ? compressedDataT
               : pako.ungzip(new Uint8Array(compressedData), { to: "string" });
             const characterData: CharacterData = JSON.parse(decompressedData);
+            if (characterData.plmex.domain?.active && !isSecureReady) {
+              toast.info("Use PalMirror Secure for PalMirror Experience Domain characters!")
+              return;
+            }
 
             setCharacterData((oldCharacterData) => {
               const updatedData = { ...oldCharacterData, ...characterData };
@@ -674,6 +678,17 @@ export default function Home() {
               return updatedData;
             });
 
+            if (characterData.plmex.domain?.active) {
+              const chatKey = crypto.randomUUID()
+              PLMsecureContext?.setSecureData(`METADATA${chatKey}`, {
+                ...characterData,
+                id: chatKey,
+                lastUpdated: new Date().toISOString(),
+              })
+              sessionStorage.setItem("chatSelect", chatKey)
+              router.push("/experience/domain")
+              return;
+            }
             sessionStorage.removeItem("chatSelect");
             router.push("/chat");
 
