@@ -666,6 +666,9 @@ export default function Home() {
             const characterData: CharacterData = JSON.parse(decompressedData);
             if (characterData.plmex.domain?.active && !isSecureReady) {
               toast.info("Use PalMirror Secure for PalMirror Experience Domain characters!")
+              reject(
+                "Domain enabled character!"
+              )
               return;
             }
 
@@ -708,7 +711,7 @@ export default function Home() {
       {
         pending: "Processing character file...",
         success: "Character imported successfully.",
-        error: "Failed to import the character. Please check the file format.",
+        error: "Failed to import the character.",
       }
     );
   };
@@ -1052,7 +1055,11 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow w-full justify-center items-start ">
                 <AnimatePresence mode="popLayout">
                   {chatList.length > 0 ? (
-                    sortByLastUpdated(chatList).map((chat, index) => (
+                    sortByLastUpdated(chatList).map((chat, index) => {
+                      if (chat.associatedDomain) {
+                        return null;
+                      }
+                      return (
                       <motion.div
                         initial={
                           (window.innerWidth < 640 && index < 4) ||
@@ -1091,7 +1098,7 @@ export default function Home() {
                           },
                         }}
                         key={chat.lastUpdated}
-                        className="flex flex-col gap-1.5 p-6 border rounded-xl h-full"
+                        className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full ${chat.plmex.domain?.active && "palmirror-exc"}`}
                         layout
                       >
                         {chat.image && (
@@ -1128,7 +1135,7 @@ export default function Home() {
                             </Button>
                           )}
                           <Button
-                            variant={chat.plmex.domain?.active ? "palmirror" : "outline"}
+                            variant="outline"
                             onClick={() => {
                               sessionStorage.setItem("chatSelect", chat.id);
                               if (chat.plmex.domain?.active) {
@@ -1142,7 +1149,8 @@ export default function Home() {
                           </Button>
                         </div>
                       </motion.div>
-                    ))
+                    )
+                    })
                   ) : (
                     <p className="opacity-50 text-sm">
                       {chatsLoading
@@ -1150,6 +1158,7 @@ export default function Home() {
                         : "No chats found."}
                     </p>
                   )}
+                
                 </AnimatePresence>
               </div>
             </motion.div>

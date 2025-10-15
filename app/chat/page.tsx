@@ -517,6 +517,9 @@ It should be 3-5 lengthy (lengthy to paint a more detailed picture) paragraphs (
 Do **not** mention AI, chats, or being a character — stay fully in-world.
 
 Only output the greeting message itself. No extra explanation.
+
+${entryTitle && "The user has given a title for you to make a greeting message around. Make sure to incorporate this, the best you can even if it's vague."}
+${entryTitle}
 `,
             }
           ]
@@ -789,6 +792,11 @@ Only output the greeting message itself. No extra explanation.
           stillGenerating: false,
         },
       ]);
+
+      if (entryTitle && sessionStorage.getItem("chatFromNewDomain") == "1") {
+        sessionStorage.removeItem("chatFromNewDomain");
+        regenerateMessage();
+      }
     }
   }, [characterData.initialMessage]);
 
@@ -851,6 +859,7 @@ Only output the greeting message itself. No extra explanation.
       setEntryTitle(entryName);
       sessionStorage.removeItem("chatEntryName");
     }
+
   }, []);
 
 
@@ -951,6 +960,7 @@ Only output the greeting message itself. No extra explanation.
       >
         <ChatHeader
           characterData={characterData}
+          fromDomain={!!entryTitle}
           getExportedMessages={() => {
             encodeMessages(false);
           }}

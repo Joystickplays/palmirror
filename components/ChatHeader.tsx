@@ -41,11 +41,12 @@ import { pmPropSysInst } from '@/utils/palmirrorProprietarySysInst'
 
 interface ChatHeaderProps {
   characterData: CharacterData;
+  fromDomain: boolean;
   getExportedMessages: () => void;
   importMessages: () => void;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessages, importMessages }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getExportedMessages, importMessages }) => {
   const [baseURL, setBaseURL] = useState('https://cvai.mhi.im/v1');
   const [apiKey, setApiKey] = useState('');
   const [temperature, setTemperature] = useState(0.5);
@@ -209,8 +210,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, getExportedMessa
           className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full object-cover rounded-lg object-[50%_35%] blur-[3px] hover:blur-none active:blur-none scale-110 hover:scale-100 active:scale-100 transition duration-300 ease-out" />
         )}
         <div className="flex gap-1 flex-col">
-          <h2 className="z-[2]"><span className="font-bold">{characterData.name}</span></h2>
-          <p className="text-xs font-bold opacity-50">On PalMirror</p>
+          <h2 className="z-[2]"><span className={`font-bold ${fromDomain && "palmirror-exc-text"}`}>{characterData.name}</span></h2>
+          <p className="text-xs font-bold opacity-50">On PalMirror {fromDomain && "Experience"}</p>
         </div>
           <DrawerTrigger asChild>
             <Button variant="outline" className={`p-3 size-8 z-[2] ${currentTheme.assistantBg}`}><Settings /></Button>

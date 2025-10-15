@@ -79,6 +79,17 @@ const ExperienceDomainPage: React.FC = () => {
         }
     }, [])
 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    function sortByLastUpdated(
+        data: { [key: string]: any }[]
+    ): { [key: string]: any }[] {
+        return data.sort(
+        (a, b) =>
+            new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+        );
+    }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+    //i really dont wanna deal w this
     useEffect(() => {
         if (PLMsecureContext && !PLMsecureContext.isSecureReady()) {
             router.push('/');
@@ -92,9 +103,7 @@ const ExperienceDomainPage: React.FC = () => {
                         console.log(data)
                     } else {
                         toast.error("Domain data not found. Returning to home.");
-                        setTimeout(() => {
-                            router.push('/');
-                        }, 3000);
+                        router.push('/');
                     }
                 });
             }
@@ -189,7 +198,7 @@ const ExperienceDomainPage: React.FC = () => {
                 <Button variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus />Start a new chat</Button>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow w-full justify-center items-start">
-                    {chatList.map((chat) => {
+                    {sortByLastUpdated(chatList).map((chat, idx) => {
                         console.log(chat)
                         if (chat.associatedDomain !== domainId) {
                             return null;
@@ -210,8 +219,10 @@ const ExperienceDomainPage: React.FC = () => {
                                     type: "spring",
                                     mass: 1,
                                     damping: 27,
-                                    stiffness: 161,
+                                    stiffness: 181,
                                     restDelta: 0.001,
+
+                                    delay: 0.05 * idx
                                 }}
                                 key={chat.lastUpdated}
                                 className="flex flex-col gap-1.5 p-6 border rounded-xl h-full"
@@ -272,6 +283,7 @@ const ExperienceDomainPage: React.FC = () => {
                         sessionStorage.setItem("chatSelect", "");
                         sessionStorage.setItem("chatAssociatedDomain", domainId);
                         sessionStorage.setItem("chatEntryName", newChatName.trim());
+                        sessionStorage.setItem("chatFromNewDomain", "1");
                         router.push(`/chat`);
                     }}>Start</Button>
                 </DialogContent>

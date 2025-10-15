@@ -316,7 +316,7 @@ body {
   background-color: #1a1a1a !important;
   color: white !important;
   border-radius: 16px !important;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-geist-sans);
   margin-bottom: 1rem;
 }
 
