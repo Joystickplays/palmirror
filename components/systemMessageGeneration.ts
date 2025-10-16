@@ -1,6 +1,7 @@
 import { CharacterData } from '@/types/CharacterData';
+import { buildFullDomainInstruction } from '@/utils/domainData';
 
-export const getSystemMessage = (characterData: CharacterData, userPersonality: { name: string, personality: string }, modelInstructions: string): string => {
+export const getSystemMessage = (characterData: CharacterData, userPersonality: { name: string, personality: string }, domainID: string | null, modelInstructions: string): string => {
   let userSystemMessage = ""
   if (characterData.userName !== "" && characterData.userPersonality !== "") {
 
@@ -52,6 +53,8 @@ Scenario: ${characterData.scenario !== "" ? characterData.scenario : "No scenari
 ${dynamicStatusSysMSG}
 
 ${invocationSysMSG}
+
+${domainID ? buildFullDomainInstruction(domainID) : ""}
 
 ${modelInstructions !== "" ? "[ADDITIONAL INSTRUCTIONS:]" : ""}
 ${modelInstructions}`;

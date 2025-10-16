@@ -380,6 +380,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     const systemPrompt = getSystemMessage(
       characterData,
       userPersonality,
+      associatedDomain ?? sessionStorage.getItem("associatedDomain") ?? null,
       modelInstructions +
         (activeSteers.length > 0 && steerApplyMethod === "system"
           ? generateSteerPrompt({ steers: activeSteers })
