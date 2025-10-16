@@ -698,15 +698,42 @@ export default function Home() {
                                 </div>
                                 <div className="flex flex-col gap-2">
                                     <h2 className="font-bold text-md">Attributes</h2>
-                                    {characterData.plmex.domain?.attributes.map((attr: DomainAttributeEntry) => (
-                                        <div key={attr.key} className="flex flex-col items-center gap-2 border border-white/20 rounded-xl w-fit p-2 min-h-24">
-                                            <Input placeholder="Attribute name" className="font-semibold" value={attr.attribute}></Input>
-                                            <Input placeholder="Attribute starting value" className="font-semibold" value={attr.value}></Input><p>%</p>
-                                        </div>
-                                    ))}
+                                    <div className="flex gap-2 flex-wrap justify-center">
+                                        <AnimatePresence mode="popLayout">
+                                            {characterData.plmex.domain?.attributes.map((attr: DomainAttributeEntry, idx) => (
+                                                <motion.div
+                                                initial={{ scale: 0.8, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                exit={{ scale: 0.8, opacity: 0 }}
+                                                transition={{ type: 'spring', mass: 1, damping: 21, stiffness: 161, delay: 0.05 * idx }}
+                                                layout
+                                                key={attr.key} className="flex flex-col items-center gap-2 border border-white/20 rounded-xl w-64 p-2 min-h-24">
+                                                    <Input placeholder="Attribute name" className="font-semibold" value={attr.attribute} onChange={(e) => {
+                                                        const newAttributes = [...(characterData.plmex.domain?.attributes ?? [])];
+                                                        newAttributes[idx] = { ...attr, attribute: e.target.value }
+                                                        setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...(plmex.domain ?? { active: false, memories: [], attributes: [] }), attributes: newAttributes } } });
+                                                    }}></Input>
+                                                    <div className="flex flex-row items-center">
+                                                        <Input placeholder="Attribute starting value" className="font-semibold" value={attr.value} onChange={(e) => {
+                                                            const newAttributes = [...(characterData.plmex.domain?.attributes ?? [])];
+                                                            newAttributes[idx] = { ...attr, value: Math.min(100, Math.max(0, Number(e.target.value))) }
+                                                            setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...(plmex.domain ?? { active: false, memories: [], attributes: [] }), attributes: newAttributes } } });
+                                                        }}></Input><p className="px-3 text-xl">%</p>
+                                                    </div>
+                                                    <div className="flex justify-end w-full">
+                                                        <Button variant="outline" onClick={() => {
+                                                            const newAttributes = characterData.plmex.domain?.attributes ? [...characterData.plmex.domain.attributes] : [];
+                                                            newAttributes.splice(idx, 1);
+                                                            setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...(plmex.domain ?? { active: false, memories: [], attributes: [] }), attributes: newAttributes } } });
+                                                        }}><Trash2 /> Delete</Button>
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </AnimatePresence>
+                                    </div>
                                     <Button className="w-fit" variant="outline" onClick={() => {
                                         const newAttributes = characterData.plmex.domain?.attributes ? [...characterData.plmex.domain.attributes] : [];
-                                        newAttributes.push({ key: Math.floor(Math.random() * 69420), attribute: "", value: 0 }); //copilot did the 69420 i kid u not
+                                        newAttributes.unshift({ key: Math.floor(Math.random() * 69420), attribute: "", value: 50 }); //copilot did the 69420 i kid u not
                                         setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...(plmex.domain ?? { active: false, memories: [], attributes: [] }), attributes: newAttributes } } });
                                     }}><CirclePlus /> Add Attribute</Button>
                                 </div>
