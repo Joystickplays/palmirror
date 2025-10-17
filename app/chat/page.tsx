@@ -29,6 +29,7 @@ import { usePalRec } from "@/context/PLMRecSystemContext"
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
+import { setDomainAttributes } from "@/utils/domainData";
 
 let openai: OpenAI;
 
@@ -55,14 +56,16 @@ interface ChatMetadata extends CharacterData {
     entryTitle?: string;
 }
 
+interface Message {
+    role: "user" | "assistant" | "system";
+    content: string;
+    stillGenerating: boolean;
+}
+
 
 const ChatPage = () => {
   const [messages, setMessages] = useState<
-    Array<{
-      role: "user" | "assistant" | "system";
-      content: string;
-      stillGenerating: boolean;
-    }>
+    Array<Message>
   >([]);
   const [characterData, setCharacterData] =
     useState<CharacterData>(defaultCharacterData);
@@ -74,6 +77,7 @@ const ChatPage = () => {
 
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+  const [successfulNewMessage, setSuccessfulNewMessage] = useState<boolean | Message>(false);
   const [userPromptThinking, setUserPromptThinking] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
   const [accurateTokenizer, setAccurateTokenizer] = useState(true); // toggle it yourself .
@@ -568,6 +572,11 @@ ${entryTitle}
           { ...p[p.length - 1], stillGenerating: false },
         ]);
         if (mode === "send") setIsThinking(false);
+        setSuccessfulNewMessage({
+          role: "assistant",
+          content: assistantMessage,
+          stillGenerating: false,
+        });
       } else {
         for await (const chunk of comp) {
           if (abortController.current?.signal.aborted) break;
@@ -904,6 +913,43 @@ ${entryTitle}
       // setShowingNewcomerDrawer(true);
     }
   }, []);
+
+  const extractAttributeTags = (message: string) => {
+    //  <ATR_CHANGE Trustworthiness +2 Courage -3>
+
+    const atrRegex = /<ATR_CHANGE\s+([^>]+)>/i;
+    const match = message.match(atrRegex);
+
+    if (!match || !match[1]) return [];
+
+    const content = match[1].trim();
+    const pairRegex = /([a-zA-Z_]+)\s*([+-]?\d+)/g;
+
+    const results: Array<{ attribute: string; change: number }> = [];
+    let pairMatch;
+
+    while ((pairMatch = pairRegex.exec(content)) !== null) {
+      results.push({
+        attribute: pairMatch[1],
+        change: parseInt(pairMatch[2], 10),
+      });
+    }
+
+    return results;
+  };
+  // Attribute changing post-message
+  useEffect(() => {
+    if (successfulNewMessage && typeof successfulNewMessage !== 'boolean') {
+      const lastMessage = successfulNewMessage.content;
+      const atrChanges = extractAttributeTags(lastMessage);
+      if (atrChanges.length > 0) {
+        atrChanges.forEach(({ attribute, change }) => {
+          setDomainAttributes(associatedDomain, attribute, change, true);
+          toast.info(`${characterData.name}'s ${attribute} changed by ${change > 0 ? "+" : ""}${change}`)
+        });
+      }
+    }
+  }, [successfulNewMessage])
 
   // Token counting (this was way too laggy so scrapped)
 

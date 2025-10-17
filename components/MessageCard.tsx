@@ -299,6 +299,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
     return modifiedString
   }
 
+  const cleanAttributeTags = (message: string): string => {
+    return message.replace(/<ATR_CHANGE\s+[^>]+>/gi, "").trim();
+  };
+
   const rpTextRender = (content: string, usingInvocationHolder: boolean = true) => {
     let processedContent = content
 
@@ -309,6 +313,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     processedContent = processedContent.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
 
     processedContent = removeStatusSection(processedContent)
+    processedContent = cleanAttributeTags(processedContent)
     } catch (e) { console.log("Text rendering failed; proceeding with raw"); console.log(e); }
     
     return processedContent

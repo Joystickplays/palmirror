@@ -5,41 +5,45 @@ import { DomainAttributeEntry } from '@/types/CharacterData';
 import { getTotalChatsSysInst } from './domainInstructionShaping/chatCountSysInst';
 
 
-export function getDomainAttributes(domainID: string) {
+export async function getDomainAttributes(domainID: string) {
     if (typeof window === 'undefined') {
         return [];
     }
 
     const sessionKey = getActivePLMSecureSession();
-    if (sessionKey) {
-        const domainData = getSecureData(
-            `METADATA${domainID}`,
-            sessionKey,
-            true
-        ).then((data) => {
-            if (data) {
-                const parsedData = JSON.parse(data as string);
-                if (parsedData.plmex && parsedData.plmex.domain && parsedData.plmex.domain.attributes) {
-                    return parsedData.plmex.domain.attributes;
-                }
-            }
-            return [];
-        }).catch((error) => {
-            console.error("Failed to get domain attributes:", error);
-            return [];
-        });
-        return domainData;
+    if (!sessionKey) {
+        return [];
     }
 
-    return [];
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+
+        if (
+            data &&
+            data.plmex &&
+            data.plmex.domain &&
+            data.plmex.domain.attributes
+        ) {
+            return data.plmex.domain.attributes;
+        }
+
+        return [];
+    } catch (error) {
+        console.error("Failed to get domain attributes:", error);
+        return [];
+    }
 }
 
+
 export function setDomainAttributes(domainID: string, attribute: string, value: number, relative: boolean = false) {
+    console.log("called")
     if (typeof window === 'undefined') {
         return;
     }
 
+    console.log("setting")
     const sessionKey = getActivePLMSecureSession();
+    console.log(sessionKey)
     if (sessionKey) {
         getSecureData(
             `METADATA${domainID}`,
@@ -47,7 +51,8 @@ export function setDomainAttributes(domainID: string, attribute: string, value: 
             true
         ).then(async (data) => {
             if (data) {
-                const parsedData = JSON.parse(data as string);
+                console.log("setting")
+                const parsedData = data
                 if (parsedData.plmex && parsedData.plmex.domain && parsedData.plmex.domain.attributes) {
                     const attributes = parsedData.plmex.domain.attributes;
                     const attributeToUpdate = attributes.find((attr: DomainAttributeEntry) => attr.attribute === attribute);
@@ -56,41 +61,43 @@ export function setDomainAttributes(domainID: string, attribute: string, value: 
                     } else {
                         attributes.push({ name: attribute, value: value + (relative ? 0 : value) });
                     }
-                    await setSecureData(`METADATA${domainID}`, JSON.stringify(parsedData), sessionKey);
+                    console.log('success')
+                    await setSecureData(`METADATA${domainID}`, parsedData, sessionKey);
                 }
             }
         });
     }
 }
 
-export function getDomainMemories(domainID: string) {
+export async function getDomainMemories(domainID: string) {
     if (typeof window === 'undefined') {
         return [];
     }
 
     const sessionKey = getActivePLMSecureSession();
-    if (sessionKey) {
-        const domainData = getSecureData(
-            `METADATA${domainID}`,
-            sessionKey,
-            true
-        ).then((data) => {
-            if (data) {
-                const parsedData = JSON.parse(data as string);
-                if (parsedData.plmex && parsedData.plmex.domain && parsedData.plmex.domain.memories) {
-                    return parsedData.plmex.domain.memories;
-                }
-            }
-            return [];
-        }).catch((error) => {
-            console.error("Failed to get domain memories:", error);
-            return [];
-        });
-        return domainData;
+    if (!sessionKey) {
+        return [];
     }
 
-    return [];
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+
+        if (
+            data &&
+            data.plmex &&
+            data.plmex.domain &&
+            data.plmex.domain.memories
+        ) {
+            return data.plmex.domain.memories;
+        }
+
+        return [];
+    } catch (error) {
+        console.error("Failed to get domain memories:", error);
+        return [];
+    }
 }
+
 
 export async function totalChatsFromDomain(domainID: string) {
     if (typeof window === 'undefined') return 0;
@@ -125,10 +132,10 @@ export async function totalChatsFromDomain(domainID: string) {
 }
 
 
-export function buildFullDomainInstruction(domainID: string) {
+export async function buildFullDomainInstruction(domainID: string) {
     return `
-    ${getAttributesSysInst(getDomainAttributes(domainID) as DomainAttributeEntry[])}
+${getAttributesSysInst(await getDomainAttributes(domainID) as DomainAttributeEntry[])}
+${getTotalChatsSysInst(await totalChatsFromDomain(domainID))}
     `;
-    // ${getTotalChatsSysInst(await totalChatsFromDomain(domainID))}
     // dealing w this later
 }

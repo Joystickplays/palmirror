@@ -14,8 +14,14 @@ For example, when the user commits something or say something trustworthy, you c
 
 To add or subtract values from attributes, use the following format at the end of your response:
 <ATR_CHANGE attribute_name +value> or <ATR_CHANGE attribute_name -value>
-For example, to increase Trustworthiness by 2, you would write: <ATR_CHANGE Trustworthiness +2>
+
+EXAMPLES:
+To increase Trustworthiness by 2, you would write: <ATR_CHANGE Trustworthiness +2>
 To decrease Courage by 3, you would write: <ATR_CHANGE Courage -3>
+-- These are EXAMPLES and does NOT reflect the attributes available to you.
+-- You must still refer to the attributes given above.
+-- For a refresher, your available attributes are ${attributes.map(attr => `${attr.attribute}`).join(", ")}
+
 Try not to overshoot the attribute values, and keep them within 1-3 points of change at a time.
 
 You can change multiple attributes at once, like so:

@@ -1,7 +1,6 @@
 const secureSessionKey = "plmSecureSession";
 
 export const setActivePLMSecureSession = (key: CryptoKey) => {
-    //secureity auditors are shaking rn
     (window as any)[secureSessionKey] = key;
 };
 
