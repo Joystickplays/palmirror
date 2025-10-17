@@ -381,7 +381,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       messagesList = checkAndTrimMessages([...messages]);
     }
 
-    const systemPrompt = getSystemMessage(
+    const systemPrompt = await getSystemMessage(
       characterData,
       userPersonality,
       associatedDomain ?? sessionStorage.getItem("associatedDomain") ?? null,
