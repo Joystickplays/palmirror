@@ -259,7 +259,7 @@ const ExperienceDomainPage: React.FC = () => {
                     </DialogHeader>
                     <Label htmlFor="chat-name">Entry name</Label>
                     <Input value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
-                    <p className="text-xs opacity-50">{`A good entry name should the reflect the moment you're capturing in this new chat. For example, "First Encounter", "Moving Day", "Evening Complication", etc.<br /><br />PalMirror will look through your past chat entries and let your AI know how far you and this character has progressed together.`}</p>
+                    <p className="text-xs opacity-50">{`A good entry name should the reflect the moment you're capturing in this new chat. For example, "First Encounter", "Moving Day", "Evening Complication", etc.\n\nPalMirror will look through your past chat entries and let your AI know how far you and this character has progressed together.`}</p>
                     <Button onClick={() => {
                         setShowingNewChat(false)
                         if (newChatName.trim() === "") {
