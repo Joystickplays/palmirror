@@ -15,7 +15,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/components/systemMessageGeneration";
 import OpenAI from "openai";
-import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
+import { CharacterData, defaultCharacterData, DomainAttributeEntry } from "@/types/CharacterData";
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import {
@@ -29,7 +29,10 @@ import { usePalRec } from "@/context/PLMRecSystemContext"
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
-import { setDomainAttributes } from "@/utils/domainData";
+
+import { getDomainAttributes, setDomainAttributes } from "@/utils/domainData";
+import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
+
 
 let openai: OpenAI;
 
@@ -74,6 +77,7 @@ const ChatPage = () => {
 
   const [associatedDomain, setAssociatedDomain] = useState<string>("");
   const [entryTitle, setEntryTitle] = useState<string>("");
+  const attributeNotification = useAttributeNotification();
 
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -385,6 +389,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       characterData,
       userPersonality,
       associatedDomain ?? sessionStorage.getItem("associatedDomain") ?? null,
+      entryTitle ?? sessionStorage.getItem("entryTitle") ?? null,
       modelInstructions +
         (activeSteers.length > 0 && steerApplyMethod === "system"
           ? generateSteerPrompt({ steers: activeSteers })
@@ -899,6 +904,10 @@ ${entryTitle}
 
       await PLMSecContext.setSecureData(`METADATA${chatId}`, metadata);
       console.log("saved chat");
+
+      if (associatedDomain) {
+        sessionStorage.setItem('chatSelect', associatedDomain)
+      }
     }
   };
 
@@ -945,7 +954,16 @@ ${entryTitle}
       if (atrChanges.length > 0) {
         atrChanges.forEach(({ attribute, change }) => {
           setDomainAttributes(associatedDomain, attribute, change, true);
-          toast.info(`${characterData.name}'s ${attribute} changed by ${change > 0 ? "+" : ""}${change}`)
+          (async () => {
+            const attributes = await getDomainAttributes(associatedDomain)
+            const attributeCurrent: DomainAttributeEntry = attributes.find((attr: DomainAttributeEntry) => attr.attribute === attribute);
+            attributeNotification.create({
+              attribute: attribute,
+              fromVal: attributeCurrent.value,
+              toVal: attributeCurrent.value + change
+            })
+          })();
+          // toast.info(`${characterData.name}'s ${attribute} changed by ${change > 0 ? "+" : ""}${change}`)
         });
       }
     }

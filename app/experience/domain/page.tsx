@@ -4,7 +4,6 @@ import React, { useState, useEffect, useContext } from "react";
 import { motion } from 'motion/react';
 import { useRouter } from "next/navigation";
 
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -13,11 +12,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { CirclePlus, Trash2, ArrowRight } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft } from 'lucide-react';
 
-import NumberFlow, { continuous } from '@number-flow/react'
+import AttributeProgress from "@/components/AttributeProgress";
 
 import { ToastContainer, toast } from "react-toastify";
 
@@ -34,30 +32,7 @@ interface ChatMetadata extends CharacterData {
     entryTitle?: string;
 }
 
-type AttributeProgressProps = {
-  attr: DomainAttributeEntry;
-};
 
-const AttributeProgress: React.FC<AttributeProgressProps> = ({ attr }) => {
-  const [progressValue, setProgressValue] = useState(0);
-
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setProgressValue(attr.value));
-    return () => cancelAnimationFrame(id);
-  }, [attr.value]);
-
-  return (
-    <div className="flex flex-col gap-2 min-w-32">
-      <div className="flex justify-between items-end">
-        <p className="text-sm font-bold">{attr.attribute}</p>
-        <p className="opacity-25 text-xs">
-          <NumberFlow plugins={[continuous]} value={progressValue} />%
-        </p>
-      </div>
-      <Progress className="!h-[12px]" value={progressValue} max={100} />
-    </div>
-  );
-}
 
 const ExperienceDomainPage: React.FC = () => {
     const PLMsecureContext = useContext(PLMSecureContext);
@@ -68,6 +43,8 @@ const ExperienceDomainPage: React.FC = () => {
     
     const [showingNewChat, setShowingNewChat] = useState(false);
     const [newChatName, setNewChatName] = useState("");
+
+    const [showingDelete, setShowingDelete] = useState(false);
 
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
@@ -101,6 +78,10 @@ const ExperienceDomainPage: React.FC = () => {
                         setCharacter(data as CharacterData);
                         console.log("load char")
                         console.log(data)
+                        if (!data.plmex.domain) {
+                            toast.error("Not a domain-enabled character. Returning to home.")
+                            router.push('/')
+                        }
                     } else {
                         toast.error("Domain data not found. Returning to home.");
                         router.push('/');
@@ -193,11 +174,16 @@ const ExperienceDomainPage: React.FC = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1 }}
                 className="flex flex-col gap-4 h-full">
+                
+                <div className="flex gap-2 h-12">
+                    <Button variant="outline" onClick={() => router.push("/")}><ArrowLeft /> Back</Button>
+                    <div className="flex-1 w-full"></div>
+                    <Button variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus />New chat</Button>
+                    <Button variant="destructive" onClick={() => setShowingDelete(true)}><Trash2 /></Button>
+                </div>
 
 
-                <Button variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus />Start a new chat</Button>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow w-full justify-center items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-grow w-full justify-center items-start">
                     {sortByLastUpdated(chatList).map((chat, idx) => {
                         console.log(chat)
                         if (chat.associatedDomain !== domainId) {
@@ -273,7 +259,7 @@ const ExperienceDomainPage: React.FC = () => {
                     </DialogHeader>
                     <Label htmlFor="chat-name">Entry name</Label>
                     <Input value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
-
+                    <p className="text-xs opacity-50">A good entry name should the reflect the moment you're capturing in this new chat. For example, "First Encounter", "Moving Day", "Evening Complication", etc.<br /><br />PalMirror will look through your past chat entries and let your AI know how far you and this character has progressed together.</p>
                     <Button onClick={() => {
                         setShowingNewChat(false)
                         if (newChatName.trim() === "") {
@@ -286,6 +272,26 @@ const ExperienceDomainPage: React.FC = () => {
                         sessionStorage.setItem("chatFromNewDomain", "1");
                         router.push(`/chat`);
                     }}>Start</Button>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showingDelete} onOpenChange={setShowingDelete}>
+                <DialogContent className="font-sans">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Delete domain</DialogTitle>
+                    </DialogHeader>
+                    <p>Are you sure you want to delete this domain? All associated chats, attributes and memory will also be deleted!</p>
+                    <Button variant="destructive" onClick={() => {
+                        setShowingDelete(false);
+                        chatList.forEach((chat) => {
+                            if (chat.associatedDomain == domainId) {
+                                PLMsecureContext?.removeKey(chat.id)
+                                PLMsecureContext?.removeKey("METADATA" + chat.id)
+                            }
+                        })
+                        PLMsecureContext?.removeKey("METADATA" + domainId)
+                        router.push("/")
+                    }}>Confirm deletion</Button>
                 </DialogContent>
             </Dialog>
             <ToastContainer

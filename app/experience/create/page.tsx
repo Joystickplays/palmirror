@@ -42,6 +42,7 @@ import {
 
 import { CharacterData, defaultCharacterData, AlternateInitialMessage, DomainAttributeEntry } from "@/types/CharacterData";
 
+
 export default function Home() {
     const router = useRouter();
     const [characterData, setCharacterData] = useState<CharacterData>(defaultCharacterData);
@@ -178,6 +179,13 @@ export default function Home() {
             toast.error("Please fill in all required fields marked with the asterisk.");
             return;
         }
+
+        if ((characterData.plmex.domain?.attributes ?? []).some(attr => attr.value === -1)) {
+            toast.error("There are malformed attribute default values. Either edit or delete them.")
+            return;
+        }
+
+
 
         const simplifiedCharacterData = {
             ...characterData,
@@ -714,11 +722,34 @@ export default function Home() {
                                                         setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...(plmex.domain ?? { active: false, memories: [], attributes: [] }), attributes: newAttributes } } });
                                                     }}></Input>
                                                     <div className="flex flex-row items-center">
-                                                        <Input placeholder="Attribute starting value" className="font-semibold" value={attr.value} onChange={(e) => {
-                                                            const newAttributes = [...(characterData.plmex.domain?.attributes ?? [])];
-                                                            newAttributes[idx] = { ...attr, value: Math.min(100, Math.max(0, Number(e.target.value))) }
-                                                            setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...(plmex.domain ?? { active: false, memories: [], attributes: [] }), attributes: newAttributes } } });
-                                                        }}></Input><p className="px-3 text-xl">%</p>
+                                                        <Input
+                                                            placeholder="Attribute starting value"
+                                                            className="font-semibold"
+                                                            value={attr.value === -1 ? "" : attr.value}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                const num = Number(val);
+
+                                                                const newValue = val === "" || isNaN(num) ? -1 : Math.min(100, Math.max(0, num));
+
+                                                                const newAttributes = [...(characterData.plmex.domain?.attributes ?? [])];
+                                                                newAttributes[idx] = { ...attr, value: newValue };
+
+                                                                setCharacterData({
+                                                                ...characterData,
+                                                                plmex: {
+                                                                    ...plmex,
+                                                                    domain: {
+                                                                        ...(plmex.domain ?? { active: false, memories: [], attributes: [] }),
+                                                                        attributes: newAttributes,
+                                                                    },
+                                                                },
+                                                                });
+                                                            }}
+                                                        />
+
+                                                        <p className="px-3 text-xl">%</p>
+
                                                     </div>
                                                     <div className="flex justify-end w-full">
                                                         <Button variant="outline" onClick={() => {

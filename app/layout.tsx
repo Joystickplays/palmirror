@@ -3,6 +3,7 @@ import { PMThemeProvider } from "@/components/PalMirrorThemeProvider";
 import { PLMSecureProvider } from "@/context/PLMSecureContext";
 import { WebAuthnProvider } from "@/context/PLMSecureWebAuthnContext";
 import { RecProvider } from "@/context/PLMRecSystemContext";
+import AttributeNotificationProvider from "@/components/AttributeNotificationProvider";
 // import { AnimatePresence, motion } from 'framer-motion';
 
 import type { Metadata } from "next";
@@ -45,27 +46,29 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <PLMSecureProvider>
-          <RecProvider>
-            <WebAuthnProvider>
-              <PMThemeProvider>
-                <ThemeProvider attribute="class" defaultTheme="dark">
-                  {/* <AnimatePresence>
-                <motion.div
-                key={"h"}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}> */}
-                  {children}
+        <AttributeNotificationProvider>
+          <PLMSecureProvider>
+            <RecProvider>
+              <WebAuthnProvider>
+                <PMThemeProvider>
+                  <ThemeProvider attribute="class" defaultTheme="dark">
+                    {/* <AnimatePresence>
+                  <motion.div
+                  key={"h"}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}> */}
+                    {children}
 
-                  {/* </motion.div>
-              </AnimatePresence> */}
-                </ThemeProvider>
-              </PMThemeProvider>
-            </WebAuthnProvider>
-          </RecProvider>
-        </PLMSecureProvider>
+                    {/* </motion.div>
+                </AnimatePresence> */}
+                  </ThemeProvider>
+                </PMThemeProvider>
+              </WebAuthnProvider>
+            </RecProvider>
+          </PLMSecureProvider>
+        </AttributeNotificationProvider>
       </body>
     </html>
   );

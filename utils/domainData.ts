@@ -2,7 +2,15 @@ import { isPalMirrorSecureActivated, setSecureData, getSecureData, getAllKeys, P
 import { getActivePLMSecureSession } from './palMirrorSecureSession';
 import { getAttributesSysInst } from './domainInstructionShaping/attributesSysInst';
 import { DomainAttributeEntry } from '@/types/CharacterData';
-import { getTotalChatsSysInst } from './domainInstructionShaping/chatCountSysInst';
+import { getTotalChatsSysInst } from './domainInstructionShaping/chatHistorySysInst';
+
+
+interface ChatMetadata {
+    id: string;
+    lastUpdated: string;
+    associatedDomain?: string;
+    entryTitle?: string;
+}
 
 
 export async function getDomainAttributes(domainID: string) {
@@ -36,14 +44,11 @@ export async function getDomainAttributes(domainID: string) {
 
 
 export function setDomainAttributes(domainID: string, attribute: string, value: number, relative: boolean = false) {
-    console.log("called")
     if (typeof window === 'undefined') {
         return;
     }
 
-    console.log("setting")
     const sessionKey = getActivePLMSecureSession();
-    console.log(sessionKey)
     if (sessionKey) {
         getSecureData(
             `METADATA${domainID}`,
@@ -51,7 +56,6 @@ export function setDomainAttributes(domainID: string, attribute: string, value: 
             true
         ).then(async (data) => {
             if (data) {
-                console.log("setting")
                 const parsedData = data
                 if (parsedData.plmex && parsedData.plmex.domain && parsedData.plmex.domain.attributes) {
                     const attributes = parsedData.plmex.domain.attributes;
@@ -61,8 +65,7 @@ export function setDomainAttributes(domainID: string, attribute: string, value: 
                     } else {
                         attributes.push({ name: attribute, value: value + (relative ? 0 : value) });
                     }
-                    console.log('success')
-                    await setSecureData(`METADATA${domainID}`, parsedData, sessionKey);
+                    await setSecureData(`METADATA${domainID}`, parsedData, sessionKey, true);
                 }
             }
         });
@@ -100,10 +103,10 @@ export async function getDomainMemories(domainID: string) {
 
 
 export async function totalChatsFromDomain(domainID: string) {
-    if (typeof window === 'undefined') return 0;
+    if (typeof window === 'undefined') return [];
 
     const sessionKey = getActivePLMSecureSession();
-    if (!sessionKey) return 0;
+    if (!sessionKey) return [];
 
     try {
         const keys = await getAllKeys();
@@ -114,28 +117,30 @@ export async function totalChatsFromDomain(domainID: string) {
                 key !== `METADATA${domainID}`
         );
 
-        const matches = await Promise.all(
+        const chatEntries = await Promise.all(
             chatKeys.map(async (key) => {
-                const data = await getSecureData(key, sessionKey, true);
-                if (!data) return false;
+                const data: ChatMetadata = await getSecureData(key, sessionKey, true);
+                if (!data) return;
+                if (!data.entryTitle) return;
+                if (data.associatedDomain !== domainID) return;
 
-                const parsedData = JSON.parse(data as string);
-                return parsedData.associatedDomain === domainID;
+                return data.entryTitle;
             })
         );
 
-        return chatKeys.filter((_, i) => matches[i]).length;
+        return chatEntries.filter((title): title is string => Boolean(title));
     } catch (err) {
         console.error("Failed to get total chats from domain:", err);
-        return 0;
+        return [];
     }
 }
 
 
-export async function buildFullDomainInstruction(domainID: string) {
+
+export async function buildFullDomainInstruction(domainID: string, entryTitle: string) {
     return `
 ${getAttributesSysInst(await getDomainAttributes(domainID) as DomainAttributeEntry[])}
-${getTotalChatsSysInst(await totalChatsFromDomain(domainID))}
+${getTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)}
     `;
     // dealing w this later
 }

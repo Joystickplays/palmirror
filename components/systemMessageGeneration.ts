@@ -1,7 +1,7 @@
 import { CharacterData } from '@/types/CharacterData';
 import { buildFullDomainInstruction } from '@/utils/domainData';
 
-export const getSystemMessage = async (characterData: CharacterData, userPersonality: { name: string, personality: string }, domainID: string | null, modelInstructions: string): Promise<string> => {
+export const getSystemMessage = async (characterData: CharacterData, userPersonality: { name: string, personality: string }, domainID: string | null, entryTitle: string | null, modelInstructions: string): Promise<string> => {
   let userSystemMessage = ""
   if (characterData.userName !== "" && characterData.userPersonality !== "") {
 
@@ -54,7 +54,7 @@ ${dynamicStatusSysMSG}
 
 ${invocationSysMSG}
 
-${domainID ? await buildFullDomainInstruction(domainID) : ""}
+${domainID && entryTitle ? await buildFullDomainInstruction(domainID, entryTitle) : ""}
 
 ${modelInstructions !== "" ? "[ADDITIONAL INSTRUCTIONS:]" : ""}
 ${modelInstructions}`;

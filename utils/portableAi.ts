@@ -46,7 +46,6 @@ export async function independentInitOpenAI() {
                     if (proxySettings.proxy && proxySettings.proxy.api_key) {
                         apiKey = proxySettings.proxy.api_key;
                         console.log("done")
-                        console.log(apiKey)
                     }
                 }
             } catch (error) {
@@ -55,7 +54,6 @@ export async function independentInitOpenAI() {
         }
     }
 
-    console.log(apiKey)
     openai = new OpenAI({
         baseURL: baseURL,
         apiKey: apiKey,
