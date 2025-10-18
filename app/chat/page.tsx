@@ -30,8 +30,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { getDomainAttributes, setDomainAttributes } from "@/utils/domainData";
+import { addDomainMemory, getDomainAttributes, setDomainAttributes } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
+import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
 
 
 let openai: OpenAI;
@@ -78,6 +79,7 @@ const ChatPage = () => {
   const [associatedDomain, setAssociatedDomain] = useState<string>("");
   const [entryTitle, setEntryTitle] = useState<string>("");
   const attributeNotification = useAttributeNotification();
+  const memoryNotification = useMemoryNotification();
 
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -946,7 +948,19 @@ ${entryTitle}
 
     return results;
   };
-  // Attribute changing post-message
+
+  const extractMemories = (text: string) => {
+    const regex = /<NEW_MEMORY\s+([^>]+)>/g;
+    const matches: string[] = [];
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      matches.push(match[1].trim());
+    }
+
+    return matches;
+  }
+  // Attribute changing & memory entry post-message
   useEffect(() => {
     if (successfulNewMessage && typeof successfulNewMessage !== 'boolean') {
       const lastMessage = successfulNewMessage.content;
@@ -965,6 +979,15 @@ ${entryTitle}
           })();
           // toast.info(`${characterData.name}'s ${attribute} changed by ${change > 0 ? "+" : ""}${change}`)
         });
+      }
+
+      const memoryToAdd = extractMemories(lastMessage);
+      if (memoryToAdd.length > 0) {
+        memoryToAdd.forEach((memory) => {
+          addDomainMemory(associatedDomain, memory)
+          memoryNotification.create(`${characterData.name} will remember that.`)
+          toast.info("new memory")
+        })
       }
     }
   }, [successfulNewMessage])

@@ -1,8 +1,11 @@
 import { isPalMirrorSecureActivated, setSecureData, getSecureData, getAllKeys, PLMSecureGeneralSettings } from './palMirrorSecureUtils';
 import { getActivePLMSecureSession } from './palMirrorSecureSession';
+
 import { getAttributesSysInst } from './domainInstructionShaping/attributesSysInst';
-import { DomainAttributeEntry } from '@/types/CharacterData';
 import { getTotalChatsSysInst } from './domainInstructionShaping/chatHistorySysInst';
+import { getMemorySysInst } from './domainInstructionShaping/memorySysInst';
+
+import { DomainAttributeEntry, DomainMemoryEntry } from '@/types/CharacterData';
 
 
 interface ChatMetadata {
@@ -101,6 +104,62 @@ export async function getDomainMemories(domainID: string) {
     }
 }
 
+export async function addDomainMemory(domainID: string, newMemory: string) {
+    if (typeof window === 'undefined') {
+        return [];
+    }
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return [];
+    }
+
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+
+        if (
+            data &&
+            data.plmex &&
+            data.plmex.domain &&
+            data.plmex.domain.memories
+        ) {
+            const memories: DomainMemoryEntry[] = data.plmex.domain.memories;
+            memories.push({
+                key: Math.floor(Math.random() * 69420),
+                memory: newMemory,
+                state: "remembering",
+                lifetime: 10,
+            } as DomainMemoryEntry)
+
+            data.plmex.domain.memories = memories
+            await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+        }
+
+        return [];
+    } catch (error) {
+        console.error("Failed to set domain memories:", error);
+        return [];
+    }
+}
+
+
+export function getTrueDomainMemories(memoryEntries: DomainMemoryEntry[]) {
+    if (typeof window === 'undefined') {
+        return [];
+    }
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return [];
+    }
+
+    const activeMemories = memoryEntries.map((memory) => {
+        if (memory.state !== "remembering") { return; }
+        return memory.memory
+    })
+
+    return activeMemories.filter((memory): memory is string => Boolean(memory))
+}
 
 export async function totalChatsFromDomain(domainID: string) {
     if (typeof window === 'undefined') return [];
@@ -141,6 +200,7 @@ export async function buildFullDomainInstruction(domainID: string, entryTitle: s
     return `
 ${getAttributesSysInst(await getDomainAttributes(domainID) as DomainAttributeEntry[])}
 ${getTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)}
+${getMemorySysInst(getTrueDomainMemories(await getDomainAttributes(domainID)))}
     `;
     // dealing w this later
 }

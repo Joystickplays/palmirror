@@ -1,19 +1,19 @@
 "use client"
 
 import React, { useState, useEffect, useContext } from "react";
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser } from 'lucide-react';
 
 import AttributeProgress from "@/components/AttributeProgress";
 
@@ -23,7 +23,7 @@ import { ToastContainer, toast } from "react-toastify";
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
-import { CharacterData, defaultCharacterData, DomainAttributeEntry } from "@/types/CharacterData";
+import { CharacterData, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry } from "@/types/CharacterData";
 
 interface ChatMetadata extends CharacterData {
     id: string;
@@ -40,9 +40,11 @@ const ExperienceDomainPage: React.FC = () => {
 
     const [domainId, setDomainId] = useState("");
     const [chatList, setChatList] = useState<Array<ChatMetadata>>([]);
-    
+
     const [showingNewChat, setShowingNewChat] = useState(false);
     const [newChatName, setNewChatName] = useState("");
+
+    const [showingMemoryManager, setShowingMemoryManager] = useState(false);
 
     const [showingDelete, setShowingDelete] = useState(false);
 
@@ -61,8 +63,8 @@ const ExperienceDomainPage: React.FC = () => {
         data: { [key: string]: any }[]
     ): { [key: string]: any }[] {
         return data.sort(
-        (a, b) =>
-            new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+            (a, b) =>
+                new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
         );
     }
     /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -174,11 +176,12 @@ const ExperienceDomainPage: React.FC = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1 }}
                 className="flex flex-col gap-4 h-full">
-                
-                <div className="flex gap-2 h-12">
-                    <Button variant="outline" onClick={() => router.push("/")}><ArrowLeft /> Back</Button>
+
+                <div className="flex gap-2 h-12 overflow-x-scroll">
+                    <Button variant="outline" onClick={() => router.push("/")}><ArrowLeft /></Button>
                     <div className="flex-1 w-full"></div>
-                    <Button variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus />New chat</Button>
+                    <Button className="p-1 px-3" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus />New chat</Button>
+                    <Button className="p-1 px-3" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button>
                     <Button variant="destructive" onClick={() => setShowingDelete(true)}><Trash2 /></Button>
                 </div>
 
@@ -222,13 +225,13 @@ const ExperienceDomainPage: React.FC = () => {
                                     <Button
                                         variant="outline"
                                         onClick={() => {
-                                        PLMsecureContext?.removeKey(chat.id);
-                                        PLMsecureContext?.removeKey(`METADATA${chat.id}`);
-                                        setChatList((prevList) =>
-                                            prevList.filter(
-                                            (chatItem) => chatItem.id !== chat.id
-                                            )
-                                        );
+                                            PLMsecureContext?.removeKey(chat.id);
+                                            PLMsecureContext?.removeKey(`METADATA${chat.id}`);
+                                            setChatList((prevList) =>
+                                                prevList.filter(
+                                                    (chatItem) => chatItem.id !== chat.id
+                                                )
+                                            );
                                         }}
                                     >
                                         <Trash2 />
@@ -259,7 +262,7 @@ const ExperienceDomainPage: React.FC = () => {
                     </DialogHeader>
                     <Label htmlFor="chat-name">Entry name</Label>
                     <Input value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
-                    <p className="text-xs opacity-50">{`A good entry name should the reflect the moment you're capturing in this new chat. For example, "First Encounter", "Moving Day", "Evening Complication", etc.\n\nPalMirror will look through your past chat entries and let your AI know how far you and this character has progressed together.`}</p>
+                    <p className="text-xs opacity-50">{`A good entry name should the reflect the moment you're capturing in this new chat. For example, "First Encounter", "Moving Day", "Evening Complication", etc.`}<br /><br />{`PalMirror will look through your past chat entries and let your AI know how far you and this character has progressed together.`}</p>
                     <Button onClick={() => {
                         setShowingNewChat(false)
                         if (newChatName.trim() === "") {
@@ -272,6 +275,63 @@ const ExperienceDomainPage: React.FC = () => {
                         sessionStorage.setItem("chatFromNewDomain", "1");
                         router.push(`/chat`);
                     }}>Start</Button>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showingMemoryManager} onOpenChange={setShowingMemoryManager}>
+                <DialogContent className="font-sans">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Manage memories</DialogTitle>
+                    </DialogHeader>
+                    <p className="opacity-50 text-xs">These memories are what {character.name} remembered about you.</p>
+                    <div
+
+                        className="flex flex-col gap-2">
+                        <AnimatePresence>
+                            {character.plmex.domain?.memories.map((memory: DomainMemoryEntry, index: number) => {
+                                const isForgotten = memory.state === "forgotten";
+
+                                return (
+                                    <motion.div
+                                        key={memory.key}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 12 }}
+                                        layout
+                                        className="border border-white/10 rounded-2xl p-4"
+                                    >
+                                        <p className={isForgotten ? "blur-sm opacity-50 select-none" : ""}>{memory.memory}</p>
+                                        <div className="flex gap-2 justify-end">
+                                            <Button variant={isForgotten ? "outline" : "destructive"}disabled={isForgotten}
+                                                onClick={() => {
+                                                    if (!isForgotten && character.plmex.domain) {
+                                                        const updatedMemories = [...character.plmex.domain.memories];
+                                                        updatedMemories[index] = { ...memory, state: "forgotten" };
+                                                        setCharacter({
+                                                            ...character, plmex: { ...character.plmex,
+                                                                domain: {
+                                                                    ...character.plmex.domain,
+                                                                    memories: updatedMemories,
+                                                                },
+                                                            },
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                {isForgotten ? "Forgotten" : (
+                                                    <>
+                                                        <Eraser /> Forget
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+
+                        </AnimatePresence>
+                    </div>
                 </DialogContent>
             </Dialog>
 

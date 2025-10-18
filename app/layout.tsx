@@ -9,6 +9,7 @@ import AttributeNotificationProvider from "@/components/AttributeNotificationPro
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import MemoryNotificationProvider from "@/components/MemoryNotificationProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -46,29 +47,31 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AttributeNotificationProvider>
-          <PLMSecureProvider>
-            <RecProvider>
-              <WebAuthnProvider>
-                <PMThemeProvider>
-                  <ThemeProvider attribute="class" defaultTheme="dark">
-                    {/* <AnimatePresence>
-                  <motion.div
-                  key={"h"}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}> */}
-                    {children}
+        <MemoryNotificationProvider>
+          <AttributeNotificationProvider>
+            <PLMSecureProvider>
+              <RecProvider>
+                <WebAuthnProvider>
+                  <PMThemeProvider>
+                    <ThemeProvider attribute="class" defaultTheme="dark">
+                      {/* <AnimatePresence>
+                    <motion.div
+                    key={"h"}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}> */}
+                      {children}
 
-                    {/* </motion.div>
-                </AnimatePresence> */}
-                  </ThemeProvider>
-                </PMThemeProvider>
-              </WebAuthnProvider>
-            </RecProvider>
-          </PLMSecureProvider>
-        </AttributeNotificationProvider>
+                      {/* </motion.div>
+                  </AnimatePresence> */}
+                    </ThemeProvider>
+                  </PMThemeProvider>
+                </WebAuthnProvider>
+              </RecProvider>
+            </PLMSecureProvider>
+          </AttributeNotificationProvider>
+        </MemoryNotificationProvider>
       </body>
     </html>
   );
