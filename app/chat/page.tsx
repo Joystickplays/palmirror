@@ -1007,7 +1007,7 @@ ${entryTitle}
       if (memoryToAdd.length > 0) {
         memoryToAdd.forEach((memory) => {
           addDomainMemory(associatedDomain, memory, successfulNewMessage.id)
-          memoryNotification.create(`${characterData.name} will remember that.`)
+          memoryNotification.create(`${characterData.name} will remember that.`, memory)
           // toast.info("new memory")
         })
       }

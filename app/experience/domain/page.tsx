@@ -82,7 +82,7 @@ const ExperienceDomainPage: React.FC = () => {
     }
     /* eslint-enable @typescript-eslint/no-explicit-any */
     //i really dont wanna deal w this
-    useEffect(() => {
+    const reloadCharacter = () => {
         if (PLMsecureContext && !PLMsecureContext.isSecureReady()) {
             router.push('/');
         } else {
@@ -104,6 +104,9 @@ const ExperienceDomainPage: React.FC = () => {
                 });
             }
         }
+    }
+    useEffect(() => {
+        reloadCharacter()
     }, [domainId]);
 
     useEffect(() => {
@@ -310,6 +313,8 @@ const ExperienceDomainPage: React.FC = () => {
 
                             toast.info("Chat deleted. " +  chatDeletePropagation ? "Relevant attributes and memories rolled back." : "")
                             setShowingChatDelete(false);
+
+                            reloadCharacter();
                         }}>Confirm deletion</Button>
                     </div>
                 </DialogContent>
