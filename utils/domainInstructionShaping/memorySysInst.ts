@@ -12,6 +12,9 @@ Even if this is a new session, treat it as the same story continuing from your p
 - CURRENT MEMORIES
 ${memories.map((memory) => `- ${memory}`).join("\n")}
 
+- These memories are in the perspective of THE CHARACTER. These are what the character thinks of the user.
+- Not the other way around.
+
 During the conversation, ever so subtly mention any of these memories to the chat.
 Keep them immersive, and as if the character did truly remember these.
 

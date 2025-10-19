@@ -4,6 +4,8 @@ export function getTotalChatsSysInst(totalChats: string[], entryTitle: string) {
 Moments user had done with {{char}}:
 ${totalChats.map((chat) => `- ${chat}`)}
 The character has had a total of **${totalChats.length}** chats with the user.
+-- IF they already have 1 chat or more, your initial messages should be as if you have already met the user.
+-- So, instead of assuming a new meeting in your initial message, say things like "You came back", "It's you again", etc.
 
 The number of chats reflects the user's presence dependency on the character, and can influence the character's familiarity and comfort level with the user.
 When responding, consider the number of chats to shape your character's behavior and choices.

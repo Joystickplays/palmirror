@@ -274,13 +274,13 @@ const ExperienceDomainPage: React.FC = () => {
                     <DialogHeader>
                         <DialogTitle>Delete chat</DialogTitle>
                     </DialogHeader>
-                    <div className="flex flex-col gap-2">
-                        <p>Are you sure you want to delete this chat entry? To maintain continuity across chats in this domain, all attribute changes and memories created in this chat will be lost.</p>
+                    <div className="flex flex-col gap-4">
+                        <p className="text-sm opacity-80">Are you sure you want to delete this chat entry? To maintain continuity across chats in this domain, all attribute changes and memories created in this chat will be lost.</p>
                         <div className="flex gap-2">
-                            <Checkbox checked={chatDeletePropagation} onCheckedChange={(ch) => {
+                            <Checkbox id="deletePropagate" checked={chatDeletePropagation} onCheckedChange={(ch) => {
                                 setChatDeletePropagation(ch === true)
                             }}></Checkbox>
-                            <Label>Don&apos;t reverse attributes and memory</Label>
+                            <Label htmlFor="deletePropagate">Don&apos;t reverse attributes and memory</Label>
                         </div>
                         <Button variant="destructive" onClick={async (e) => {
                             if (!chatDeletePropagation) {

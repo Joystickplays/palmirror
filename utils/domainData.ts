@@ -65,6 +65,10 @@ export function setDomainAttributes(domainID: string, responsibleMessage: string
                     const attributeToUpdate = attributes.find((attr: DomainAttributeEntry) => attr.attribute === attribute) as DomainAttributeEntry;
                     if (attributeToUpdate) {
                         attributeToUpdate.value = value + (relative ? attributeToUpdate.value : 0);
+                        
+                        if (!attributeToUpdate.history) {
+                            attributeToUpdate.history = []
+                        }
                         attributeToUpdate.history.push({
                             associatedMessage: responsibleMessage,
                             change: value + (relative ? attributeToUpdate.value : 0)

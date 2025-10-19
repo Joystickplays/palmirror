@@ -988,7 +988,7 @@ ${entryTitle}
       const atrChanges = extractAttributeTags(lastMessage);
       if (atrChanges.length > 0) {
         atrChanges.forEach(({ attribute, change }) => {
-          setDomainAttributes(associatedDomain, attribute, successfulNewMessage.id, change, true);
+          setDomainAttributes(associatedDomain, successfulNewMessage.id, attribute, change, true);
           (async () => {
             const attributes = await getDomainAttributes(associatedDomain)
             const attributeCurrent = attributes.find((attr: DomainAttributeEntry) => attr.attribute === attribute);
