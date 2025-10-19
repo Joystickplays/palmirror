@@ -21,7 +21,7 @@ const AttributeProgress: React.FC<AttributeProgressProps> = ({ attr, animated = 
   }, [attr.value]);
 
   return (
-    <div className="flex flex-col gap-2 min-w-32">
+    <div className="flex flex-col gap-2 min-w-32 font-sans">
       <div className="flex justify-between items-end">
         <p className="text-sm font-bold">{attr.attribute}</p>
         <p className="opacity-25 text-xs">

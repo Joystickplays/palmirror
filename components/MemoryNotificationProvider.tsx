@@ -71,11 +71,11 @@ function MemoryNotificationInstance({
   return (
     <motion.div
       key={data.id}
-      initial={{ opacity: 0, y: -30 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -30 }}
+      exit={{ opacity: 0, y: 30 }}
       transition={{ type: "spring", mass: 1, stiffness: 161, damping: 16 }}
-      className="p-4 border border-white/10 bg-background rounded-2xl shadow-lg pointer-events-auto"
+      className="p-4 border border-white/10 bg-background rounded-2xl shadow-lg pointer-events-auto font-sans"
       layout
     >
       <p className="text-sm font-medium text-white">{data.message}</p>

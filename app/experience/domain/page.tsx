@@ -24,6 +24,7 @@ import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
 import { CharacterData, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry } from "@/types/CharacterData";
+import { setDomainMemories } from "@/utils/domainData";
 
 interface ChatMetadata extends CharacterData {
     id: string;
@@ -279,7 +280,7 @@ const ExperienceDomainPage: React.FC = () => {
             </Dialog>
 
             <Dialog open={showingMemoryManager} onOpenChange={setShowingMemoryManager}>
-                <DialogContent className="font-sans">
+                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold mb-4">Manage memories</DialogTitle>
                     </DialogHeader>
@@ -316,6 +317,8 @@ const ExperienceDomainPage: React.FC = () => {
                                                                 },
                                                             },
                                                         });
+
+                                                        setDomainMemories(domainId, updatedMemories)
                                                     }
                                                 }}
                                             >

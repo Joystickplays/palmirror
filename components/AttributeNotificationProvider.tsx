@@ -90,7 +90,7 @@ function AttributeNotificationInstance({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -30 }}
       transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 16 }}
-      className="p-4 border border-white/10 bg-background rounded-2xl" 
+      className="p-4 border border-white/10 bg-background rounded-2xl font-sans" 
       layout
     >
       <AttributeProgress
