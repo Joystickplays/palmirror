@@ -280,7 +280,7 @@ const ExperienceDomainPage: React.FC = () => {
                             <Checkbox checked={chatDeletePropagation} onCheckedChange={(ch) => {
                                 setChatDeletePropagation(ch === true)
                             }}></Checkbox>
-                            <Label>Don't reverse attributes and memory</Label>
+                            <Label>Don&apos;t reverse attributes and memory</Label>
                         </div>
                         <Button variant="destructive" onClick={async (e) => {
                             if (!chatDeletePropagation) {
