@@ -829,7 +829,7 @@ ${entryTitle}
         },
       ]);
 
-      if (entryTitle && sessionStorage.getItem("chatFromNewDomain") == "1") {
+      if (sessionStorage.getItem("chatFromNewDomain") == "1") {
         sessionStorage.removeItem("chatFromNewDomain");
         regenerateMessage();
       }
