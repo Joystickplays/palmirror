@@ -5,7 +5,7 @@ import { getAttributesSysInst } from './domainInstructionShaping/attributesSysIn
 import { getTotalChatsSysInst } from './domainInstructionShaping/chatHistorySysInst';
 import { getMemorySysInst } from './domainInstructionShaping/memorySysInst';
 
-import { DomainAttributeEntry, DomainMemoryEntry } from '@/types/CharacterData';
+import { CharacterData, DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry } from '@/types/CharacterData';
 
 
 interface ChatMetadata {
@@ -16,7 +16,7 @@ interface ChatMetadata {
 }
 
 
-export async function getDomainAttributes(domainID: string) {
+export async function getDomainAttributes(domainID: string): Promise<DomainAttributeEntry[]> {
     if (typeof window === 'undefined') {
         return [];
     }
@@ -46,7 +46,7 @@ export async function getDomainAttributes(domainID: string) {
 }
 
 
-export function setDomainAttributes(domainID: string, attribute: string, value: number, relative: boolean = false) {
+export function setDomainAttributes(domainID: string, responsibleMessage: string, attribute: string, value: number, relative: boolean = false) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -62,11 +62,22 @@ export function setDomainAttributes(domainID: string, attribute: string, value: 
                 const parsedData = data
                 if (parsedData.plmex && parsedData.plmex.domain && parsedData.plmex.domain.attributes) {
                     const attributes = parsedData.plmex.domain.attributes;
-                    const attributeToUpdate = attributes.find((attr: DomainAttributeEntry) => attr.attribute === attribute);
+                    const attributeToUpdate = attributes.find((attr: DomainAttributeEntry) => attr.attribute === attribute) as DomainAttributeEntry;
                     if (attributeToUpdate) {
                         attributeToUpdate.value = value + (relative ? attributeToUpdate.value : 0);
+                        attributeToUpdate.history.push({
+                            associatedMessage: responsibleMessage,
+                            change: value + (relative ? attributeToUpdate.value : 0)
+                        })
                     } else {
-                        attributes.push({ name: attribute, value: value + (relative ? 0 : value) });
+                        return; // nope
+
+                        // attributes.push({ key: Math.floor(Math.random() * 69420), attribute: attribute, value: value + (relative ? 0 : value), history: [
+                        //     {
+                        //         associatedMessage: responsibleMessage,
+                        //         change: value + (relative ? 0 : value)
+                        //     }
+                        // ] } as DomainAttributeEntry);
                     }
                     await setSecureData(`METADATA${domainID}`, parsedData, sessionKey, true);
                 }
@@ -75,7 +86,41 @@ export function setDomainAttributes(domainID: string, attribute: string, value: 
     }
 }
 
-export async function getDomainMemories(domainID: string) {
+export async function reverseDomainAttribute(domainID: string, message: string) {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return;
+    }
+
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        const attributes = data.plmex.domain.attributes as DomainAttributeEntry[]
+
+        attributes.forEach(entry => {
+            entry.history.forEach(history => {
+                if (history.associatedMessage === message){
+                    entry.value -= history.change
+                }
+            })
+        })
+        data.plmex.domain.attributes = attributes
+
+        await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+        
+
+    } catch (error) {
+        console.error("Failed to reverse an attribute change:", error)
+        return;
+    }
+}
+
+
+
+export async function getDomainMemories(domainID: string): Promise<DomainMemoryEntry[]> {
     if (typeof window === 'undefined') {
         return [];
     }
@@ -173,7 +218,7 @@ export async function addDomainMemory(domainID: string, newMemory: string, assoc
     }
 }
 
-export async function deleteMemoryFromMessageIfAny(domainID: string, messageId: string) {
+export async function deleteMemoryFromMessageIfAny(domainID: string, responsibleMessage: string) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -186,7 +231,7 @@ export async function deleteMemoryFromMessageIfAny(domainID: string, messageId: 
     try {
         const memories = await getDomainMemories(domainID)
 
-        const filteredMemories = memories.filter((memory) => memory.associatedMessage !== messageId)
+        const filteredMemories = memories.filter((memory) => memory.associatedMessage !== responsibleMessage)
         await setDomainMemories(domainID, filteredMemories)
     } catch (error) {
         console.error("Failed to delete memory from chat:", error)
@@ -195,7 +240,7 @@ export async function deleteMemoryFromMessageIfAny(domainID: string, messageId: 
 }
 
 
-export function getTrueDomainMemories(memoryEntries: DomainMemoryEntry[]) {
+export function getTrueDomainMemories(memoryEntries: DomainMemoryEntry[]): string[] {
     if (typeof window === 'undefined') {
         return [];
     }
@@ -252,7 +297,7 @@ export async function buildFullDomainInstruction(domainID: string, entryTitle: s
     return `
 ${getAttributesSysInst(await getDomainAttributes(domainID) as DomainAttributeEntry[])}
 ${getTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)}
-${getMemorySysInst(getTrueDomainMemories(await getDomainAttributes(domainID)))}
+${getMemorySysInst(getTrueDomainMemories(await getDomainMemories(domainID))) /* oops */ }
     `;
     // dealing w this later
 }

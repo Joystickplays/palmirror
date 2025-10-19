@@ -98,6 +98,7 @@ function AttributeNotificationInstance({
           key: data.id,
           attribute: data.attribute,
           value,
+          history: []
         }}
         animated={animate}
       />

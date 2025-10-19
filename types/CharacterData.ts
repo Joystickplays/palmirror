@@ -25,10 +25,15 @@ export interface DomainMemoryEntry {
     associatedMessage: string;
 }
 
+export interface DomainAttributeHistory {
+    associatedMessage: string;
+    change: number;
+}
 export interface DomainAttributeEntry {
     key: number;
     attribute: string;
     value: number;
+    history: DomainAttributeHistory[]
 }
 
 export interface CharacterData {

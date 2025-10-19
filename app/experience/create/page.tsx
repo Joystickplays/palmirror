@@ -764,7 +764,7 @@ export default function Home() {
                                     </div>
                                     <Button className="w-fit" variant="outline" onClick={() => {
                                         const newAttributes = characterData.plmex.domain?.attributes ? [...characterData.plmex.domain.attributes] : [];
-                                        newAttributes.unshift({ key: Math.floor(Math.random() * 69420), attribute: "", value: 50 }); //copilot did the 69420 i kid u not
+                                        newAttributes.unshift({ key: Math.floor(Math.random() * 69420), attribute: "", value: 50, history: [] }); //copilot did the 69420 i kid u not
                                         setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...(plmex.domain ?? { active: false, memories: [], attributes: [] }), attributes: newAttributes } } });
                                     }}><CirclePlus /> Add Attribute</Button>
                                 </div>

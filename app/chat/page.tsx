@@ -30,7 +30,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, deleteMemoryFromMessageIfAny, getDomainAttributes, setDomainAttributes } from "@/utils/domainData";
+import { addDomainMemory, deleteMemoryFromMessageIfAny, getDomainAttributes, reverseDomainAttribute, setDomainAttributes } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
 
@@ -366,8 +366,9 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       }
       messagesList = [...messages];
       if (regenerate) {
-        if (associatedDomain) {
+        if (associatedDomain && messagesList.length > 0) {
           deleteMemoryFromMessageIfAny(associatedDomain, messagesList[messagesList.length - 1].id)
+          reverseDomainAttribute(associatedDomain, messagesList[messagesList.length - 1].id)
         }
         messagesList = messagesList.slice(0, -1);
         
@@ -646,7 +647,8 @@ ${entryTitle}
 
     if (associatedDomain) {
       messagesToDelete.forEach((msg) => {
-        deleteMemoryFromMessageIfAny(associatedDomain, msg.id)
+        deleteMemoryFromMessageIfAny(associatedDomain, msg.id);
+        reverseDomainAttribute(associatedDomain, msg.id)
       });
     }
 
@@ -829,7 +831,7 @@ ${entryTitle}
         },
       ]);
 
-      if (sessionStorage.getItem("chatFromNewDomain") == "1") {
+      if (entryTitle && sessionStorage.getItem("chatFromNewDomain") == "1") {
         sessionStorage.removeItem("chatFromNewDomain");
         regenerateMessage();
       }
@@ -986,10 +988,11 @@ ${entryTitle}
       const atrChanges = extractAttributeTags(lastMessage);
       if (atrChanges.length > 0) {
         atrChanges.forEach(({ attribute, change }) => {
-          setDomainAttributes(associatedDomain, attribute, change, true);
+          setDomainAttributes(associatedDomain, attribute, successfulNewMessage.id, change, true);
           (async () => {
             const attributes = await getDomainAttributes(associatedDomain)
-            const attributeCurrent: DomainAttributeEntry = attributes.find((attr: DomainAttributeEntry) => attr.attribute === attribute);
+            const attributeCurrent = attributes.find((attr: DomainAttributeEntry) => attr.attribute === attribute);
+            if (!attributeCurrent) return;
             attributeNotification.create({
               attribute: attribute,
               fromVal: attributeCurrent.value,

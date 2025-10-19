@@ -24,7 +24,8 @@ import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
 import { CharacterData, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry } from "@/types/CharacterData";
-import { setDomainMemories } from "@/utils/domainData";
+import { deleteMemoryFromMessageIfAny, reverseDomainAttribute, setDomainMemories } from "@/utils/domainData";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ChatMetadata extends CharacterData {
     id: string;
@@ -33,6 +34,13 @@ interface ChatMetadata extends CharacterData {
     entryTitle?: string;
 }
 
+
+interface Message {
+    id: string;
+    role: "user" | "assistant" | "system";
+    content: string;
+    stillGenerating: boolean;
+}
 
 
 const ExperienceDomainPage: React.FC = () => {
@@ -48,6 +56,10 @@ const ExperienceDomainPage: React.FC = () => {
     const [showingMemoryManager, setShowingMemoryManager] = useState(false);
 
     const [showingDelete, setShowingDelete] = useState(false);
+
+    const [showingChatDelete, setShowingChatDelete] = useState(false);
+    const [chatAboutToDelete, setChatAboutToDelete] = useState("");
+    const [chatDeletePropagation, setChatDeletePropagation] = useState(false);
 
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
@@ -226,13 +238,15 @@ const ExperienceDomainPage: React.FC = () => {
                                     <Button
                                         variant="outline"
                                         onClick={() => {
-                                            PLMsecureContext?.removeKey(chat.id);
-                                            PLMsecureContext?.removeKey(`METADATA${chat.id}`);
-                                            setChatList((prevList) =>
-                                                prevList.filter(
-                                                    (chatItem) => chatItem.id !== chat.id
-                                                )
-                                            );
+                                            setChatAboutToDelete(chat.id)
+                                            setShowingChatDelete(true);
+                                            // PLMsecureContext?.removeKey(chat.id);
+                                            // PLMsecureContext?.removeKey(`METADATA${chat.id}`);
+                                            // setChatList((prevList) =>
+                                            //     prevList.filter(
+                                            //         (chatItem) => chatItem.id !== chat.id
+                                            //     )
+                                            // );
                                         }}
                                     >
                                         <Trash2 />
@@ -255,6 +269,51 @@ const ExperienceDomainPage: React.FC = () => {
                 </div>
             </motion.div>
 
+            <Dialog open={showingChatDelete} onOpenChange={setShowingChatDelete}>
+                <DialogContent className="font-sans">
+                    <DialogHeader>
+                        <DialogTitle>Delete chat</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-2">
+                        <p>Are you sure you want to delete this chat entry? To maintain continuity across chats in this domain, all attribute changes and memories created in this chat will be lost.</p>
+                        <div className="flex gap-2">
+                            <Checkbox checked={chatDeletePropagation} onCheckedChange={(ch) => {
+                                setChatDeletePropagation(ch === true)
+                            }}></Checkbox>
+                            <Label>Don't reverse attributes and memory</Label>
+                        </div>
+                        <Button variant="destructive" onClick={async (e) => {
+                            if (!chatDeletePropagation) {
+                                const file = await PLMsecureContext?.getSecureData(chatAboutToDelete) ?? "";
+                                const decodedString = atob(file);
+                                const decodedArray = new Uint8Array(
+                                    decodedString.split("").map((char) => char.charCodeAt(0))
+                                );
+                                const decoder = new TextDecoder();
+                                const json = decoder.decode(decodedArray);
+                                const parsedMessages = JSON.parse(json);
+
+                                parsedMessages.forEach((message: Message) => {
+                                    deleteMemoryFromMessageIfAny(domainId, message.id);
+                                    reverseDomainAttribute(domainId, message.id)
+                                })
+                            }
+
+
+                            PLMsecureContext?.removeKey(chatAboutToDelete);
+                            PLMsecureContext?.removeKey(`METADATA${chatAboutToDelete}`);
+                            setChatList((prevList) =>
+                                prevList.filter(
+                                    (chatItem) => chatItem.id !== chatAboutToDelete
+                                )
+                            );
+
+                            toast.info("Chat deleted. " +  chatDeletePropagation ? "Relevant attributes and memories rolled back." : "")
+                            setShowingChatDelete(false);
+                        }}>Confirm deletion</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={showingNewChat} onOpenChange={setShowingNewChat}>
                 <DialogContent className="font-sans">
