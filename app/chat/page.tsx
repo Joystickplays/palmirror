@@ -30,7 +30,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, getDomainAttributes, setDomainAttributes } from "@/utils/domainData";
+import { addDomainMemory, deleteMemoryFromMessageIfAny, getDomainAttributes, setDomainAttributes } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
 
@@ -61,6 +61,7 @@ interface ChatMetadata extends CharacterData {
 }
 
 interface Message {
+    id: string;
     role: "user" | "assistant" | "system";
     content: string;
     stillGenerating: boolean;
@@ -344,6 +345,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       if (!force && e?.key !== "Enter") return;
     }
 
+    const messageId = crypto.randomUUID()
+
     loadSettingsFromLocalStorage();
     if (!baseURL.includes("http")) {
       toast.error("You need to configure your AI provider first in Settings.");
@@ -363,6 +366,9 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       }
       messagesList = [...messages];
       if (regenerate) {
+        if (associatedDomain) {
+          deleteMemoryFromMessageIfAny(associatedDomain, messagesList[messagesList.length - 1].id)
+        }
         messagesList = messagesList.slice(0, -1);
         
         setMessages(messagesList);
@@ -374,6 +380,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         : newMessage.trim();
       if (userMessageContent && userMSGaddOnList) {
         messagesList.push({
+          id: crypto.randomUUID(),
           role: "user",
           content: userMessageContent,
           stillGenerating: false,
@@ -494,7 +501,7 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
                 role: "user" as "user" | "assistant" | "system",
                 name: "user",
                 content:
-                  "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter). ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
+                  "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
               },
             ]
           : []),
@@ -556,7 +563,7 @@ ${entryTitle}
       if (destination === "chat") {
         setMessages((p) => [
           ...p,
-          { role: "assistant", content: "", stillGenerating: true },
+          { id: messageId, role: "assistant", content: "", stillGenerating: true },
         ]);
         for await (const chunk of comp) {
           if (abortController.current?.signal.aborted) break;
@@ -567,6 +574,7 @@ ${entryTitle}
           setMessages((p) => [
             ...p.slice(0, -1),
             {
+              id: messageId,
               role: "assistant",
               content: assistantMessage,
               stillGenerating: true,
@@ -580,6 +588,7 @@ ${entryTitle}
         ]);
         if (mode === "send") setIsThinking(false);
         setSuccessfulNewMessage({
+          id: messageId,
           role: "assistant",
           content: assistantMessage,
           stillGenerating: false,
@@ -633,6 +642,14 @@ ${entryTitle}
   };
 
   const rewindTo = (index: number) => {
+    const messagesToDelete = messages.slice(index + 1);
+
+    if (associatedDomain) {
+      messagesToDelete.forEach((msg) => {
+        deleteMemoryFromMessageIfAny(associatedDomain, msg.id)
+      });
+    }
+
     setMessages(messages.slice(0, index + 1));
     setExclusionCount(0);
   };
@@ -801,8 +818,10 @@ ${entryTitle}
           value: status.defaultValue,
         })
       );
+      const messageId = crypto.randomUUID()
       setMessages([
         {
+          id: messageId,
           role: "assistant",
           content:
             characterData.initialMessage + buildStatusSection(statusData),
@@ -962,7 +981,7 @@ ${entryTitle}
   }
   // Attribute changing & memory entry post-message
   useEffect(() => {
-    if (successfulNewMessage && typeof successfulNewMessage !== 'boolean') {
+    if (successfulNewMessage && typeof successfulNewMessage !== 'boolean' && associatedDomain) {
       const lastMessage = successfulNewMessage.content;
       const atrChanges = extractAttributeTags(lastMessage);
       if (atrChanges.length > 0) {
@@ -984,9 +1003,9 @@ ${entryTitle}
       const memoryToAdd = extractMemories(lastMessage);
       if (memoryToAdd.length > 0) {
         memoryToAdd.forEach((memory) => {
-          addDomainMemory(associatedDomain, memory)
+          addDomainMemory(associatedDomain, memory, successfulNewMessage.id)
           memoryNotification.create(`${characterData.name} will remember that.`)
-          toast.info("new memory")
+          // toast.info("new memory")
         })
       }
     }

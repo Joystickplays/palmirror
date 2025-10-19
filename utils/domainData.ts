@@ -94,7 +94,7 @@ export async function getDomainMemories(domainID: string) {
             data.plmex.domain &&
             data.plmex.domain.memories
         ) {
-            return data.plmex.domain.memories;
+            return data.plmex.domain.memories as DomainMemoryEntry[];
         }
 
         return [];
@@ -104,7 +104,37 @@ export async function getDomainMemories(domainID: string) {
     }
 }
 
-export async function addDomainMemory(domainID: string, newMemory: string) {
+export async function setDomainMemories(domainID: string, memoryList: DomainMemoryEntry[]) {
+    if (typeof window === 'undefined') {
+        return [];
+    }
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return [];
+    }
+
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+
+        if (
+            data &&
+            data.plmex &&
+            data.plmex.domain &&
+            data.plmex.domain.memories
+        ) {
+            data.plmex.domain.memories = memoryList
+            await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+        }
+
+        return [];
+    } catch (error) {
+        console.error("Failed to set domain memories:", error);
+        return [];
+    }
+}
+
+export async function addDomainMemory(domainID: string, newMemory: string, associatedMessage: string,) {
     if (typeof window === 'undefined') {
         return [];
     }
@@ -129,6 +159,7 @@ export async function addDomainMemory(domainID: string, newMemory: string) {
                 memory: newMemory,
                 state: "remembering",
                 lifetime: 10,
+                associatedMessage: associatedMessage,
             } as DomainMemoryEntry)
 
             data.plmex.domain.memories = memories
@@ -139,6 +170,27 @@ export async function addDomainMemory(domainID: string, newMemory: string) {
     } catch (error) {
         console.error("Failed to set domain memories:", error);
         return [];
+    }
+}
+
+export async function deleteMemoryFromMessageIfAny(domainID: string, messageId: string) {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return;
+    }
+
+    try {
+        const memories = await getDomainMemories(domainID)
+
+        const filteredMemories = memories.filter((memory) => memory.associatedMessage !== messageId)
+        await setDomainMemories(domainID, filteredMemories)
+    } catch (error) {
+        console.error("Failed to delete memory from chat:", error)
+        return;
     }
 }
 

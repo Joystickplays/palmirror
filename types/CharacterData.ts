@@ -22,6 +22,7 @@ export interface DomainMemoryEntry {
     memory: string;
     state: "remembering" | "forgotten";
     lifetime: number;
+    associatedMessage: string;
 }
 
 export interface DomainAttributeEntry {

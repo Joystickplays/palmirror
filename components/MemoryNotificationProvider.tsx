@@ -38,7 +38,7 @@ export default function MemoryNotificationProvider({ children }: { children: Rea
       {children}
 
       {/* Notification layer */}
-      <div className="fixed top-4 left-0 right-0 flex justify-center items-center gap-2 z-[9999] pointer-events-none">
+      <div className="fixed bottom-4 left-0 right-0 flex justify-center items-center gap-2 z-[9999] pointer-events-none">
         <AnimatePresence mode="popLayout">
           {notifications.map((notif) => (
             <MemoryNotificationInstance

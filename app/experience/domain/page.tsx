@@ -299,7 +299,7 @@ const ExperienceDomainPage: React.FC = () => {
                                         exit={{ opacity: 0 }}
                                         transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 12 }}
                                         layout
-                                        className="border border-white/10 rounded-2xl p-4"
+                                        className="border border-white/10 rounded-2xl p-4 flex flex-col gap-2"
                                     >
                                         <p className={isForgotten ? "blur-sm opacity-50 select-none" : ""}>{memory.memory}</p>
                                         <div className="flex gap-2 justify-end">
