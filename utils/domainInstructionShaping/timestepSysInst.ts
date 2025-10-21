@@ -15,6 +15,9 @@ Example:
 User (she) says something funny -> Your character (he) laughs and feels a warm connection.
 <TIMESTEP (user name) tells him a joke. (character name) laughs warmly at her joke, feeling a closer bond.>
 
+MAKE SURE to DESCRIBE what just happened between you and the user in this TIMESTEP tag.
+Do NOT make the timestep a continuation of the message itself.
+
 Guidelines for creating TIMESTEPS:
 - Focus on meaningful moments that impact the story or your connection with the user.
 - Capture changes in emotions, actions, or important interactions.
