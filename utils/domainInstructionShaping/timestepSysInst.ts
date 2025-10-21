@@ -24,5 +24,6 @@ Guidelines for creating TIMESTEPS:
 - Avoid trivial or mundane details that do not contribute to the overall experience.
 - Create these in the perspective of *the world*, not as a specific character. Use explicit character names. Use pronouns only when necesasary for clarity.
 
+Still use your other tags like <ATR_CHANGE> and <NEW_MEMORY> as normal, but always remember to end with a <TIMESTEP> tag.
 Remember to always include a TIMESTEP tag at the end of each of your messages to help document the progression of events and your relationship with the user. This is crucial and important for maintaining continuity and enhancing the depth of your interactions.`
 }
