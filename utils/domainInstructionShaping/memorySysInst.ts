@@ -37,9 +37,10 @@ Create a new memory when you notice something meaningful, recurring, or revealin
 - When they reveal or correct something about themselves or the setting.  
 - When a moment feels worth remembering for future context.
 
-Do **not** store:
+Do **NOT** store:
 - Temporary or one-time scene events.  
 - Passing emotions or actions.  
+- ALREADY existing memories. Do not store duplicates.
 
 - HOW TO WRITE MEMORIES
 Write as your own internal thought — short, natural, and emotional if it fits your personality.  

@@ -23,16 +23,10 @@ import { ToastContainer, toast } from "react-toastify";
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
-import { CharacterData, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry } from "@/types/CharacterData";
+import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry } from "@/types/CharacterData";
 import { deleteMemoryFromMessageIfAny, reverseDomainAttribute, setDomainMemories } from "@/utils/domainData";
 import { Checkbox } from "@/components/ui/checkbox";
 
-interface ChatMetadata extends CharacterData {
-    id: string;
-    lastUpdated: string;
-    associatedDomain?: string;
-    entryTitle?: string;
-}
 
 
 interface Message {
@@ -311,7 +305,9 @@ const ExperienceDomainPage: React.FC = () => {
                                 )
                             );
 
-                            toast.info("Chat deleted. " +  chatDeletePropagation ? "Relevant attributes and memories rolled back." : "")
+                            toast.info(
+                                `Chat deleted. ${chatDeletePropagation ? "Attributes and memories preserved." : "Relevant attributes and memories rolled back."}`
+                            );
                             setShowingChatDelete(false);
 
                             reloadCharacter();

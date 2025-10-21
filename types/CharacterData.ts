@@ -36,6 +36,12 @@ export interface DomainAttributeEntry {
     history: DomainAttributeHistory[]
 }
 
+export interface DomainTimestepEntry {
+    key: number;
+    associatedMessage: string;
+    entry: string;
+}
+
 export interface CharacterData {
   image: string;
   name: string;
@@ -56,6 +62,15 @@ export interface CharacterData {
     invocations: Array<Invocation>;
   };
 }
+
+export interface ChatMetadata extends CharacterData {
+    id: string;
+    lastUpdated: string;
+    associatedDomain?: string;
+    entryTitle?: string;
+    timesteps?: Array<DomainTimestepEntry>;
+}
+
 
 export const defaultCharacterData: CharacterData = {
   image: "",

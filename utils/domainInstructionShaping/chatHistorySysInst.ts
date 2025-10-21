@@ -1,9 +1,17 @@
-export function getTotalChatsSysInst(totalChats: string[], entryTitle: string) {
+export type ChatHistory = {
+    entryTitle: string;
+    timestampStructure: string;
+}
+
+export function getTotalChatsSysInst(totalChats: ChatHistory[], entryTitle: string) {
     return `CHAT HISTORY
 
 Moments user had done with {{char}}:
-${totalChats.map((chat) => `- ${chat}`)}
+${totalChats.map((chat) => `- ${chat.entryTitle}\n${chat.entryTitle}'s events, in order:\n${chat.timestampStructure}`).join("\n")}
 The character has had a total of **${totalChats.length}** chats with the user.
+-- The timesteps above reflect the important events that happened in each chat.
+-- Use these to understand the history and context of your relationship with the user.
+
 -- IF they already have 1 chat or more, your initial messages should be as if you have already met the user.
 -- So, instead of assuming a new meeting in your initial message, say things like "You came back", "It's you again", etc.
 

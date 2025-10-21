@@ -2,10 +2,11 @@ import { isPalMirrorSecureActivated, setSecureData, getSecureData, getAllKeys, P
 import { getActivePLMSecureSession } from './palMirrorSecureSession';
 
 import { getAttributesSysInst } from './domainInstructionShaping/attributesSysInst';
-import { getTotalChatsSysInst } from './domainInstructionShaping/chatHistorySysInst';
+import { ChatHistory, getTotalChatsSysInst } from './domainInstructionShaping/chatHistorySysInst';
 import { getMemorySysInst } from './domainInstructionShaping/memorySysInst';
 
-import { CharacterData, DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry } from '@/types/CharacterData';
+import { CharacterData, DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, DomainTimestepEntry } from '@/types/CharacterData';
+import { getTimestepSysInst } from './domainInstructionShaping/timestepSysInst';
 
 
 interface ChatMetadata {
@@ -262,6 +263,83 @@ export function getTrueDomainMemories(memoryEntries: DomainMemoryEntry[]): strin
     return activeMemories.filter((memory): memory is string => Boolean(memory))
 }
 
+export async function getDomainTimesteps(domainID: string): Promise<DomainTimestepEntry[]> {
+    if (typeof window === 'undefined') {
+        return [];
+    }
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return [];
+    }
+
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        return data?.timesteps || [];
+    } catch (error) {
+        console.error("Failed to get domain timesteps:", error);
+        return [];
+    }
+}
+
+export async function addDomainTimestep(domainID: string, associatedMessage: string, entry: string) {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return;
+    }
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        if (data) {
+            if (!data.timesteps) {
+                data.timesteps = []
+            }
+            data.timesteps.push({
+                key: Math.floor(Math.random() * 69420),
+                associatedMessage: associatedMessage,
+                entry: entry,
+            } as DomainTimestepEntry);
+            await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+        }
+
+    } catch (error) {
+        console.error("Failed to add domain timestep:", error);
+        return;
+    }
+}
+
+export async function removeDomainTimestep(domainID: string, associatedMessage: string) {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return;
+    }
+
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        if (data) {
+            data.timesteps = data.timesteps.filter((timestep: DomainTimestepEntry) => timestep.associatedMessage !== associatedMessage);
+            await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+        }
+    } catch (error) {
+        console.error("Failed to remove domain timestep:", error);
+        return;
+    }
+}
+
+export async function structureDomainTimesteps(domainID: string): Promise<string> {
+    const timesteps = await getDomainTimesteps(domainID);
+    let structuredTimesteps = "";
+
+    timesteps.forEach((timestep, index) => {
+        structuredTimesteps += `Timestep ${index + 1}: ${timestep.entry}\n`;
+    });
+    return structuredTimesteps;
+}
+
 export async function totalChatsFromDomain(domainID: string) {
     if (typeof window === 'undefined') return [];
 
@@ -284,11 +362,14 @@ export async function totalChatsFromDomain(domainID: string) {
                 if (!data.entryTitle) return;
                 if (data.associatedDomain !== domainID) return;
 
-                return data.entryTitle;
+                return {
+                    entryTitle: data.entryTitle,
+                    timestampStructure: await structureDomainTimesteps(data.associatedDomain!)
+                } as ChatHistory;
             })
         );
 
-        return chatEntries.filter((title): title is string => Boolean(title));
+        return chatEntries.filter((title): title is ChatHistory => Boolean(title));
     } catch (err) {
         console.error("Failed to get total chats from domain:", err);
         return [];
@@ -300,8 +381,9 @@ export async function totalChatsFromDomain(domainID: string) {
 export async function buildFullDomainInstruction(domainID: string, entryTitle: string) {
     return `
 ${getAttributesSysInst(await getDomainAttributes(domainID) as DomainAttributeEntry[])}
+${getMemorySysInst(getTrueDomainMemories(await getDomainMemories(domainID)))}
 ${getTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)}
-${getMemorySysInst(getTrueDomainMemories(await getDomainMemories(domainID))) /* oops */ }
+${getTimestepSysInst()}
     `;
     // dealing w this later
 }

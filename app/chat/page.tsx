@@ -15,7 +15,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/components/systemMessageGeneration";
 import OpenAI from "openai";
-import { CharacterData, defaultCharacterData, DomainAttributeEntry } from "@/types/CharacterData";
+import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry } from "@/types/CharacterData";
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import {
@@ -30,7 +30,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, deleteMemoryFromMessageIfAny, getDomainAttributes, reverseDomainAttribute, setDomainAttributes } from "@/utils/domainData";
+import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, reverseDomainAttribute, setDomainAttributes } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
 
@@ -53,12 +53,7 @@ type UserPersonality = {
 
 
 
-interface ChatMetadata extends CharacterData {
-    id: string;
-    lastUpdated: string;
-    associatedDomain?: string;
-    entryTitle?: string;
-}
+
 
 interface Message {
     id: string;
@@ -981,6 +976,18 @@ ${entryTitle}
 
     return matches;
   }
+
+  const extractTimesteps = (text: string) => {
+    const regex = /<TIMESTEP\s+([^>]+)>/g;
+    const matches: string[] = [];
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      matches.push(match[1].trim());
+    }
+    
+    return matches;
+  }
   // Attribute changing & memory entry post-message
   useEffect(() => {
     if (successfulNewMessage && typeof successfulNewMessage !== 'boolean' && associatedDomain) {
@@ -1009,6 +1016,14 @@ ${entryTitle}
           addDomainMemory(associatedDomain, memory, successfulNewMessage.id)
           memoryNotification.create(`${characterData.name} will remember that.`, memory)
           // toast.info("new memory")
+        })
+      }
+
+      const timestepsToAdd = extractTimesteps(lastMessage);
+      if (timestepsToAdd.length > 0) {
+        timestepsToAdd.forEach((timestep) => {
+          addDomainTimestep(associatedDomain, timestep, successfulNewMessage.id)
+          toast.info(timestep)
         })
       }
     }
