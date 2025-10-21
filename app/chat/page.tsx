@@ -30,7 +30,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, reverseDomainAttribute, setDomainAttributes } from "@/utils/domainData";
+import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
 
@@ -364,6 +364,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         if (associatedDomain && messagesList.length > 0) {
           deleteMemoryFromMessageIfAny(associatedDomain, messagesList[messagesList.length - 1].id)
           reverseDomainAttribute(associatedDomain, messagesList[messagesList.length - 1].id)
+          removeDomainTimestep(associatedDomain, messagesList[messagesList.length - 1].id)
         }
         messagesList = messagesList.slice(0, -1);
         
@@ -643,7 +644,8 @@ ${entryTitle}
     if (associatedDomain) {
       messagesToDelete.forEach((msg) => {
         deleteMemoryFromMessageIfAny(associatedDomain, msg.id);
-        reverseDomainAttribute(associatedDomain, msg.id)
+        reverseDomainAttribute(associatedDomain, msg.id);
+        removeDomainTimestep(associatedDomain, msg.id);
       });
     }
 

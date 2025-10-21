@@ -24,7 +24,7 @@ import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
 import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry } from "@/types/CharacterData";
-import { deleteMemoryFromMessageIfAny, reverseDomainAttribute, setDomainMemories } from "@/utils/domainData";
+import { deleteMemoryFromMessageIfAny, removeDomainTimestep, reverseDomainAttribute, setDomainMemories } from "@/utils/domainData";
 import { Checkbox } from "@/components/ui/checkbox";
 
 
@@ -292,8 +292,9 @@ const ExperienceDomainPage: React.FC = () => {
 
                                 parsedMessages.forEach((message: Message) => {
                                     deleteMemoryFromMessageIfAny(domainId, message.id);
-                                    reverseDomainAttribute(domainId, message.id)
-                                })
+                                    reverseDomainAttribute(domainId, message.id);
+                                    removeDomainTimestep(domainId, message.id);
+                                });
                             }
 
 
