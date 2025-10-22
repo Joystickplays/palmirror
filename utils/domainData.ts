@@ -208,7 +208,7 @@ export async function addDomainMemory(domainID: string, newMemory: string, assoc
                 key: Math.floor(Math.random() * 69420),
                 memory: newMemory,
                 state: "remembering",
-                lifetime: 10,
+                lifetime: 100,
                 associatedMessage: associatedMessage,
             } as DomainMemoryEntry)
 

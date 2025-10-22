@@ -460,7 +460,7 @@ export default function Home() {
                             <div className="flex flex-col gap-1">
                                 <h1 className="palmirror-exc-text text-2xl">Dynamic Statuses</h1>
                                 <div className="flex flex-col gap-1">
-                                    <p className="opacity-75 text-sm">These are the statuses that your character will have that can change throughout the conversation. For example, "Mood", "Energy", "Trust", etc.</p>
+                                    <p className="opacity-75 text-sm">These are the statuses that your character will have that can change throughout the conversation. For example, &quot;Mood&quot;, &quot;Energy&quot;, &quot;Trust&quot;, etc.</p>
                                     <p className="opacity-50 text-xs mt-4">Suggestions</p>
                                     <div className="flex gap-2 overflow-x-scroll">
                                         {["Mood", "Energy", "Trust", "Inner thoughts", "Attraction", "Tiredness"].map((suggestion) => (
