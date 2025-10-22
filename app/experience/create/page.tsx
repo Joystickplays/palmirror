@@ -459,6 +459,19 @@ export default function Home() {
                         <div className="flex flex-col gap-9  p-8">
                             <div className="flex flex-col gap-1">
                                 <h1 className="palmirror-exc-text text-2xl">Dynamic Statuses</h1>
+                                <div className="flex flex-col gap-1">
+                                    <p className="opacity-75 text-sm">These are the statuses that your character will have that can change throughout the conversation. For example, "Mood", "Energy", "Trust", etc.</p>
+                                    <p className="opacity-50 text-xs mt-4">Suggestions</p>
+                                    <div className="flex gap-2 overflow-x-scroll">
+                                        {["Mood", "Energy", "Trust", "Inner thoughts", "Attraction", "Tiredness"].map((suggestion) => (
+                                            <Button key={suggestion} size="sm" variant="outline" onClick={() => {
+                                                if (plmex.dynamicStatuses.findIndex(ds => ds.name.toLowerCase() === suggestion.toLowerCase()) === -1) {
+                                                    setCharacterData({ ...characterData, plmex: { ...plmex, dynamicStatuses: [...plmex.dynamicStatuses, { key: Math.floor(Math.random() * 69420), name: suggestion, defaultValue: "0" }] } });
+                                                }
+                                            }}>{suggestion}</Button>
+                                        ))}
+                                    </div>
+                                </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     <AnimatePresence mode="popLayout">
                                         {plmex.dynamicStatuses.map((dynStat, index) => (
@@ -507,6 +520,9 @@ export default function Home() {
                             </div>
                             <div className="flex flex-col gap-1">
                                 <h1 className="palmirror-exc-text text-2xl">Invocations</h1>
+                                <div className="flex flex-col gap-1">
+                                    <p className="opacity-75 text-sm">Invocations are actions your character can perform when triggered by specific keywords in the conversation. For example, playing a sound or showing an image.</p>
+                                </div>
                                 <div className="grid grid-cols-1 gap-2">
                                     <AnimatePresence mode="popLayout">
                                         {plmex.invocations.map((invocation, index) => (
@@ -706,6 +722,21 @@ export default function Home() {
                                 </div>
                                 <div className="flex flex-col gap-2">
                                     <h2 className="font-bold text-md">Attributes</h2>
+                                    <div className="flex flex-col gap-1">
+                                        <p className="opacity-75 text-sm">Domain attributes are long-term traits and values of your character that persist across chats within the same domain. The character may change them in realtime based on how you act or say.</p>
+                                        <p className="opacity-50 text-xs mt-4">Suggestions</p>
+                                        <div className="flex gap-2 overflow-x-scroll">
+                                            {["Trust", "Attraction", "Admiration", "Gratitude", "Hatred", "Distrust", "Fear", "Loyalty", "Possessiveness", "Dependency", "Empathy"].map((suggestion) => (
+                                                <Button key={suggestion} size="sm" variant="outline" onClick={() => {
+                                                    if (characterData.plmex.domain) {
+                                                        const newAttributes = [...(characterData.plmex.domain?.attributes ?? [])];
+                                                        newAttributes.push({ key: Math.floor(Math.random() * 69420), attribute: suggestion, value: 0, history: [] });
+                                                        setCharacterData({ ...characterData, plmex: { ...plmex, domain: { ...(plmex.domain ?? { active: false, memories: [], attributes: [] }), attributes: newAttributes } } });
+                                                    }
+                                                }}>{suggestion}</Button>
+                                            ))}
+                                        </div>
+                                    </div>
                                     <div className="flex gap-2 flex-wrap justify-center">
                                         <AnimatePresence mode="popLayout">
                                             {characterData.plmex.domain?.attributes.map((attr: DomainAttributeEntry, idx) => (

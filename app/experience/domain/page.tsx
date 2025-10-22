@@ -87,6 +87,8 @@ const ExperienceDomainPage: React.FC = () => {
                         setCharacter(data as CharacterData);
                         console.log("load char")
                         console.log(data)
+
+                        localStorage.setItem("characterData", JSON.stringify(data));
                         if (!data.plmex.domain) {
                             toast.error("Not a domain-enabled character. Returning to home.")
                             router.push('/')
@@ -323,7 +325,7 @@ const ExperienceDomainPage: React.FC = () => {
                         <DialogTitle className="text-2xl font-bold mb-4">Start a new chat</DialogTitle>
                     </DialogHeader>
                     <Label htmlFor="chat-name">Entry name</Label>
-                    <Input value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
+                    <Input autoComplete="off" value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
                     <p className="text-xs opacity-50">{`A good entry name should the reflect the moment you're capturing in this new chat. For example, "First Encounter", "Moving Day", "Evening Complication", etc.`}<br /><br />{`PalMirror will look through your past chat entries and let your AI know how far you and this character has progressed together.`}</p>
                     <Button onClick={() => {
                         setShowingNewChat(false)

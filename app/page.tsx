@@ -61,6 +61,8 @@ import { useDebounce } from "@/utils/useDebounce";
 
 import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 
+import discord from "@/public/discord.svg"
+
 
 function GetFromPlatform({
   router,
@@ -1264,6 +1266,9 @@ export default function Home() {
         </u>{" "}
         AI chat client project
       </p>
+      <a className="opacity-20 hover:opacity-80 transition-opacity" href="https://discord.gg/DhaszrVYZ7" target="_blank" rel="noopener noreferrer">
+        <img src={"./discord.svg"} alt="Discord Logo" className="w-8 h-8" />
+      </a>
 
       <ToastContainer
         position="top-right"

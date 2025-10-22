@@ -24,7 +24,7 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "PalMirror",
-  description: "Just-with-a-bit-more-style AI chat platform",
+  description: "Your world. Your reflection.",
 };
 
 export default function RootLayout({
