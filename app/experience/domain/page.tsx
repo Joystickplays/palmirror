@@ -13,7 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History } from 'lucide-react';
 
 import AttributeProgress from "@/components/AttributeProgress";
 
@@ -26,6 +26,7 @@ import { PLMSecureContext } from "@/context/PLMSecureContext";
 import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry } from "@/types/CharacterData";
 import { deleteMemoryFromMessageIfAny, removeDomainTimestep, reverseDomainAttribute, setDomainMemories } from "@/utils/domainData";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 
 
@@ -54,6 +55,8 @@ const ExperienceDomainPage: React.FC = () => {
     const [showingChatDelete, setShowingChatDelete] = useState(false);
     const [chatAboutToDelete, setChatAboutToDelete] = useState("");
     const [chatDeletePropagation, setChatDeletePropagation] = useState(false);
+    const [showingChatTimesteps, setShowingChatTimesteps] = useState(false);
+    const [selectedChat, setSelectedChat] = useState<ChatMetadata | null>(null);
 
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
@@ -65,16 +68,14 @@ const ExperienceDomainPage: React.FC = () => {
         }
     }, [])
 
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     function sortByLastUpdated(
-        data: { [key: string]: any }[]
-    ): { [key: string]: any }[] {
+        data: ChatMetadata[]
+    ): ChatMetadata[] {
         return data.sort(
             (a, b) =>
                 new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
         );
     }
-    /* eslint-enable @typescript-eslint/no-explicit-any */
     //i really dont wanna deal w this
     const reloadCharacter = () => {
         if (PLMsecureContext && !PLMsecureContext.isSecureReady()) {
@@ -161,7 +162,7 @@ const ExperienceDomainPage: React.FC = () => {
 
 
     return (
-        <div className="flex flex-col gap-6 min-h-screen px-8 lg:px-56 pb-20 p-8 sm:p-10 font-[family-name:var(--font-geist-sans)]">
+        <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-[family-name:var(--font-geist-sans)]">
             <motion.div
                 initial={{ opacity: 0, scale: 0.8, y: -100 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -174,7 +175,7 @@ const ExperienceDomainPage: React.FC = () => {
                         damping: 10,
                     }
                 }}
-                className="palmirror-exc border border-white/20 rounded-2xl w-full min-h-24 p-8 py-6 flex flex-col md:flex-row items-center justify-around"
+                className="palmirror-exc border border-white/20 rounded-[24px] w-full min-h-24 p-8 py-6 flex flex-col md:flex-row items-center justify-around"
             >
                 <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text">{character.name}</h1>
                 <div className="flex overflow-x-scroll max-w-full pb-2 mt-4 md:pb-0 md:my-0 md:grid md:grid-cols-3 gap-4">
@@ -183,23 +184,31 @@ const ExperienceDomainPage: React.FC = () => {
                     ))}
                 </div>
             </motion.div>
+            <Button className="fixed bottom-4 right-4 p-1 px-3 rounded-full" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus className="scale-150" /></Button>
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1 }}
                 className="flex flex-col gap-4 h-full">
 
-                <div className="flex gap-2 h-12 overflow-x-scroll">
+                <div className="flex gap-2 h-12 overflow-x-scroll -mt-4">
                     <Button variant="outline" onClick={() => router.push("/")}><ArrowLeft /></Button>
                     <div className="flex-1 w-full"></div>
-                    <Button className="p-1 px-3" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus />New chat</Button>
-                    <Button className="p-1 px-3" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button className="p-1 px-3" variant="outline"><EllipsisVertical /></Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans p-4">
+                            <Button className="p-1 px-3 !justify-start" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button>
+                        </PopoverContent>
+                    </Popover>
+                    {/* <Button className="p-1 px-3" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button> */}
                     <Button variant="destructive" onClick={() => setShowingDelete(true)}><Trash2 /></Button>
                 </div>
 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-grow w-full justify-center items-start">
-                    {sortByLastUpdated(chatList).map((chat, idx) => {
+                    {sortByLastUpdated(chatList).map((chat: ChatMetadata, idx: number) => {
                         console.log(chat)
                         if (chat.associatedDomain !== domainId) {
                             return null;
@@ -234,22 +243,33 @@ const ExperienceDomainPage: React.FC = () => {
                                     {formatDateWithLocale(chat.lastUpdated)}
                                 </p>
                                 <div className="flex justify-end gap-2">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setChatAboutToDelete(chat.id)
-                                            setShowingChatDelete(true);
-                                            // PLMsecureContext?.removeKey(chat.id);
-                                            // PLMsecureContext?.removeKey(`METADATA${chat.id}`);
-                                            // setChatList((prevList) =>
-                                            //     prevList.filter(
-                                            //         (chatItem) => chatItem.id !== chat.id
-                                            //     )
-                                            // );
-                                        }}
-                                    >
-                                        <Trash2 />
-                                    </Button>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button className="p-1 px-3" variant="outline"><EllipsisVertical /></Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans p-4">
+                                            <Button
+                                                className="p-1 px-3 !justify-start"
+                                                variant="destructive"
+                                                onClick={() => {
+                                                    setChatAboutToDelete(chat.id);
+                                                    setShowingChatDelete(true);
+                                                }}
+                                            >
+                                                <Trash2 /> Delete
+                                            </Button>
+                                            <Button
+                                                className="p-1 px-3 !justify-start"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setSelectedChat(chat);
+                                                    setShowingChatTimesteps(true);
+                                                }}
+                                            >
+                                                <History /> View timesteps
+                                            </Button>
+                                        </PopoverContent>
+                                    </Popover>
                                     <Button
                                         variant={"outline"}
                                         onClick={() => {
@@ -401,23 +421,23 @@ const ExperienceDomainPage: React.FC = () => {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={showingDelete} onOpenChange={setShowingDelete}>
+            <Dialog open={showingChatTimesteps} onOpenChange={setShowingChatTimesteps}>
                 <DialogContent className="font-sans">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold mb-4">Delete domain</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold mb-4">Chat Timesteps</DialogTitle>
                     </DialogHeader>
-                    <p>Are you sure you want to delete this domain? All associated chats, attributes and memory will also be deleted!</p>
-                    <Button variant="destructive" onClick={() => {
-                        setShowingDelete(false);
-                        chatList.forEach((chat) => {
-                            if (chat.associatedDomain == domainId) {
-                                PLMsecureContext?.removeKey(chat.id)
-                                PLMsecureContext?.removeKey("METADATA" + chat.id)
-                            }
-                        })
-                        PLMsecureContext?.removeKey("METADATA" + domainId)
-                        router.push("/")
-                    }}>Confirm deletion</Button>
+                    <p>View the timesteps of this chat. Each message creates a timestep to help PalMirror cross-reference moments between chats in this domain.</p>
+                    <div className="flex flex-col gap-2">
+                        {selectedChat && selectedChat.timesteps && selectedChat.timesteps.length > 0 ? (
+                            selectedChat.timesteps.map((timestep) => (
+                                <div key={timestep.key} className="p-2 border border-white/10 rounded-lg">
+                                    <p className="mt-2">{timestep.entry}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="opacity-70">No timesteps available for this chat.</p>
+                        )}
+                    </div>
                 </DialogContent>
             </Dialog>
             <ToastContainer

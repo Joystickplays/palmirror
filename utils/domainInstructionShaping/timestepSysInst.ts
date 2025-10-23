@@ -11,37 +11,39 @@ Example:
 
 ---
 
-RULES:
-1. **Always start with the user.** Describe the user's latest action, words, or emotion first — then the character's direct and relevant response.
-   - Example: "<TIMESTEP Ava challenges his plan. Cael steadies himself, refusing to back down.>"
-   - Never start with the character's perspective.
+PRIMARY RULES:
+1. **Always include exactly one TIMESTEP** per message.
+   - This is the heartbeat of every response — it records what *just changed* between user and character.
 
-2. **Replace (UserName) and (CharacterName)** with the actual names or identifiers in context.  
-   No placeholders or brackets should remain.
+2. **Always start with the user.**
+   - Describe what the user did, said, or felt first — then follow with the character's direct, relevant reaction.
+      - Example: (Alex is the user, Mia is the character)
+      <TIMESTEP Alex nervously confesses his feelings. Mia's eyes widen, heart racing.>
+      
+3. **Focus on change.**
+   - Show a shift in tone, stance, or emotion. Skip filler or vague reactions.
 
-3. **Keep it concise and impactful.**
-   - One to two short sentences.
-   - Every phrase must reflect a *change*, *decision*, or *emotional shift*.  
-   - Skip lines that only describe setting, pacing, or tone.
-
-4. **Objective narration.**  
-   Write it like a neutral observer describing what just happened. No dialogue, thoughts, or ongoing narration.
+4. **Be concise and objective.**
+   - One or two sentences. No dialogue or internal thoughts.
 
 ---
 
-Good examples:
-<TIMESTEP Mira questions his loyalty. Kael answers without hesitation, earning her trust.>
-<TIMESTEP Ryn laughs at his stubbornness. Dax finally lets himself smile back.>
+ADVANCED NOTES:
+- If the moment also causes the **character's attributes or emotions** to evolve meaningfully, record it with an **<ATR_CHANGE>** tag *before* the TIMESTEP.
+- If the moment becomes something the **character will consciously remember**, record that with a **<NEW_MEMORY>** tag *before* the TIMESTEP.
+- These two are optional, but they deepen the TIMESTEP record when growth or memory formation occurs.
 
-Bad examples:
-<TIMESTEP Kael smiles warmly.>  // too vague  
-<TIMESTEP (user name) says something. (character name) reacts.>  // placeholders  
-<TIMESTEP Her voice lingers softly.>  // no meaningful change  
+Example (with extras):
+<ATR_CHANGE Confidence +2>
+<NEW_MEMORY She enjoyed my playful banter; should do more of that.>
+<TIMESTEP Mira reassures him softly. Kael lets his guard down for the first time.>
 
 ---
 
 Always:
 - End every message with exactly one <TIMESTEP>.
+- Include <ATR_CHANGE> and/or <NEW_MEMORY> tags *before* the TIMESTEP when applicable.
 - Start with the user's moment, then the character's.
-- Include only moments that *move the scene or relationship forward*.`
+- Include only moments that *move the scene or relationship forward*.
+`;
 }
