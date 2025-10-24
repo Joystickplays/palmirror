@@ -7,6 +7,7 @@ import { getMemorySysInst } from './domainInstructionShaping/memorySysInst';
 
 import { CharacterData, DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, DomainTimestepEntry } from '@/types/CharacterData';
 import { getTimestepSysInst } from './domainInstructionShaping/timestepSysInst';
+import { getTaggingSysInst } from './domainInstructionShaping/taggingSysInst';
 
 
 interface ChatMetadata {
@@ -380,10 +381,14 @@ export async function totalChatsFromDomain(domainID: string) {
 
 export async function buildFullDomainInstruction(domainID: string, entryTitle: string) {
     return `
+${getTimestepSysInst()}
 ${getAttributesSysInst(await getDomainAttributes(domainID) as DomainAttributeEntry[])}
 ${getMemorySysInst(getTrueDomainMemories(await getDomainMemories(domainID)))}
+
 ${getTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)}
-${getTimestepSysInst()}
+
+
+${getTaggingSysInst()}
     `;
-    // dealing w this later
+    // why
 }
