@@ -184,12 +184,12 @@ const ExperienceDomainPage: React.FC = () => {
                     ))}
                 </div>
             </motion.div>
-            <Button className="fixed bottom-4 right-4 p-1 px-3 rounded-full" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus className="scale-150" /></Button>
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1 }}
                 className="flex flex-col gap-4 h-full">
+                <Button className="fixed bottom-4 right-4 p-8 px-6 rounded-full" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus className="scale-150" /></Button>
 
                 <div className="flex gap-2 h-12 overflow-x-scroll -mt-4">
                     <Button variant="outline" onClick={() => router.push("/")}><ArrowLeft /></Button>
@@ -432,8 +432,8 @@ const ExperienceDomainPage: React.FC = () => {
                     <div className="flex flex-col gap-2">
                         {selectedChat && selectedChat.timesteps && selectedChat.timesteps.length > 0 ? (
                             selectedChat.timesteps.map((timestep) => (
-                                <div key={timestep.key} className="p-2 border border-white/10 rounded-lg">
-                                    <p className="mt-2">{timestep.entry}</p>
+                                <div key={timestep.key} className="p-4 border border-white/10 rounded-xl">
+                                    <p className="text-sm">{timestep.entry}</p>
                                 </div>
                             ))
                         ) : (

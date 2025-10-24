@@ -364,7 +364,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         if (associatedDomain && messagesList.length > 0) {
           deleteMemoryFromMessageIfAny(associatedDomain, messagesList[messagesList.length - 1].id)
           reverseDomainAttribute(associatedDomain, messagesList[messagesList.length - 1].id)
-          removeDomainTimestep(associatedDomain, messagesList[messagesList.length - 1].id)
+          removeDomainTimestep(chatId, messagesList[messagesList.length - 1].id)
         }
         messagesList = messagesList.slice(0, -1);
         
@@ -645,7 +645,7 @@ ${entryTitle}
       messagesToDelete.forEach((msg) => {
         deleteMemoryFromMessageIfAny(associatedDomain, msg.id);
         reverseDomainAttribute(associatedDomain, msg.id);
-        removeDomainTimestep(associatedDomain, msg.id);
+        removeDomainTimestep(chatId, msg.id);
       });
     }
 
@@ -1024,7 +1024,7 @@ ${entryTitle}
         // --- Timesteps ---
         const timestepsToAdd = extractTimesteps(lastMessage);
         for (const timestep of timestepsToAdd) {
-          await addDomainTimestep(associatedDomain, successfulNewMessage.id, timestep);
+          await addDomainTimestep(chatId, successfulNewMessage.id, timestep);
           toast.info(timestep);
         }
       })();

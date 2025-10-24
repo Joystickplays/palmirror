@@ -263,7 +263,7 @@ export function getTrueDomainMemories(memoryEntries: DomainMemoryEntry[]): strin
     return activeMemories.filter((memory): memory is string => Boolean(memory))
 }
 
-export async function getDomainTimesteps(domainID: string): Promise<DomainTimestepEntry[]> {
+export async function getDomainTimesteps(chatID: string): Promise<DomainTimestepEntry[]> {
     if (typeof window === 'undefined') {
         return [];
     }
@@ -273,15 +273,15 @@ export async function getDomainTimesteps(domainID: string): Promise<DomainTimest
     }
 
     try {
-        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        const data = await getSecureData(`METADATA${chatID}`, sessionKey, true);
         return data?.timesteps || [];
     } catch (error) {
-        console.error("Failed to get domain timesteps:", error);
+        console.error("Failed to get chat's timesteps:", error);
         return [];
     }
 }
 
-export async function addDomainTimestep(domainID: string, associatedMessage: string, entry: string) {
+export async function addDomainTimestep(chatID: string, associatedMessage: string, entry: string) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -290,7 +290,7 @@ export async function addDomainTimestep(domainID: string, associatedMessage: str
         return;
     }
     try {
-        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        const data = await getSecureData(`METADATA${chatID}`, sessionKey, true);
         if (data) {
             if (!data.timesteps) {
                 data.timesteps = []
@@ -300,7 +300,7 @@ export async function addDomainTimestep(domainID: string, associatedMessage: str
                 associatedMessage: associatedMessage,
                 entry: entry,
             } as DomainTimestepEntry);
-            await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+            await setSecureData(`METADATA${chatID}`, data, sessionKey, true);
         }
 
     } catch (error) {
@@ -309,7 +309,7 @@ export async function addDomainTimestep(domainID: string, associatedMessage: str
     }
 }
 
-export async function removeDomainTimestep(domainID: string, associatedMessage: string) {
+export async function removeDomainTimestep(chatID: string, associatedMessage: string) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -319,10 +319,10 @@ export async function removeDomainTimestep(domainID: string, associatedMessage: 
     }
 
     try {
-        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        const data = await getSecureData(`METADATA${chatID}`, sessionKey, true);
         if (data) {
             data.timesteps = data.timesteps.filter((timestep: DomainTimestepEntry) => timestep.associatedMessage !== associatedMessage);
-            await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+            await setSecureData(`METADATA${chatID}`, data, sessionKey, true);
         }
     } catch (error) {
         console.error("Failed to remove domain timestep:", error);
@@ -330,8 +330,8 @@ export async function removeDomainTimestep(domainID: string, associatedMessage: 
     }
 }
 
-export async function structureDomainTimesteps(domainID: string): Promise<string> {
-    const timesteps = await getDomainTimesteps(domainID);
+export async function structureDomainTimesteps(chatID: string): Promise<string> {
+    const timesteps = await getDomainTimesteps(chatID);
     let structuredTimesteps = "";
 
     timesteps.forEach((timestep, index) => {
@@ -360,11 +360,11 @@ export async function totalChatsFromDomain(domainID: string) {
                 const data: ChatMetadata = await getSecureData(key, sessionKey, true);
                 if (!data) return;
                 if (!data.entryTitle) return;
-                if (data.associatedDomain !== domainID) return;
+                if (!data.id) return;
 
                 return {
                     entryTitle: data.entryTitle,
-                    timestampStructure: await structureDomainTimesteps(data.associatedDomain!)
+                    timestampStructure: await structureDomainTimesteps(data.id)
                 } as ChatHistory;
             })
         );
