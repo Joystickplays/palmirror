@@ -1017,14 +1017,14 @@ ${entryTitle}
         // --- Memories ---
         const memoryToAdd = extractMemories(lastMessage);
         for (const memory of memoryToAdd) {
-          await addDomainMemory(associatedDomain, memory, successfulNewMessage.id);
+          await addDomainMemory(associatedDomain, successfulNewMessage.id, memory);
           memoryNotification.create(`${characterData.name} will remember that.`, memory);
         }
 
         // --- Timesteps ---
         const timestepsToAdd = extractTimesteps(lastMessage);
         for (const timestep of timestepsToAdd) {
-          await addDomainTimestep(associatedDomain, timestep, successfulNewMessage.id);
+          await addDomainTimestep(associatedDomain, successfulNewMessage.id, timestep);
           toast.info(timestep);
         }
       })();
