@@ -424,7 +424,7 @@ const ExperienceDomainPage: React.FC = () => {
             
 
             <Dialog open={showingChatTimesteps} onOpenChange={setShowingChatTimesteps}>
-                <DialogContent className="font-sans">
+                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold mb-4">Chat Timesteps</DialogTitle>
                     </DialogHeader>
