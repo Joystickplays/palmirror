@@ -990,46 +990,46 @@ ${entryTitle}
     
     return matches;
   }
-  // Attribute changing & memory entry post-message
+
   useEffect(() => {
     if (successfulNewMessage && typeof successfulNewMessage !== 'boolean' && associatedDomain) {
       const lastMessage = successfulNewMessage.content;
-      const atrChanges = extractAttributeTags(lastMessage);
-      if (atrChanges.length > 0) {
-        atrChanges.forEach(({ attribute, change }) => {
-          setDomainAttributes(associatedDomain, successfulNewMessage.id, attribute, change, true);
-          (async () => {
-            const attributes = await getDomainAttributes(associatedDomain)
-            const attributeCurrent = attributes.find((attr: DomainAttributeEntry) => attr.attribute === attribute);
-            if (!attributeCurrent) return;
+
+      (async () => {
+        // --- Attributes ---
+        const atrChanges = extractAttributeTags(lastMessage);
+        for (const { attribute, change } of atrChanges) {
+          await setDomainAttributes(associatedDomain, successfulNewMessage.id, attribute, change, true);
+        
+          const attributes = await getDomainAttributes(associatedDomain);
+          const attributeCurrent = attributes.find(
+            (attr: DomainAttributeEntry) => attr.attribute === attribute
+          );
+          if (attributeCurrent) {
             attributeNotification.create({
-              attribute: attribute,
+              attribute,
               fromVal: attributeCurrent.value,
               toVal: attributeCurrent.value + change
-            })
-          })();
-          // toast.info(`${characterData.name}'s ${attribute} changed by ${change > 0 ? "+" : ""}${change}`)
-        });
-      }
+            });
+          }
+        }
 
-      const memoryToAdd = extractMemories(lastMessage);
-      if (memoryToAdd.length > 0) {
-        memoryToAdd.forEach((memory) => {
-          addDomainMemory(associatedDomain, memory, successfulNewMessage.id)
-          memoryNotification.create(`${characterData.name} will remember that.`, memory)
-          // toast.info("new memory")
-        })
-      }
+        // --- Memories ---
+        const memoryToAdd = extractMemories(lastMessage);
+        for (const memory of memoryToAdd) {
+          await addDomainMemory(associatedDomain, memory, successfulNewMessage.id);
+          memoryNotification.create(`${characterData.name} will remember that.`, memory);
+        }
 
-      const timestepsToAdd = extractTimesteps(lastMessage);
-      if (timestepsToAdd.length > 0) {
-        timestepsToAdd.forEach((timestep) => {
-          addDomainTimestep(associatedDomain, timestep, successfulNewMessage.id)
-          toast.info(timestep)
-        })
-      }
+        // --- Timesteps ---
+        const timestepsToAdd = extractTimesteps(lastMessage);
+        for (const timestep of timestepsToAdd) {
+          await addDomainTimestep(associatedDomain, timestep, successfulNewMessage.id);
+          toast.info(timestep);
+        }
+      })();
     }
-  }, [successfulNewMessage])
+  }, [successfulNewMessage]);
 
   // Token counting (this was way too laggy so scrapped)
 

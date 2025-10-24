@@ -184,7 +184,7 @@ export async function setDomainMemories(domainID: string, memoryList: DomainMemo
     }
 }
 
-export async function addDomainMemory(domainID: string, newMemory: string, associatedMessage: string,) {
+export async function addDomainMemory(domainID: string, associatedMessage: string, newMemory: string,) {
     if (typeof window === 'undefined') {
         return [];
     }

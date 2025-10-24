@@ -421,15 +421,17 @@ const ExperienceDomainPage: React.FC = () => {
                 </DialogContent>
             </Dialog>
 
+            
+
             <Dialog open={showingChatTimesteps} onOpenChange={setShowingChatTimesteps}>
                 <DialogContent className="font-sans">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold mb-4">Chat Timesteps</DialogTitle>
                     </DialogHeader>
-                    <p>View the timesteps of this chat. Each message creates a timestep to help PalMirror cross-reference moments between chats in this domain.</p>
+                    <p className="opacity-50 text-xs">View the timesteps of this chat. Each message creates a timestep to help PalMirror cross-reference moments between chats in this domain.</p>
                     <div className="flex flex-col gap-2">
-                        {selectedChat && selectedChat.timesteps && selectedChat.timesteps.length > 0 ? (
-                            selectedChat.timesteps.map((timestep) => (
+                        {selectedChat && selectedChat.plmex.timesteps && selectedChat.plmex.timesteps.length > 0 ? (
+                            selectedChat.plmex.timesteps.map((timestep) => (
                                 <div key={timestep.key} className="p-2 border border-white/10 rounded-lg">
                                     <p className="mt-2">{timestep.entry}</p>
                                 </div>
@@ -440,6 +442,27 @@ const ExperienceDomainPage: React.FC = () => {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={showingDelete} onOpenChange={setShowingDelete}>
+                <DialogContent className="font-sans">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Delete domain</DialogTitle>
+                    </DialogHeader>
+                    <p>Are you sure you want to delete this domain? All associated chats, attributes and memory will also be deleted!</p>
+                    <Button variant="destructive" onClick={() => {
+                        setShowingDelete(false);
+                        chatList.forEach((chat) => {
+                            if (chat.associatedDomain == domainId) {
+                                PLMsecureContext?.removeKey(chat.id)
+                                PLMsecureContext?.removeKey("METADATA" + chat.id)
+                            }
+                        })
+                        PLMsecureContext?.removeKey("METADATA" + domainId)
+                        router.push("/")
+                    }}>Confirm deletion</Button>
+                </DialogContent>
+            </Dialog>
+            
             <ToastContainer
                 position="top-right"
                 autoClose={5000}
