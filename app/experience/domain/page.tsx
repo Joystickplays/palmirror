@@ -430,8 +430,8 @@ const ExperienceDomainPage: React.FC = () => {
                     </DialogHeader>
                     <p className="opacity-50 text-xs">View the timesteps of this chat. Each message creates a timestep to help PalMirror cross-reference moments between chats in this domain.</p>
                     <div className="flex flex-col gap-2">
-                        {selectedChat && selectedChat.plmex.timesteps && selectedChat.plmex.timesteps.length > 0 ? (
-                            selectedChat.plmex.timesteps.map((timestep) => (
+                        {selectedChat && selectedChat.timesteps && selectedChat.timesteps.length > 0 ? (
+                            selectedChat.timesteps.map((timestep) => (
                                 <div key={timestep.key} className="p-2 border border-white/10 rounded-lg">
                                     <p className="mt-2">{timestep.entry}</p>
                                 </div>
