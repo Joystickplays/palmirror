@@ -73,7 +73,7 @@ export function setDomainAttributes(domainID: string, responsibleMessage: string
                         }
                         attributeToUpdate.history.push({
                             associatedMessage: responsibleMessage,
-                            change: value + (relative ? attributeToUpdate.value : 0)
+                            change: value // thats kinda dumb
                         })
                     } else {
                         return; // nope
