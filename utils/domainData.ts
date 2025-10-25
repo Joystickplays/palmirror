@@ -282,6 +282,28 @@ export async function getDomainTimesteps(chatID: string): Promise<DomainTimestep
     }
 }
 
+export async function setDomainTimesteps(chatID: string, timesteps: DomainTimestepEntry[]) {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return;
+    }
+
+    try {
+        const data = await getSecureData(`METADATA${chatID}`, sessionKey, true);
+        
+        if (data) {
+            data.timesteps = timesteps;
+            await setSecureData(`METADATA${chatID}`, data, sessionKey, true);
+        }
+    } catch (error) {
+        console.error("Failed to set domain timesteps:", error);
+    }
+}
+
 export async function addDomainTimestep(chatID: string, associatedMessage: string, entry: string) {
     if (typeof window === 'undefined') {
         return;

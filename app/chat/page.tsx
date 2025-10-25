@@ -15,7 +15,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/utils/systemMessageGeneration";
 import OpenAI from "openai";
-import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry } from "@/types/CharacterData";
+import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry, DomainTimestepEntry } from "@/types/CharacterData";
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import {
@@ -30,7 +30,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes } from "@/utils/domainData";
+import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
 
@@ -173,6 +173,55 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
   const router = useRouter();
   const PLMSecContext = useContext(PLMSecureContext);
 
+  // Tag extractors
+  const extractAttributeTags = (message: string) => {
+    //  <ATR_CHANGE Trustworthiness +2 Courage -3>
+
+    const atrRegex = /<ATR_CHANGE\s+([^>]+)>/i;
+    const match = message.match(atrRegex);
+
+    if (!match || !match[1]) return [];
+
+    const content = match[1].trim();
+    const pairRegex = /([a-zA-Z_]+)\s*([+-]?\d+)/g;
+
+    const results: Array<{ attribute: string; change: number }> = [];
+    let pairMatch;
+
+    while ((pairMatch = pairRegex.exec(content)) !== null) {
+      results.push({
+        attribute: pairMatch[1],
+        change: parseInt(pairMatch[2], 10),
+      });
+    }
+
+    return results;
+  };
+
+  const extractMemories = (text: string) => {
+    const regex = /<NEW_MEMORY\s+([^>]+)>/g;
+    const matches: string[] = [];
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      matches.push(match[1].trim());
+    }
+
+    return matches;
+  }
+
+  const extractTimesteps = (text: string) => {
+    const regex = /<TIMESTEP\s+([^>]+)>/g;
+    const matches: string[] = [];
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      matches.push(match[1].trim());
+    }
+    
+    return matches;
+  }
+
   // Function to download a file
   const downloadFile = (
     content: string,
@@ -237,6 +286,25 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
       setMessages(parsedMessages);
       toast.success("Chat imported successfully!");
+
+      if (associatedDomain) {
+        const timestepsToSet: Array<DomainTimestepEntry> = [];
+        for (const msg of parsedMessages) {
+          if (!msg?.content) continue;
+          const extracted = extractTimesteps(msg.content);
+          for (const ts of extracted) {
+            timestepsToSet.push({
+              key: Math.floor(Math.random() * 69420),
+              associatedMessage: msg.id,
+              entry: ts,
+            });
+          }
+        }
+        if (timestepsToSet.length > 0) {
+          setDomainTimesteps(chatId, timestepsToSet);
+          toast.info(`Found timesteps from messages, imported ${timestepsToSet.length} timesteps`);
+        }
+      }
     } catch (error) {
       toast.error("Failed to decode messages: " + error);
     }
@@ -944,53 +1012,7 @@ ${entryTitle}
     }
   }, []);
 
-  const extractAttributeTags = (message: string) => {
-    //  <ATR_CHANGE Trustworthiness +2 Courage -3>
-
-    const atrRegex = /<ATR_CHANGE\s+([^>]+)>/i;
-    const match = message.match(atrRegex);
-
-    if (!match || !match[1]) return [];
-
-    const content = match[1].trim();
-    const pairRegex = /([a-zA-Z_]+)\s*([+-]?\d+)/g;
-
-    const results: Array<{ attribute: string; change: number }> = [];
-    let pairMatch;
-
-    while ((pairMatch = pairRegex.exec(content)) !== null) {
-      results.push({
-        attribute: pairMatch[1],
-        change: parseInt(pairMatch[2], 10),
-      });
-    }
-
-    return results;
-  };
-
-  const extractMemories = (text: string) => {
-    const regex = /<NEW_MEMORY\s+([^>]+)>/g;
-    const matches: string[] = [];
-    let match;
-
-    while ((match = regex.exec(text)) !== null) {
-      matches.push(match[1].trim());
-    }
-
-    return matches;
-  }
-
-  const extractTimesteps = (text: string) => {
-    const regex = /<TIMESTEP\s+([^>]+)>/g;
-    const matches: string[] = [];
-    let match;
-
-    while ((match = regex.exec(text)) !== null) {
-      matches.push(match[1].trim());
-    }
-    
-    return matches;
-  }
+  
 
   useEffect(() => {
     if (successfulNewMessage && typeof successfulNewMessage !== 'boolean' && associatedDomain) {
