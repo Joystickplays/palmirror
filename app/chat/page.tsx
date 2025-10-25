@@ -74,6 +74,7 @@ const ChatPage = () => {
 
   const [associatedDomain, setAssociatedDomain] = useState<string>("");
   const [entryTitle, setEntryTitle] = useState<string>("");
+  const [chatTimesteps, setChatTimesteps] = useState<Array<DomainTimestepEntry>>([])
   const attributeNotification = useAttributeNotification();
   const memoryNotification = useMemoryNotification();
 
@@ -301,7 +302,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
           }
         }
         if (timestepsToSet.length > 0) {
-          setDomainTimesteps(chatId, timestepsToSet);
+          setChatTimesteps(timestepsToSet);
           toast.info(`Found timesteps from messages, imported ${timestepsToSet.length} timesteps`);
         }
       }
@@ -953,6 +954,7 @@ ${entryTitle}
   useEffect(() => {
     const domain = sessionStorage.getItem("chatAssociatedDomain");
     const entryName = sessionStorage.getItem("chatEntryName");
+    const timesteps = sessionStorage.getItem("chatTimesteps");
 
     if (domain) {
       setAssociatedDomain(domain);
@@ -962,6 +964,11 @@ ${entryTitle}
     if (entryName) {
       setEntryTitle(entryName);
       sessionStorage.removeItem("chatEntryName");
+    }
+
+    if (timesteps) {
+      setChatTimesteps(JSON.parse(timesteps));
+      sessionStorage.removeItem("chatTimesteps");
     }
 
   }, []);
@@ -985,6 +992,7 @@ ${entryTitle}
         lastUpdated: new Date().toISOString(),
         associatedDomain,
         entryTitle,
+        timesteps: chatTimesteps
       };
 
       delete metadata.plmex?.domain;
@@ -1051,7 +1059,14 @@ ${entryTitle}
         // --- Timesteps ---
         const timestepsToAdd = extractTimesteps(lastMessage);
         for (const timestep of timestepsToAdd) {
-          await addDomainTimestep(chatId, successfulNewMessage.id, timestep);
+          setChatTimesteps((prev) => [
+            ...prev,
+            {
+              key: Math.floor(Math.random() * 69420),
+              associatedMessage: successfulNewMessage.id,
+              entry: timestep,
+            },
+          ]);
           // toast.info(timestep);
         }
       })();
