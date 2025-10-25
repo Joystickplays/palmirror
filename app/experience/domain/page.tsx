@@ -189,7 +189,8 @@ const ExperienceDomainPage: React.FC = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1 }}
                 className="flex flex-col gap-4 h-full">
-                <Button className="fixed bottom-4 right-4 p-8 px-6 rounded-full" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus className="scale-150" /></Button>
+                
+                <Button className="fixed bottom-4 right-4 p-8 px-6 rounded-full bg-background z-[100]" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus className="scale-150" /></Button>
 
                 <div className="flex gap-2 h-12 overflow-x-scroll -mt-4">
                     <Button variant="outline" onClick={() => router.push("/")}><ArrowLeft /></Button>
