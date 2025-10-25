@@ -30,7 +30,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes } from "@/utils/domainData";
+import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
 
@@ -430,7 +430,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
           role: "user",
           name: "user",
           content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${rewriteBase}\`
-Your enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`,
+Your enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.
+Do not lead with anything like "Sure. Here's an enhanced version..." or anything similar. Be invisible. Do not create the status section here. JUST THE REWRITTEN MESSAGE.`,
         },
       ];
     } else if (mode === "call-steer") {
@@ -1017,6 +1018,10 @@ ${entryTitle}
         // --- Memories ---
         const memoryToAdd = extractMemories(lastMessage);
         for (const memory of memoryToAdd) {
+          const memories = await getDomainMemories(associatedDomain)
+          if (memories.some((m: any) => m.memory === memory)) {
+            continue;
+          }
           await addDomainMemory(associatedDomain, successfulNewMessage.id, memory);
           memoryNotification.create(`${characterData.name} will remember that.`, memory);
         }
@@ -1025,7 +1030,7 @@ ${entryTitle}
         const timestepsToAdd = extractTimesteps(lastMessage);
         for (const timestep of timestepsToAdd) {
           await addDomainTimestep(chatId, successfulNewMessage.id, timestep);
-          toast.info(timestep);
+          // toast.info(timestep);
         }
       })();
     }
