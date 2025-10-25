@@ -427,8 +427,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       messagesList = [...messages];
       if (regenerate) {
         if (associatedDomain && messagesList.length > 0) {
-          deleteMemoryFromMessageIfAny(associatedDomain, messagesList[messagesList.length - 1].id)
-          reverseDomainAttribute(associatedDomain, messagesList[messagesList.length - 1].id)
+          await deleteMemoryFromMessageIfAny(associatedDomain, messagesList[messagesList.length - 1].id)
+          await reverseDomainAttribute(associatedDomain, messagesList[messagesList.length - 1].id)
           setChatTimesteps(prev => {
             return prev.filter(ts => ts.associatedMessage !== messagesList[messagesList.length - 1].id)
           });
@@ -710,13 +710,17 @@ ${entryTitle}
     const messagesToDelete = messages.slice(index + 1);
 
     if (associatedDomain) {
-      messagesToDelete.forEach((msg) => {
-        deleteMemoryFromMessageIfAny(associatedDomain, msg.id);
-        reverseDomainAttribute(associatedDomain, msg.id);
-        setChatTimesteps(prev => {
-          return prev.filter(ts => ts.associatedMessage !== msg.id)
-        });
-      });
+      for (const msg of messagesToDelete) {
+        (async () => {
+          try {
+            await deleteMemoryFromMessageIfAny(associatedDomain, msg.id);
+            await reverseDomainAttribute(associatedDomain, msg.id);
+          } catch (err) {
+            console.error("Error reverting domain data:", err);
+          }
+        })();
+        setChatTimesteps(prev => prev.filter(ts => ts.associatedMessage !== msg.id));
+      }
     }
 
     setMessages(messages.slice(0, index + 1));
