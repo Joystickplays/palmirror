@@ -13,7 +13,7 @@ import { useThrottle } from "@/utils/useThrottle";
 import { useTheme } from "@/components/PalMirrorThemeProvider";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { getSystemMessage } from "@/components/systemMessageGeneration";
+import { getSystemMessage } from "@/utils/systemMessageGeneration";
 import OpenAI from "openai";
 import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry } from "@/types/CharacterData";
 
