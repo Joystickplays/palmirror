@@ -371,12 +371,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
   };
 
   const checkAndTrimMessages = (
-    messagesList: Array<{
-      role: "user" | "assistant" | "system";
-      content: string;
-      stillGenerating: boolean;
-    }>
-  ) => {
+    messagesList: Array<Message>
+  ): Array<Message> => {
     let totalLength = messagesList.reduce(
       (acc, msg) => acc + msg.content.length,
       0
@@ -417,7 +413,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       return;
     }
 
-    let messagesList = [];
+    let messagesList: Message[] = [];
     let userMessageContent = "";
 
     if (mode === "send") {
@@ -433,7 +429,9 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         if (associatedDomain && messagesList.length > 0) {
           deleteMemoryFromMessageIfAny(associatedDomain, messagesList[messagesList.length - 1].id)
           reverseDomainAttribute(associatedDomain, messagesList[messagesList.length - 1].id)
-          removeDomainTimestep(chatId, messagesList[messagesList.length - 1].id)
+          setChatTimesteps(prev => {
+            return prev.filter(ts => ts.associatedMessage !== messagesList[messagesList.length - 1].id)
+          });
         }
         messagesList = messagesList.slice(0, -1);
         
@@ -715,7 +713,9 @@ ${entryTitle}
       messagesToDelete.forEach((msg) => {
         deleteMemoryFromMessageIfAny(associatedDomain, msg.id);
         reverseDomainAttribute(associatedDomain, msg.id);
-        removeDomainTimestep(chatId, msg.id);
+        setChatTimesteps(prev => {
+          return prev.filter(ts => ts.associatedMessage !== msg.id)
+        });
       });
     }
 
