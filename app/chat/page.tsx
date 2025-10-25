@@ -15,7 +15,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/utils/systemMessageGeneration";
 import OpenAI from "openai";
-import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry, DomainTimestepEntry } from "@/types/CharacterData";
+import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry, DomainTimestepEntry } from "@/types/CharacterData";
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import {
@@ -1041,7 +1041,7 @@ ${entryTitle}
         const memoryToAdd = extractMemories(lastMessage);
         for (const memory of memoryToAdd) {
           const memories = await getDomainMemories(associatedDomain)
-          if (memories.some((m: any) => m.memory === memory)) {
+          if (memories.some((m: DomainMemoryEntry) => m.memory === memory)) {
             continue;
           }
           await addDomainMemory(associatedDomain, successfulNewMessage.id, memory);
