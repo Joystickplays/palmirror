@@ -277,7 +277,7 @@ const ExperienceDomainPage: React.FC = () => {
                                             sessionStorage.setItem("chatSelect", chat.id);
                                             sessionStorage.setItem("chatAssociatedDomain", domainId);
                                             sessionStorage.setItem("chatEntryName", chat.entryTitle || "");
-                                            sessionStorage.setItem("chatTimesteps", chat.timesteps || "")
+                                            sessionStorage.setItem("chatTimesteps", JSON.stringify(chat.timesteps || []))
                                             router.push(`/chat`);
                                         }}
                                     >
