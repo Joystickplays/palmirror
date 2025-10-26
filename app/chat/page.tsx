@@ -427,11 +427,15 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       messagesList = [...messages];
       if (regenerate) {
         if (associatedDomain && messagesList.length > 0) {
-          await deleteMemoryFromMessageIfAny(associatedDomain, messagesList[messagesList.length - 1].id)
-          await reverseDomainAttribute(associatedDomain, messagesList[messagesList.length - 1].id)
-          setChatTimesteps(prev => {
-            return prev.filter(ts => ts.associatedMessage !== messagesList[messagesList.length - 1].id)
-          });
+          try {
+            await deleteMemoryFromMessageIfAny(associatedDomain, messagesList[messagesList.length - 1].id)
+            await reverseDomainAttribute(associatedDomain, messagesList[messagesList.length - 1].id)
+            setChatTimesteps(prev => {
+              return prev.filter(ts => ts.associatedMessage !== messagesList[messagesList.length - 1].id)
+            });
+          } catch (e) {
+            console.warn(e)
+          }
         }
         messagesList = messagesList.slice(0, -1);
         

@@ -13,7 +13,15 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History } from 'lucide-react';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info } from 'lucide-react';
 
 import AttributeProgress from "@/components/AttributeProgress";
 
@@ -57,6 +65,8 @@ const ExperienceDomainPage: React.FC = () => {
     const [chatDeletePropagation, setChatDeletePropagation] = useState(false);
     const [showingChatTimesteps, setShowingChatTimesteps] = useState(false);
     const [selectedChat, setSelectedChat] = useState<ChatMetadata | null>(null);
+
+    const [showDomainIntro, setShowDomainIntro] = useState(false);
 
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
@@ -160,6 +170,12 @@ const ExperienceDomainPage: React.FC = () => {
         return `${day} ${time}`;
     };
 
+    
+    useEffect(() => {
+        if (localStorage.getItem("domainIntroNewcomer") !== "1") {
+            setShowDomainIntro(true);
+        }
+    }, [])
 
     return (
         <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-[family-name:var(--font-geist-sans)]">
@@ -201,6 +217,7 @@ const ExperienceDomainPage: React.FC = () => {
                         </PopoverTrigger>
                         <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans p-4">
                             <Button className="p-1 px-3 !justify-start" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button>
+                            <Button className="p-1 px-3 !justify-start" variant="outline" onClick={() => setShowDomainIntro(true)}><Info />Help</Button>
                         </PopoverContent>
                     </Popover>
                     {/* <Button className="p-1 px-3" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button> */}
@@ -464,6 +481,21 @@ const ExperienceDomainPage: React.FC = () => {
                     }}>Confirm deletion</Button>
                 </DialogContent>
             </Dialog>
+
+            <Drawer open={showDomainIntro} onOpenChange={setShowDomainIntro}>
+                <DrawerContent className="font-sans p-6 pt-0">
+                    <DrawerHeader>
+                        <DrawerTitle className="text-2xl font-bold mb-4 text-center">Welcome to your domain</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="flex flex-col gap-4">
+                        <p className="text-sm"><span className="palmirror-exc-text">PalMirror Domains</span><span className="opacity-80">{` allow you to create a persistent world for your character that evolves over time. They have attributes and memories that will change based on your interactions as you chat with them in a domain.`}</span></p>
+                        <p className="opacity-80 text-sm">{`Domains is your platform for multiple different isolated chats. PalMirror will automatically cross-reference your chat's moments across each other to create continuity.`}</p>
+                        <p className="opacity-80 text-sm">{`Watch the attribute bars change in realtime as you chat to see how your choices affect the character. See and forget memories to shape what they remember about your relationship.`}</p>
+                        <p className="opacity-80 text-sm">{`Start new chat entries to explore different scenarios and see how the character adapts. Enjoy building deeper connections with your character!`}</p>
+                        <Button onClick={() => { setShowDomainIntro(false); setShowingNewChat(true); }}>Start a new chat</Button>
+                    </div>
+                </DrawerContent>
+            </Drawer>
             
             <ToastContainer
                 position="top-right"
