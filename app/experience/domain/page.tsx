@@ -193,8 +193,9 @@ const ExperienceDomainPage: React.FC = () => {
                 }}
                 className="palmirror-exc border border-white/20 rounded-[24px] w-full min-h-24 p-8 py-6 flex flex-col md:flex-row items-center justify-around"
             >
-                <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text">{character.name}</h1>
-                <div className="flex overflow-x-scroll max-w-full pb-2 mt-4 md:pb-0 md:my-0 md:grid md:grid-cols-3 gap-4">
+                <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text min-w-[16rem]">{character.name}</h1>
+                <div className=""></div>
+                <div className="flex overflow-x-scroll max-w-full md:max-w-[32rem] pb-2 mt-4 md:pb-0 md:my-0 md:grid md:grid-cols-3 md:grid-rows-2 md:grid-flow-col md:auto-cols-max gap-4">
                     {character.plmex.domain?.attributes.map(attr => (
                         <AttributeProgress key={attr.key} attr={attr} />
                     ))}
@@ -492,7 +493,7 @@ const ExperienceDomainPage: React.FC = () => {
                         <p className="opacity-80 text-sm">{`Domains is your platform for multiple different isolated chats. PalMirror will automatically cross-reference your chat's moments across each other to create continuity.`}</p>
                         <p className="opacity-80 text-sm">{`Watch the attribute bars change in realtime as you chat to see how your choices affect the character. See and forget memories to shape what they remember about your relationship.`}</p>
                         <p className="opacity-80 text-sm">{`Start new chat entries to explore different scenarios and see how the character adapts. Enjoy building deeper connections with your character!`}</p>
-                        <Button onClick={() => { setShowDomainIntro(false); setShowingNewChat(true); }}>Start a new chat</Button>
+                        <Button onClick={() => { localStorage.setItem("domainIntroNewcomer", "1"); setShowDomainIntro(false); setShowingNewChat(true); }}>Start a new chat</Button>
                     </div>
                 </DrawerContent>
             </Drawer>

@@ -393,13 +393,13 @@ function SetupCharacter({
           </AnimateChangeInHeight>
         </DialogContent>
       </Dialog>
-      <PopoverContent asChild className="z-[999999] min-w-80">
-        <p>
-          PalMirror-exclusive characters with customizable traits and reactions.
-          Adjust their emotions and status in real-time as they react to your
-          changes, triggering sounds and effects. More features are being worked
-          out for PalMirror Experience characters.
-        </p>
+      <PopoverContent asChild>
+        <div className="z-[999999] min-w-80 font-sans">
+          <p>
+            <span className="palmirror-exc-text">PalMirror Experience</span> characters are characters made in PalMirror supercharged with features that go <b>way</b> beyond basic back-and-forth chatting. Explore your character's immersive nature, have memories, and a lot more.
+          </p>
+          <Button onClick={() => router.push("/experience/create")} variant="palmirror" className="w-full mt-4">Create a character</Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
@@ -1260,7 +1260,7 @@ export default function Home() {
       </div>
       {/* <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character.</p> */}
       <p className="text-sm opacity-10 text-center">
-        An opinionated, {" "}
+        An opinionated, immersive, {" "}
         <u>
           <a href="https://github.com/Joystickplays/palmirror">open-source</a>
         </u>{" "}
