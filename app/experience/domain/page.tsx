@@ -193,7 +193,7 @@ const ExperienceDomainPage: React.FC = () => {
                 }}
                 className="palmirror-exc border border-white/20 rounded-[24px] w-full min-h-24 p-8 py-6 flex flex-col md:flex-row items-center justify-around"
             >
-                <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text min-w-[16rem]">{character.name}</h1>
+                <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text md:min-w-[16rem]">{character.name}</h1>
                 <div className=""></div>
                 <div className="flex overflow-x-scroll max-w-full md:max-w-[32rem] pb-2 mt-4 md:pb-0 md:my-0 md:grid md:grid-cols-3 md:grid-rows-2 md:grid-flow-col md:auto-cols-max gap-4">
                     {character.plmex.domain?.attributes.map(attr => (

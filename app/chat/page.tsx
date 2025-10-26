@@ -426,21 +426,24 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       }
       messagesList = [...messages];
       if (regenerate) {
-        if (associatedDomain && messagesList.length > 0) {
-          try {
-            await deleteMemoryFromMessageIfAny(associatedDomain, messagesList[messagesList.length - 1].id)
-            await reverseDomainAttribute(associatedDomain, messagesList[messagesList.length - 1].id)
-            setChatTimesteps(prev => {
-              return prev.filter(ts => ts.associatedMessage !== messagesList[messagesList.length - 1].id)
-            });
-          } catch (e) {
-            console.warn(e)
+        if (messagesList.length > 0) {
+          const lastMessageId = messagesList[messagesList.length - 1].id;
+
+          if (associatedDomain) {
+            try {
+              await deleteMemoryFromMessageIfAny(associatedDomain, lastMessageId);
+              await reverseDomainAttribute(associatedDomain, lastMessageId);
+              setChatTimesteps(prev => prev.filter(ts => ts.associatedMessage !== lastMessageId));
+            } catch (e) {
+              console.warn(e);
+            }
           }
+
+          messagesList = messagesList.slice(0, -1);
+          setMessages(messagesList);
         }
-        messagesList = messagesList.slice(0, -1);
-        
-        setMessages(messagesList);
       }
+
       userMessageContent = regenerate
         ? regenerationMessage ?? ""
         : optionalMessage !== ""
@@ -710,26 +713,26 @@ ${entryTitle}
     setMessages(updatedMessages);
   };
 
-  const rewindTo = (index: number) => {
+  const rewindTo = async (index: number) => {
     const messagesToDelete = messages.slice(index + 1);
 
-    if (associatedDomain) {
+    if (associatedDomain && messagesToDelete.length > 0) {
       for (const msg of messagesToDelete) {
-        (async () => {
-          try {
-            await deleteMemoryFromMessageIfAny(associatedDomain, msg.id);
-            await reverseDomainAttribute(associatedDomain, msg.id);
-          } catch (err) {
-            console.error("Error reverting domain data:", err);
-          }
-        })();
-        setChatTimesteps(prev => prev.filter(ts => ts.associatedMessage !== msg.id));
+        try {
+          await deleteMemoryFromMessageIfAny(associatedDomain, msg.id);
+          await reverseDomainAttribute(associatedDomain, msg.id);
+
+          setChatTimesteps(prev => prev.filter(ts => ts.associatedMessage !== msg.id));
+        } catch (err) {
+          console.error("Error reverting domain data:", err);
+        }
       }
     }
 
     setMessages(messages.slice(0, index + 1));
     setExclusionCount(0);
   };
+
 
   const suggestReply = async () => {
     setUserPromptThinking(true);
