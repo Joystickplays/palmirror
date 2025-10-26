@@ -396,7 +396,7 @@ function SetupCharacter({
       <PopoverContent asChild>
         <div className="z-[999999] min-w-80 font-sans">
           <p>
-            <span className="palmirror-exc-text">PalMirror Experience</span> characters are characters made in PalMirror supercharged with features that go <b>way</b> beyond basic back-and-forth chatting. Explore your character's immersive nature, have memories, and a lot more.
+            <span className="palmirror-exc-text">PalMirror Experience</span> characters are characters made in PalMirror supercharged with features that go <b>way</b> beyond basic back-and-forth chatting. Explore your character&quot;s immersive nature, have memories, and a lot more.
           </p>
           <Button onClick={() => router.push("/experience/create")} variant="palmirror" className="w-full mt-4">Create a character</Button>
         </div>
