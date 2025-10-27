@@ -429,13 +429,11 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         messagesList.unshift({
           role: "system" as "user" | "assistant" | "system",
           content: await buildAssistantRecall(associatedDomain),
-          name: "system",
         })
       } else {
         messagesList.splice(messagesList.length - 7, 0, {
           role: "system" as "user" | "assistant" | "system",
           content: await buildAssistantRecall(associatedDomain),
-          name: "system",
         })
       }
       if (regenerate) {
