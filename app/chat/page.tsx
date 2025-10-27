@@ -30,7 +30,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps } from "@/utils/domainData";
+import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
 
@@ -425,6 +425,19 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         .find((m) => m.role === "user")?.content;
       }
       messagesList = [...messages];
+      if (messagesList.length < 7) {
+        messagesList.unshift({
+          role: "system" as "user" | "assistant" | "system",
+          content: await buildAssistantRecall(associatedDomain),
+          name: "system",
+        })
+      } else {
+        messagesList.splice(messagesList.length - 7, 0, {
+          role: "system" as "user" | "assistant" | "system",
+          content: await buildAssistantRecall(associatedDomain),
+          name: "system",
+        })
+      }
       if (regenerate) {
         if (messagesList.length > 0) {
           const lastMessageId = messagesList[messagesList.length - 1].id;

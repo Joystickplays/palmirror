@@ -8,6 +8,7 @@ import { getMemorySysInst } from './domainInstructionShaping/memorySysInst';
 import { CharacterData, DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, DomainTimestepEntry } from '@/types/CharacterData';
 import { getTimestepSysInst } from './domainInstructionShaping/timestepSysInst';
 import { getTaggingSysInst } from './domainInstructionShaping/taggingSysInst';
+import { getRecallSysInst } from './domainInstructionShaping/recallSysInst';
 
 
 interface ChatMetadata {
@@ -413,4 +414,10 @@ ${getTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)}
 ${getTaggingSysInst()}
     `;
     // why
+}
+
+export async function buildAssistantRecall(domainID: string) {
+  const memories = getTrueDomainMemories(await getDomainMemories(domainID))
+  const allChats = await totalChatsFromDomain(domainID);
+  return getRecallSysInst(memories, allChats[allChats.length - 1])
 }
