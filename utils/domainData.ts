@@ -364,6 +364,10 @@ export async function structureDomainTimesteps(chatID: string): Promise<string> 
     return structuredTimesteps;
 }
 
+type ChatHistoryTimed = ChatHistory & {
+    lastUpdated: string;
+};
+
 export async function totalChatsFromDomain(domainID: string) {
     if (typeof window === 'undefined') return [];
 
@@ -388,12 +392,13 @@ export async function totalChatsFromDomain(domainID: string) {
 
                 return {
                     entryTitle: data.entryTitle,
-                    timestampStructure: await structureDomainTimesteps(data.id)
-                } as ChatHistory;
+                    timestampStructure: await structureDomainTimesteps(data.id),
+                    lastUpdated: data.lastUpdated,
+                } as ChatHistoryTimed;
             })
         );
 
-        return chatEntries.filter((title): title is ChatHistory => Boolean(title));
+        return chatEntries.filter((title): title is ChatHistoryTimed => Boolean(title));
     } catch (err) {
         console.error("Failed to get total chats from domain:", err);
         return [];
@@ -416,8 +421,17 @@ ${getTaggingSysInst()}
     // why
 }
 
+function sortByLastUpdated(
+        data: ChatHistoryTimed[]
+    ): ChatHistoryTimed[] {
+        return data.sort(
+            (a, b) =>
+                new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+        );
+    }
+
 export async function buildAssistantRecall(domainID: string) {
   const memories = getTrueDomainMemories(await getDomainMemories(domainID))
   const allChats = await totalChatsFromDomain(domainID);
-  return getRecallSysInst(memories, allChats[allChats.length - 1])
+  return getRecallSysInst(memories, sortByLastUpdated(allChats)[0])
 }
