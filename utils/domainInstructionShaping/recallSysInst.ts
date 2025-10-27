@@ -1,6 +1,6 @@
 export type ChatHistory = {
   entryTitle: string;
-  timestampStructure: strinf;
+  timestampStructure: string;
 }
 
 export function getRecallSysInst(memories: string[], lastChat: ChatHistory) {
