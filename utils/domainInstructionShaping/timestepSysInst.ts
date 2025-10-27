@@ -26,6 +26,12 @@ PRIMARY RULES:
 4. **Be concise and objective.**
    - One or two sentences. No dialogue or internal thoughts.
 
+5. **Be simple and literal as possible.**
+   - AVOID using complex variations to say a word.
+    (Good Example: "Kael baked him a cake. Mira took a bite and likes it.")
+   - Do NOT overcomplicate or leave out any details.
+
+
 ---
 
 Example:
@@ -37,5 +43,6 @@ Always:
 - End every message with exactly one <TIMESTEP>.
 - Start with the user's moment, then the character's.
 - Include only moments that *move the scene or relationship forward*.
+- Create the timesteps in simple and literal wording.
 `;
 }
