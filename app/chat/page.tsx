@@ -425,17 +425,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         .find((m) => m.role === "user")?.content;
       }
       messagesList = [...messages];
-      if (messagesList.length < 7) {
-        messagesList.unshift({
-          role: "system" as "user" | "assistant" | "system",
-          content: await buildAssistantRecall(associatedDomain),
-        })
-      } else {
-        messagesList.splice(messagesList.length - 7, 0, {
-          role: "system" as "user" | "assistant" | "system",
-          content: await buildAssistantRecall(associatedDomain),
-        })
-      }
+      
       if (regenerate) {
         if (messagesList.length > 0) {
           const lastMessageId = messagesList[messagesList.length - 1].id;
@@ -628,6 +618,20 @@ ${entryTitle}
           : []
         )
       ];
+
+      if (finalMessages.length < 7) {
+        finalMessages.unshift({
+          role: "system" as "user" | "assistant" | "system",
+          content: await buildAssistantRecall(associatedDomain),
+          name: "system"
+        })
+      } else {
+        finalMessages.splice(finalMessages.length - 7, 0, {
+          role: "system" as "user" | "assistant" | "system",
+          content: await buildAssistantRecall(associatedDomain),
+          name: "system"
+        })
+      }
 
       recChattedAt(chatId, Date.now())
     }
