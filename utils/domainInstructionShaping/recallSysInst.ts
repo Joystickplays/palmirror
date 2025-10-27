@@ -18,7 +18,7 @@ I should subtly mention these memories in my chat.
 
 
 Here is the latest chat I had as {{char}}, between {{user}} and their events.
-- ${lastChat.entryTitle}\nEVENTS IN THIS CHAT:\n${chat.timestampStructure}
+- ${lastChat.entryTitle}\nEVENTS IN THIS CHAT:\n${lastChat.timestampStructure}
 
 I should reference whatever happened above to make mt initial message. This is necessary to create continuity.
 Got it.
