@@ -80,6 +80,7 @@ const ChatPage = () => {
 
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+  const [tokenHitStamps, setTokenHitStamps] = useState<Array<number>>([]);
   const [successfulNewMessage, setSuccessfulNewMessage] = useState<boolean | Message>(false);
   const [userPromptThinking, setUserPromptThinking] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
@@ -619,18 +620,23 @@ ${entryTitle}
         )
       ];
 
-      if (finalMessages.length < 7) {
-        finalMessages.unshift({
-          role: "system" as "user" | "assistant" | "system",
-          content: await buildAssistantRecall(associatedDomain),
-          name: "system"
-        })
-      } else {
-        finalMessages.splice(finalMessages.length - 7, 0, {
-          role: "system" as "user" | "assistant" | "system",
-          content: await buildAssistantRecall(associatedDomain),
-          name: "system"
-        })
+      if (associatedDomain) {
+        const assistantRecall = await buildAssistantRecall(associatedDomain)
+        if (assistantRecall !== "") {
+          if (finalMessages.length < 7) {
+            finalMessages.unshift({
+              role: "system" as "user" | "assistant" | "system",
+              content: assistantRecall,
+              name: "system"
+            })
+          } else {
+            finalMessages.splice(finalMessages.length - 7, 0, {
+              role: "system" as "user" | "assistant" | "system",
+              content: assistantRecall,
+              name: "system"
+            })
+          }
+        }
       }
 
       recChattedAt(chatId, Date.now())
@@ -658,21 +664,23 @@ ${entryTitle}
           assistantMessage += c;
           if ("usage" in chunk && chunk.usage?.total_tokens)
             setTokenCount(chunk.usage.total_tokens);
-          setMessages((p) => [
-            ...p.slice(0, -1),
-            {
-              id: messageId,
-              role: "assistant",
-              content: assistantMessage,
-              stillGenerating: true,
-            },
-          ]);
-          vibrate(10);
-        }
+            setTokenHitStamps((p) => [...p, Date.now()]);
+            setMessages((p) => [
+              ...p.slice(0, -1),
+              {
+                id: messageId,
+                role: "assistant",
+                content: assistantMessage,
+                stillGenerating: true,
+              },
+            ]);
+            vibrate(10);
+          }
         setMessages((p) => [
           ...p.slice(0, -1),
           { ...p[p.length - 1], stillGenerating: false },
         ]);
+        setTokenHitStamps([]);
         if (mode === "send") setIsThinking(false);
         setSuccessfulNewMessage({
           id: messageId,
@@ -706,6 +714,7 @@ ${entryTitle}
         toast.error(
           "Error: " + (err instanceof Error ? err.message : String(err))
         );
+        navigator.clipboard.writeText(JSON.stringify(finalMessages));
       }
     } finally {
       abortController.current = null;
@@ -1239,6 +1248,7 @@ ${entryTitle}
           onCancel={cancelRequest}
           isThinking={isThinking}
           userPromptThinking={userPromptThinking}
+          tokenHitStamps={tokenHitStamps}
           suggestReply={suggestReply}
           rewriteMessage={rewriteMessage}
           showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}

@@ -756,7 +756,7 @@ export default function Home() {
       resolve();
       localStorage.removeItem("PLMSecureAttempts");
       localStorage.removeItem("PLMSecureLockUntil");
-      navigator.vibrate([50, 100, 50])
+      if ("vibrate" in navigator) navigator.vibrate([50, 100, 50]);
       setIsSecureReady(true);
     });
   };

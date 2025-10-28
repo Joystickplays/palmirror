@@ -433,5 +433,8 @@ function sortByLastUpdated(
 export async function buildAssistantRecall(domainID: string) {
   const memories = getTrueDomainMemories(await getDomainMemories(domainID))
   const allChats = await totalChatsFromDomain(domainID);
+  if (allChats.length < 2) {
+    return "";
+  }
   return getRecallSysInst(memories, sortByLastUpdated(allChats)[1])
 }

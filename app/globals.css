@@ -33,6 +33,8 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+
+    --domain-image-mask: linear-gradient(to right, rgba(0,0,0,0.6), transparent);
   }
 
   .dark {
@@ -305,6 +307,8 @@ body {
   }
 }
 
+
+
 /* Custom toast styling */
 
 .Toastify__toast-container {
@@ -321,3 +325,8 @@ body {
 }
 
 
+@media (max-width: 767px) {
+  :root {
+    --domain-image-mask: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+  }
+}

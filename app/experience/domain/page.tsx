@@ -191,8 +191,25 @@ const ExperienceDomainPage: React.FC = () => {
                         damping: 10,
                     }
                 }}
-                className="palmirror-exc border border-white/20 rounded-[24px] w-full min-h-24 p-8 py-6 flex flex-col md:flex-row items-center justify-around"
-            >
+                className={`palmirror-exc border border-white/20 rounded-[24px] w-full min-h-24 p-8 py-6 flex flex-col md:flex-row items-center justify-around ${character.image && "pt-24 md:pt-6"}`}
+            >   
+                <motion.img
+                    src={character.image}
+                    className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-[70%] md:w-[50%] md:h-full rounded-xl object-cover object-[50%_30%] pointer-events-none z-[-1] opacity-80"
+                    style={{
+                        maskImage: "var(--domain-image-mask)",
+                        WebkitMaskImage: "var(--domain-image-mask)",
+                        willChange: "object-position",
+                    }}
+                    initial={{ objectPosition: "50% 40%" }}
+                    animate={{ objectPosition: "50% 80%" }}
+                    transition={{
+                        duration: 30,
+                        repeat: Infinity,
+                        repeatType: "mirror",
+                        ease: "easeInOut",
+                    }}
+                />
                 <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text md:min-w-[16rem]">{character.name}</h1>
                 <div className=""></div>
                 <div className="flex overflow-x-scroll max-w-full md:max-w-[32rem] pb-2 mt-4 md:pb-0 md:my-0 md:grid md:grid-cols-3 md:grid-rows-2 md:grid-flow-col md:auto-cols-max gap-4">

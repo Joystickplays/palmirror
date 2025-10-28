@@ -33,6 +33,7 @@ interface MessageInputProps {
   onCancel: () => void;
   isThinking: boolean;
   userPromptThinking: boolean;
+  tokenHitStamps: Array<number>;
   suggestReply: () => void;
   rewriteMessage: (base: string) => void;
   showSkipToSceneModal: () => void;
@@ -46,6 +47,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   onCancel,
   isThinking,
   userPromptThinking,
+  tokenHitStamps,
   suggestReply,
   rewriteMessage,
   showSkipToSceneModal,
@@ -126,7 +128,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       />
       <div className="absolute right-2 top-0 px-2 pt-1">
         {
-          isThinking && ( <Stopwatch startDate={firstThinking}/> )
+          isThinking && ( <Stopwatch startDate={firstThinking} tokenHitStamps={tokenHitStamps}/> )
         }
       </div>
       <ContextMenu>
