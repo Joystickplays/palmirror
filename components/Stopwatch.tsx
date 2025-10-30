@@ -68,7 +68,7 @@ const Stopwatch: React.FC<StopwatchProps> = ({ startDate, tokenHitStamps }) => {
                     Speed now: {tokensLastSec > 0 ? (
                       <>
                         <NumberFlow
-                          transformTiming={{ duration: 200, easing: 'cubic-bezier(0,19, 1, 0.22, 1)' }}
+                          transformTiming={{ duration: 200, easing: 'cubic-bezier(0.19, 1, 0.22, 1)' }}
                           value={tokensLastSec / (windowMs / 1000)}
                           format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }}
                         />{" "}
@@ -81,7 +81,7 @@ const Stopwatch: React.FC<StopwatchProps> = ({ startDate, tokenHitStamps }) => {
             }
             <p>
               Tokens generated:{" "}
-              <NumberFlow transformTiming={{ duration: 200, easing: 'cubic-bezier(0,19, 1, 0.22, 1)' }} value={tokenHitStamps.length} format={{ minimumFractionDigits: 0, maximumFractionDigits: 0 }} />
+              <NumberFlow transformTiming={{ duration: 200, easing: 'cubic-bezier(0.19, 1, 0.22, 1)' }} value={tokenHitStamps.length} format={{ minimumFractionDigits: 0, maximumFractionDigits: 0 }} />
             </p>
             {
               (() => {
@@ -93,7 +93,7 @@ const Stopwatch: React.FC<StopwatchProps> = ({ startDate, tokenHitStamps }) => {
                 return (
                   <p>
                     Average speed:{" "}
-                    <NumberFlow transformTiming={{ duration: 200, easing: 'cubic-bezier(0,19, 1, 0.22, 1)' }} value={avg} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} /> tokens/s
+                    <NumberFlow transformTiming={{ duration: 200, easing: 'cubic-bezier(0.19, 1, 0.22, 1)' }} value={avg} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} /> tokens/s
                   </p>
                 );
               })()
