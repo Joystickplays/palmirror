@@ -648,6 +648,9 @@ ${entryTitle}
         model: modelName,
         messages: finalMessages,
         stream: true,
+        stream_options: {
+          include_usage: true,
+        },
         temperature: generationTemperature,
       });
 

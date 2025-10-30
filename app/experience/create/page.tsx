@@ -229,6 +229,13 @@ export default function Home() {
                 }));
             }
             const { userName, userPersonality, ...rest } = parsedData
+            // some weird edge cases
+            if (!rest.plmex.dynamicStatuses) {
+                rest.plmex.dynamicStatuses = []
+            }
+            if (!rest.plmex.invocations) {
+                rest.plmex.invocations = []
+            }
             setCharacterData(rest);
             toast.success("Character data loaded from previous save.");
             setIsPrefillButtonVisible(false);
