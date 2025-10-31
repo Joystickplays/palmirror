@@ -10,6 +10,7 @@ import {
   removeKey as removeKeyUtil,
 } from '@/utils/palMirrorSecureUtils';
 import { WebAuthnProvider, useAuth } from '@/context/PLMSecureWebAuthnContext';
+import { setActivePLMSecureSession } from '@/utils/palMirrorSecureSession';
 
 interface PLMSecureContextProps {
   setKey: (password: string) => Promise<boolean>;
@@ -87,6 +88,7 @@ const MergedProviderContent: React.FC<MergedProviderContentProps> = ({
     const derived = await deriveKey(password, salt);
     setDerivedKey(derived);
     setIsReady(true);
+    setActivePLMSecureSession(derived)
     return true;
   };
 

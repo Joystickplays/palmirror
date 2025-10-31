@@ -16,7 +16,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useTheme } from "@/components/PalMirrorThemeProvider";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
 import Stopwatch from "@/components/Stopwatch"
@@ -33,6 +33,7 @@ interface MessageInputProps {
   onCancel: () => void;
   isThinking: boolean;
   userPromptThinking: boolean;
+  tokenHitStamps: Array<number>;
   suggestReply: () => void;
   rewriteMessage: (base: string) => void;
   showSkipToSceneModal: () => void;
@@ -46,6 +47,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   onCancel,
   isThinking,
   userPromptThinking,
+  tokenHitStamps,
   suggestReply,
   rewriteMessage,
   showSkipToSceneModal,
@@ -126,22 +128,27 @@ const MessageInput: React.FC<MessageInputProps> = ({
       />
       <div className="absolute right-2 top-0 px-2 pt-1">
         {
-          isThinking && ( <Stopwatch startDate={firstThinking}/> )
+          isThinking && ( <Stopwatch startDate={firstThinking} tokenHitStamps={tokenHitStamps}/> )
         }
       </div>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <Button
-            className="absolute right-2 bottom-2 p-2 rounded-full"
-            size="icon"
-            onClick={handleButtonClick}
-          >
-            {isThinking || userPromptThinking ? (
-              <OctagonX className="animate-pulse" />
-            ) : (
-              <Send />
-            )}
-          </Button>
+          <motion.div
+          className="absolute right-2 bottom-2"
+          whileTap={{ scale: 0.8 }}
+          transition={{ type: 'spring', mass: 1, stiffness: 200, damping: 11 }}>
+            <Button
+              className=" p-2 rounded-full"
+              size="icon"
+              onClick={handleButtonClick}
+            >
+              {isThinking || userPromptThinking ? (
+                <OctagonX className="animate-pulse" />
+              ) : (
+                <Send />
+              )}
+            </Button>
+          </motion.div>
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-64 font-sans font-semibold">

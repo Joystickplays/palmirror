@@ -17,6 +17,31 @@ export interface AlternateInitialMessage {
     initialMessage: string;
 }
 
+export interface DomainMemoryEntry {
+    key: number;
+    memory: string;
+    state: "remembering" | "forgotten";
+    lifetime: number;
+    associatedMessage: string;
+}
+
+export interface DomainAttributeHistory {
+    associatedMessage: string;
+    change: number;
+}
+export interface DomainAttributeEntry {
+    key: number;
+    attribute: string;
+    value: number;
+    history: DomainAttributeHistory[]
+}
+
+export interface DomainTimestepEntry {
+    key: number;
+    associatedMessage: string;
+    entry: string;
+}
+
 export interface CharacterData {
   image: string;
   name: string;
@@ -28,10 +53,24 @@ export interface CharacterData {
   tags: string[];
   alternateInitialMessages: Array<string> | Array<AlternateInitialMessage>;
   plmex: {
+    domain?: {
+      active: boolean;
+      memories: Array<DomainMemoryEntry>;
+      attributes: Array<DomainAttributeEntry>;
+    },
     dynamicStatuses: Array<DynamicStatus>;
     invocations: Array<Invocation>;
   };
 }
+
+export interface ChatMetadata extends CharacterData {
+    id: string;
+    lastUpdated: string;
+    associatedDomain?: string;
+    entryTitle?: string;
+    timesteps?: Array<DomainTimestepEntry>;
+}
+
 
 export const defaultCharacterData: CharacterData = {
   image: "",
@@ -44,6 +83,11 @@ export const defaultCharacterData: CharacterData = {
   tags: [],
   alternateInitialMessages: [],
   plmex: {
+    domain: {
+      active: false,
+      memories: [],
+      attributes: [],
+    },
     dynamicStatuses: [],
     invocations: [], 
   }

@@ -1,6 +1,7 @@
 import { CharacterData } from '@/types/CharacterData';
+import { buildFullDomainInstruction } from '@/utils/domainData';
 
-export const getSystemMessage = (characterData: CharacterData, userPersonality: { name: string, personality: string }, modelInstructions: string): string => {
+export const getSystemMessage = async (characterData: CharacterData, userPersonality: { name: string, personality: string }, domainID: string | null, entryTitle: string | null, modelInstructions: string): Promise<string> => {
   let userSystemMessage = ""
   if (characterData.userName !== "" && characterData.userPersonality !== "") {
 
@@ -23,7 +24,12 @@ Example formatting:
 ---
 STATUS:
 ${characterData.plmex.dynamicStatuses.map(item => `${item.name}=${item.defaultValue}`).join("\n")}
-\`\`\`` : ""
+\`\`\`
+- Refer to the default values on how to structure your statuses in each message.
+  If it has a percentage, it's a metric.
+- Do not derail or add anything unnecessary to percentage statuses.
+- Have them in a natural value.
+- DO NOT use Markdown in your statuses. Dynamic Statuses does not support Markdown.` : ""
 
   const invocationSysMSG = characterData.plmex.invocations.length > 0 ? `ACTIONS
 When applicable and fits the context, add these ACTION tags, preferably add them right when they happen:
@@ -52,6 +58,8 @@ Scenario: ${characterData.scenario !== "" ? characterData.scenario : "No scenari
 ${dynamicStatusSysMSG}
 
 ${invocationSysMSG}
+
+${domainID && entryTitle ? await buildFullDomainInstruction(domainID, entryTitle) : ""}
 
 ${modelInstructions !== "" ? "[ADDITIONAL INSTRUCTIONS:]" : ""}
 ${modelInstructions}`;

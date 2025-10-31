@@ -22,9 +22,12 @@ import pako from "pako";
 
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 interface ChatMetadata extends CharacterData {
-  id: string;
-  lastUpdated: Date;
+    id: string;
+    lastUpdated: string;
+    associatedDomain?: string;
+    entryTitle?: string;
 }
+
 
 import { usePalRec } from "@/context/PLMRecSystemContext" 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
@@ -57,6 +60,8 @@ import { useRouter } from "next/navigation";
 import { useDebounce } from "@/utils/useDebounce";
 
 import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+
+import discord from "@/public/discord.svg"
 
 
 function GetFromPlatform({
@@ -284,7 +289,7 @@ function SetupCharacter({
                 <Button
                   variant="palmirror"
                   onClick={() => {
-                    router.push("/palexp/create");
+                    router.push("/experience/create");
                   }}
                 >
                   Create
@@ -388,13 +393,13 @@ function SetupCharacter({
           </AnimateChangeInHeight>
         </DialogContent>
       </Dialog>
-      <PopoverContent asChild className="z-[999999] min-w-80">
-        <p>
-          PalMirror-exclusive characters with customizable traits and reactions.
-          Adjust their emotions and status in real-time as they react to your
-          changes, triggering sounds and effects. More features are being worked
-          out for PalMirror Experience characters.
-        </p>
+      <PopoverContent asChild>
+        <div className="z-[999999] min-w-80 font-sans">
+          <p>
+            <span className="palmirror-exc-text">PalMirror Experience</span> characters are characters made in PalMirror supercharged with features that go <b>way</b> beyond basic back-and-forth chatting. Explore your character&quot;s immersive nature, have memories, and a lot more.
+          </p>
+          <Button onClick={() => router.push("/experience/create")} variant="palmirror" className="w-full mt-4">Create a character</Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
@@ -533,7 +538,7 @@ export default function Home() {
       const updatedData = {
         ...prevData,
         image: "",
-        plmex: { dynamicStatuses: [], invocations: [] },
+        plmex: defaultCharacterData.plmex,
       };
       localStorage.setItem("characterData", JSON.stringify(updatedData));
       toast.success("Character data saved! Starting chat...");
@@ -598,10 +603,7 @@ export default function Home() {
                 [],
               scenario: data.node.definition.scenario,
               image: imageBase64,
-              plmex: {
-                dynamicStatuses: [],
-                invocations: [],
-              },
+              plmex: defaultCharacterData.plmex,
             };
             localStorage.setItem("characterData", JSON.stringify(updatedData));
             return updatedData;
@@ -664,6 +666,13 @@ export default function Home() {
               ? compressedDataT
               : pako.ungzip(new Uint8Array(compressedData), { to: "string" });
             const characterData: CharacterData = JSON.parse(decompressedData);
+            if (characterData.plmex.domain?.active && !isSecureReady) {
+              toast.info("Use PalMirror Secure for PalMirror Experience Domain characters!")
+              reject(
+                "Domain enabled character!"
+              )
+              return;
+            }
 
             setCharacterData((oldCharacterData) => {
               const updatedData = { ...oldCharacterData, ...characterData };
@@ -674,6 +683,17 @@ export default function Home() {
               return updatedData;
             });
 
+            if (characterData.plmex.domain?.active) {
+              const chatKey = crypto.randomUUID()
+              PLMsecureContext?.setSecureData(`METADATA${chatKey}`, {
+                ...characterData,
+                id: chatKey,
+                lastUpdated: new Date().toISOString(),
+              })
+              sessionStorage.setItem("chatSelect", chatKey)
+              router.push("/experience/domain")
+              return;
+            }
             sessionStorage.removeItem("chatSelect");
             router.push("/chat");
 
@@ -693,7 +713,7 @@ export default function Home() {
       {
         pending: "Processing character file...",
         success: "Character imported successfully.",
-        error: "Failed to import the character. Please check the file format.",
+        error: "Failed to import the character.",
       }
     );
   };
@@ -736,7 +756,7 @@ export default function Home() {
       resolve();
       localStorage.removeItem("PLMSecureAttempts");
       localStorage.removeItem("PLMSecureLockUntil");
-      navigator.vibrate([50, 100, 50])
+      if ("vibrate" in navigator) navigator.vibrate([50, 100, 50]);
       setIsSecureReady(true);
     });
   };
@@ -1037,7 +1057,11 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow w-full justify-center items-start ">
                 <AnimatePresence mode="popLayout">
                   {chatList.length > 0 ? (
-                    sortByLastUpdated(chatList).map((chat, index) => (
+                    sortByLastUpdated(chatList).map((chat, index) => {
+                      if (chat.associatedDomain) {
+                        return null;
+                      }
+                      return (
                       <motion.div
                         initial={
                           (window.innerWidth < 640 && index < 4) ||
@@ -1076,7 +1100,7 @@ export default function Home() {
                           },
                         }}
                         key={chat.lastUpdated}
-                        className="flex flex-col gap-1.5 p-6 border rounded-xl h-full"
+                        className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full ${chat.plmex.domain?.active && "palmirror-exc"}`}
                         layout
                       >
                         {chat.image && (
@@ -1091,37 +1115,44 @@ export default function Home() {
                             />
                           </div>
                         )}
-                        <h2 className="font-bold ml-auto">{chat.name}</h2>
+                        <h2 className={`font-bold ml-auto ${chat.plmex.domain?.active && "palmirror-exc-text"}`}>{chat.name}</h2>
                         <p className="opacity-70 ml-auto text-xs">
                           {formatDateWithLocale(chat.lastUpdated)}
                         </p>
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              PLMsecureContext?.removeKey(chat.id);
-                              PLMsecureContext?.removeKey(`METADATA${chat.id}`);
-                              setChatList((prevList) =>
-                                prevList.filter(
-                                  (chatItem) => chatItem.id !== chat.id
-                                )
-                              );
-                            }}
-                          >
-                            <Trash2 />
-                          </Button>
+                          {!chat.plmex.domain?.active && (
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                PLMsecureContext?.removeKey(chat.id);
+                                PLMsecureContext?.removeKey(`METADATA${chat.id}`);
+                                setChatList((prevList) =>
+                                  prevList.filter(
+                                    (chatItem) => chatItem.id !== chat.id
+                                  )
+                                );
+                              }}
+                            >
+                              <Trash2 />
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             onClick={() => {
                               sessionStorage.setItem("chatSelect", chat.id);
+                              if (chat.plmex.domain?.active) {
+                                router.push("/experience/domain")
+                                return;
+                              }
                               router.push(`/chat`);
                             }}
                           >
-                            Continue <ArrowRight />
+                            {chat.plmex.domain?.active ? "Enter" : "Continue"} <ArrowRight />
                           </Button>
                         </div>
                       </motion.div>
-                    ))
+                    )
+                    })
                   ) : (
                     <p className="opacity-50 text-sm">
                       {chatsLoading
@@ -1129,6 +1160,7 @@ export default function Home() {
                         : "No chats found."}
                     </p>
                   )}
+                
                 </AnimatePresence>
               </div>
             </motion.div>
@@ -1228,12 +1260,15 @@ export default function Home() {
       </div>
       {/* <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character.</p> */}
       <p className="text-sm opacity-10 text-center">
-        An opinionated, {" "}
+        An opinionated, immersive, {" "}
         <u>
           <a href="https://github.com/Joystickplays/palmirror">open-source</a>
         </u>{" "}
         AI chat client project
       </p>
+      <a className="opacity-20 hover:opacity-80 transition-opacity" href="https://discord.gg/DhaszrVYZ7" target="_blank" rel="noopener noreferrer">
+        <img src={"./discord.svg"} alt="Discord Logo" className="w-8 h-8" />
+      </a>
 
       <ToastContainer
         position="top-right"

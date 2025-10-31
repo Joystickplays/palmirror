@@ -13,9 +13,9 @@ import { useThrottle } from "@/utils/useThrottle";
 import { useTheme } from "@/components/PalMirrorThemeProvider";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { getSystemMessage } from "@/components/systemMessageGeneration";
+import { getSystemMessage } from "@/utils/systemMessageGeneration";
 import OpenAI from "openai";
-import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
+import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry, DomainTimestepEntry } from "@/types/CharacterData";
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import {
@@ -29,6 +29,11 @@ import { usePalRec } from "@/context/PLMRecSystemContext"
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
+
+import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall } from "@/utils/domainData";
+import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
+import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
+
 
 let openai: OpenAI;
 
@@ -47,21 +52,36 @@ type UserPersonality = {
 };
 
 
+
+
+
+interface Message {
+    id: string;
+    role: "user" | "assistant" | "system";
+    content: string;
+    stillGenerating: boolean;
+}
+
+
 const ChatPage = () => {
   const [messages, setMessages] = useState<
-    Array<{
-      role: "user" | "assistant" | "system";
-      content: string;
-      stillGenerating: boolean;
-    }>
+    Array<Message>
   >([]);
   const [characterData, setCharacterData] =
     useState<CharacterData>(defaultCharacterData);
   const [chatId, setChatId] = useState("");
   const [loaded, setLoaded] = useState(false);
 
+  const [associatedDomain, setAssociatedDomain] = useState<string>("");
+  const [entryTitle, setEntryTitle] = useState<string>("");
+  const [chatTimesteps, setChatTimesteps] = useState<Array<DomainTimestepEntry>>([])
+  const attributeNotification = useAttributeNotification();
+  const memoryNotification = useMemoryNotification();
+
   const [newMessage, setNewMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+  const [tokenHitStamps, setTokenHitStamps] = useState<Array<number>>([]);
+  const [successfulNewMessage, setSuccessfulNewMessage] = useState<boolean | Message>(false);
   const [userPromptThinking, setUserPromptThinking] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
   const [accurateTokenizer, setAccurateTokenizer] = useState(true); // toggle it yourself .
@@ -155,6 +175,55 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
   const router = useRouter();
   const PLMSecContext = useContext(PLMSecureContext);
 
+  // Tag extractors
+  const extractAttributeTags = (message: string) => {
+    //  <ATR_CHANGE Trustworthiness +2 Courage -3>
+
+    const atrRegex = /<ATR_CHANGE\s+([^>]+)>/i;
+    const match = message.match(atrRegex);
+
+    if (!match || !match[1]) return [];
+
+    const content = match[1].trim();
+    const pairRegex = /([a-zA-Z_]+)\s*([+-]?\d+)/g;
+
+    const results: Array<{ attribute: string; change: number }> = [];
+    let pairMatch;
+
+    while ((pairMatch = pairRegex.exec(content)) !== null) {
+      results.push({
+        attribute: pairMatch[1],
+        change: parseInt(pairMatch[2], 10),
+      });
+    }
+
+    return results;
+  };
+
+  const extractMemories = (text: string) => {
+    const regex = /<NEW_MEMORY\s+([^>]+)>/g;
+    const matches: string[] = [];
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      matches.push(match[1].trim());
+    }
+
+    return matches;
+  }
+
+  const extractTimesteps = (text: string) => {
+    const regex = /<TIMESTEP\s+([^>]+)>/g;
+    const matches: string[] = [];
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      matches.push(match[1].trim());
+    }
+    
+    return matches;
+  }
+
   // Function to download a file
   const downloadFile = (
     content: string,
@@ -219,6 +288,25 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
       setMessages(parsedMessages);
       toast.success("Chat imported successfully!");
+
+      if (associatedDomain) {
+        const timestepsToSet: Array<DomainTimestepEntry> = [];
+        for (const msg of parsedMessages) {
+          if (!msg?.content) continue;
+          const extracted = extractTimesteps(msg.content);
+          for (const ts of extracted) {
+            timestepsToSet.push({
+              key: Math.floor(Math.random() * 69420),
+              associatedMessage: msg.id,
+              entry: ts,
+            });
+          }
+        }
+        if (timestepsToSet.length > 0) {
+          setChatTimesteps(timestepsToSet);
+          toast.info(`Found timesteps from messages, imported ${timestepsToSet.length} timesteps`);
+        }
+      }
     } catch (error) {
       toast.error("Failed to decode messages: " + error);
     }
@@ -284,12 +372,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
   };
 
   const checkAndTrimMessages = (
-    messagesList: Array<{
-      role: "user" | "assistant" | "system";
-      content: string;
-      stillGenerating: boolean;
-    }>
-  ) => {
+    messagesList: Array<Message>
+  ): Array<Message> => {
     let totalLength = messagesList.reduce(
       (acc, msg) => acc + msg.content.length,
       0
@@ -322,13 +406,15 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       if (!force && e?.key !== "Enter") return;
     }
 
+    const messageId = crypto.randomUUID()
+
     loadSettingsFromLocalStorage();
     if (!baseURL.includes("http")) {
       toast.error("You need to configure your AI provider first in Settings.");
       return;
     }
 
-    let messagesList = [];
+    let messagesList: Message[] = [];
     let userMessageContent = "";
 
     if (mode === "send") {
@@ -340,11 +426,26 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         .find((m) => m.role === "user")?.content;
       }
       messagesList = [...messages];
+      
       if (regenerate) {
-        messagesList = messagesList.slice(0, -1);
-        
-        setMessages(messagesList);
+        if (messagesList.length > 0) {
+          const lastMessageId = messagesList[messagesList.length - 1].id;
+
+          if (associatedDomain) {
+            try {
+              await deleteMemoryFromMessageIfAny(associatedDomain, lastMessageId);
+              await reverseDomainAttribute(associatedDomain, lastMessageId);
+              setChatTimesteps(prev => prev.filter(ts => ts.associatedMessage !== lastMessageId));
+            } catch (e) {
+              console.warn(e);
+            }
+          }
+
+          messagesList = messagesList.slice(0, -1);
+          setMessages(messagesList);
+        }
       }
+
       userMessageContent = regenerate
         ? regenerationMessage ?? ""
         : optionalMessage !== ""
@@ -352,6 +453,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         : newMessage.trim();
       if (userMessageContent && userMSGaddOnList) {
         messagesList.push({
+          id: crypto.randomUUID(),
           role: "user",
           content: userMessageContent,
           stillGenerating: false,
@@ -365,9 +467,11 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       messagesList = checkAndTrimMessages([...messages]);
     }
 
-    const systemPrompt = getSystemMessage(
+    const systemPrompt = await getSystemMessage(
       characterData,
       userPersonality,
+      associatedDomain ?? sessionStorage.getItem("associatedDomain") ?? null,
+      entryTitle ?? sessionStorage.getItem("entryTitle") ?? null,
       modelInstructions +
         (activeSteers.length > 0 && steerApplyMethod === "system"
           ? generateSteerPrompt({ steers: activeSteers })
@@ -402,7 +506,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
           role: "user",
           name: "user",
           content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${rewriteBase}\`
-Your enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.`,
+Your enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.
+Do not lead with anything like "Sure. Here's an enhanced version..." or anything similar. Be invisible. Do not create the status section here. JUST THE REWRITTEN MESSAGE.`,
         },
       ];
     } else if (mode === "call-steer") {
@@ -470,7 +575,7 @@ Your enhanced message should be quick, realistic, markdown-styled and in the per
                 role: "user" as "user" | "assistant" | "system",
                 name: "user",
                 content:
-                  "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. Use 3 minutes as reference (or shorter). ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
+                  "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
               },
             ]
           : []),
@@ -505,12 +610,34 @@ It should be 3-5 lengthy (lengthy to paint a more detailed picture) paragraphs (
 Do **not** mention AI, chats, or being a character — stay fully in-world.
 
 Only output the greeting message itself. No extra explanation.
+
+${entryTitle && "The user has given a title for you to make a greeting message around. Make sure to incorporate this, the best you can even if it's vague."}
+${entryTitle}
 `,
             }
           ]
           : []
         )
       ];
+
+      if (associatedDomain) {
+        const assistantRecall = await buildAssistantRecall(associatedDomain)
+        if (assistantRecall !== "") {
+          if (finalMessages.length < 7) {
+            finalMessages.unshift({
+              role: "system" as "user" | "assistant" | "system",
+              content: assistantRecall,
+              name: "system"
+            })
+          } else {
+            finalMessages.splice(finalMessages.length - 7, 0, {
+              role: "system" as "user" | "assistant" | "system",
+              content: assistantRecall,
+              name: "system"
+            })
+          }
+        }
+      }
 
       recChattedAt(chatId, Date.now())
     }
@@ -521,6 +648,9 @@ Only output the greeting message itself. No extra explanation.
         model: modelName,
         messages: finalMessages,
         stream: true,
+        stream_options: {
+          include_usage: true,
+        },
         temperature: generationTemperature,
       });
 
@@ -529,7 +659,7 @@ Only output the greeting message itself. No extra explanation.
       if (destination === "chat") {
         setMessages((p) => [
           ...p,
-          { role: "assistant", content: "", stillGenerating: true },
+          { id: messageId, role: "assistant", content: "", stillGenerating: true },
         ]);
         for await (const chunk of comp) {
           if (abortController.current?.signal.aborted) break;
@@ -537,21 +667,30 @@ Only output the greeting message itself. No extra explanation.
           assistantMessage += c;
           if ("usage" in chunk && chunk.usage?.total_tokens)
             setTokenCount(chunk.usage.total_tokens);
-          setMessages((p) => [
-            ...p.slice(0, -1),
-            {
-              role: "assistant",
-              content: assistantMessage,
-              stillGenerating: true,
-            },
-          ]);
-          vibrate(10);
-        }
+            setTokenHitStamps((p) => [...p, Date.now()]);
+            setMessages((p) => [
+              ...p.slice(0, -1),
+              {
+                id: messageId,
+                role: "assistant",
+                content: assistantMessage,
+                stillGenerating: true,
+              },
+            ]);
+            vibrate(10);
+          }
         setMessages((p) => [
           ...p.slice(0, -1),
           { ...p[p.length - 1], stillGenerating: false },
         ]);
+        setTokenHitStamps([]);
         if (mode === "send") setIsThinking(false);
+        setSuccessfulNewMessage({
+          id: messageId,
+          role: "assistant",
+          content: assistantMessage,
+          stillGenerating: false,
+        });
       } else {
         for await (const chunk of comp) {
           if (abortController.current?.signal.aborted) break;
@@ -578,6 +717,7 @@ Only output the greeting message itself. No extra explanation.
         toast.error(
           "Error: " + (err instanceof Error ? err.message : String(err))
         );
+        navigator.clipboard.writeText(JSON.stringify(finalMessages));
       }
     } finally {
       abortController.current = null;
@@ -600,10 +740,26 @@ Only output the greeting message itself. No extra explanation.
     setMessages(updatedMessages);
   };
 
-  const rewindTo = (index: number) => {
+  const rewindTo = async (index: number) => {
+    const messagesToDelete = messages.slice(index + 1);
+
+    if (associatedDomain && messagesToDelete.length > 0) {
+      for (const msg of messagesToDelete) {
+        try {
+          await deleteMemoryFromMessageIfAny(associatedDomain, msg.id);
+          await reverseDomainAttribute(associatedDomain, msg.id);
+
+          setChatTimesteps(prev => prev.filter(ts => ts.associatedMessage !== msg.id));
+        } catch (err) {
+          console.error("Error reverting domain data:", err);
+        }
+      }
+    }
+
     setMessages(messages.slice(0, index + 1));
     setExclusionCount(0);
   };
+
 
   const suggestReply = async () => {
     setUserPromptThinking(true);
@@ -769,14 +925,21 @@ Only output the greeting message itself. No extra explanation.
           value: status.defaultValue,
         })
       );
+      const messageId = crypto.randomUUID()
       setMessages([
         {
+          id: messageId,
           role: "assistant",
           content:
             characterData.initialMessage + buildStatusSection(statusData),
           stillGenerating: false,
         },
       ]);
+
+      if (entryTitle && sessionStorage.getItem("chatFromNewDomain") == "1") {
+        sessionStorage.removeItem("chatFromNewDomain");
+        regenerateMessage();
+      }
     }
   }, [characterData.initialMessage]);
 
@@ -826,33 +989,127 @@ Only output the greeting message itself. No extra explanation.
     load();
   }, []);
 
+  useEffect(() => {
+    const domain = sessionStorage.getItem("chatAssociatedDomain");
+    const entryName = sessionStorage.getItem("chatEntryName");
+    const timesteps = sessionStorage.getItem("chatTimesteps");
+
+    if (domain) {
+      setAssociatedDomain(domain);
+      sessionStorage.removeItem("chatAssociatedDomain");
+    }
+
+    if (entryName) {
+      setEntryTitle(entryName);
+      sessionStorage.removeItem("chatEntryName");
+    }
+
+    if (timesteps) {
+      setChatTimesteps(JSON.parse(timesteps));
+      sessionStorage.removeItem("chatTimesteps");
+    }
+
+  }, []);
+
+
   // Save chat to chat ID if any (and if PalMirror Secure active)
   useEffect(() => {
-    const save = async () => {
-      if (
-        (await isPalMirrorSecureActivated()) &&
-        PLMSecContext &&
-        PLMSecContext.isSecureReady() &&
-        chatId !== ""
-      ) {
-        await PLMSecContext.setSecureData(chatId, encodeMessages(true));
-        await PLMSecContext.setSecureData(`METADATA${chatId}`, {
-          ...characterData,
-          id: chatId,
-          lastUpdated: new Date().toISOString(),
-        });
-        console.log("saved chat");
-      }
-    };
-    save();
-  }, [messages]);
+  const save = async () => {
+    const active = await isPalMirrorSecureActivated();
+    if (
+      active &&
+      PLMSecContext &&
+      PLMSecContext.isSecureReady() &&
+      chatId !== ""
+    ) {
+      await PLMSecContext.setSecureData(chatId, encodeMessages(true));
 
+      const metadata: ChatMetadata = {
+        ...characterData,
+        id: chatId,
+        lastUpdated: new Date().toISOString(),
+        associatedDomain,
+        entryTitle,
+        timesteps: chatTimesteps
+      };
+
+      delete metadata.plmex?.domain;
+
+      console.log("saving metadata:", metadata);
+
+      await PLMSecContext.setSecureData(`METADATA${chatId}`, metadata);
+      console.log("saved chat");
+
+      if (associatedDomain) {
+        sessionStorage.setItem('chatSelect', associatedDomain)
+      }
+    }
+  };
+
+  save();
+}, [messages, associatedDomain, entryTitle]);
+
+
+  
   // Show newcomer drawer if new ..
   useEffect(() => {
     if (!localStorage.getItem("NewcomerDrawer")) {
       // setShowingNewcomerDrawer(true);
     }
   }, []);
+
+  
+
+  useEffect(() => {
+    if (successfulNewMessage && typeof successfulNewMessage !== 'boolean' && associatedDomain) {
+      const lastMessage = successfulNewMessage.content;
+
+      (async () => {
+        // --- Attributes ---
+        const atrChanges = extractAttributeTags(lastMessage);
+        for (const { attribute, change } of atrChanges) {
+          await setDomainAttributes(associatedDomain, successfulNewMessage.id, attribute, change, true);
+        
+          const attributes = await getDomainAttributes(associatedDomain);
+          const attributeCurrent = attributes.find(
+            (attr: DomainAttributeEntry) => attr.attribute === attribute
+          );
+          if (attributeCurrent) {
+            attributeNotification.create({
+              attribute,
+              fromVal: attributeCurrent.value,
+              toVal: attributeCurrent.value + change
+            });
+          }
+        }
+
+        // --- Memories ---
+        const memoryToAdd = extractMemories(lastMessage);
+        for (const memory of memoryToAdd) {
+          const memories = await getDomainMemories(associatedDomain)
+          if (memories.some((m: DomainMemoryEntry) => m.memory === memory)) {
+            continue;
+          }
+          await addDomainMemory(associatedDomain, successfulNewMessage.id, memory);
+          memoryNotification.create(`${characterData.name} will remember that.`, memory);
+        }
+
+        // --- Timesteps ---
+        const timestepsToAdd = extractTimesteps(lastMessage);
+        for (const timestep of timestepsToAdd) {
+          setChatTimesteps((prev) => [
+            ...prev,
+            {
+              key: Math.floor(Math.random() * 69420),
+              associatedMessage: successfulNewMessage.id,
+              entry: timestep,
+            },
+          ]);
+          // toast.info(timestep);
+        }
+      })();
+    }
+  }, [successfulNewMessage]);
 
   // Token counting (this was way too laggy so scrapped)
 
@@ -910,6 +1167,7 @@ Only output the greeting message itself. No extra explanation.
       >
         <ChatHeader
           characterData={characterData}
+          fromDomain={!!entryTitle}
           getExportedMessages={() => {
             encodeMessages(false);
           }}
@@ -993,6 +1251,7 @@ Only output the greeting message itself. No extra explanation.
           onCancel={cancelRequest}
           isThinking={isThinking}
           userPromptThinking={userPromptThinking}
+          tokenHitStamps={tokenHitStamps}
           suggestReply={suggestReply}
           rewriteMessage={rewriteMessage}
           showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
