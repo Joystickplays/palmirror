@@ -1208,7 +1208,7 @@ ${entryTitle}
                         message.role === "user"
                           ? "origin-bottom-right ml-auto"
                           : "origin-bottom-left"
-                      } overflow-hidden w-fit`}
+                      } overflow-hidden w-fit max-w-full`}
                       // initial={{
                       //   scale: 0.8,
                       //   opacity: 0,
