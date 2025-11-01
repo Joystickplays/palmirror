@@ -56,8 +56,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [localMessage, setLocalMessage] = useState(newMessage);
   const localMessageRef = useRef<string>("");
 
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
   useEffect(() => {
     setLocalMessage(newMessage);
   }, [newMessage]);
@@ -83,7 +81,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
   ) => {
     if (e && e.key === "Enter") {
       e.preventDefault();
-      setNewMessage(localMessageRef.current);
       handleSendMessage(
         {
           key: "Enter",
@@ -127,8 +124,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
         value={localMessage}
         onChange={handleInputChange}
         onKeyDown={(e) => localHandleSendMessage(e)}
-        ref={inputRef}
-        onBlur={() => { setNewMessage(localMessageRef.current) }}
         disabled={userPromptThinking}
       />
       <div className="absolute right-2 top-0 px-2 pt-1">
