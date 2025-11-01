@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useContext } from "react";
 import React from "react";
 import MessageCard from "@/components/MessageCard";
+import MessageCardDisplayOnly from "@/components/MessageCardVisual";
 import ChatHeader from "@/components/ChatHeader";
 import MessageInput from "@/components/MessageInput";
 import SteerBar from "@/components/SteerBar";
@@ -79,12 +80,23 @@ const ChatPage = () => {
   const memoryNotification = useMemoryNotification();
 
   const [newMessage, setNewMessage] = useState("");
+  const [lastNewMessage, setLastNewMessage] = useState("");
+  const [newMessageId, setNewMessageId] = useState(crypto.randomUUID());
   const [isThinking, setIsThinking] = useState(false);
   const [tokenHitStamps, setTokenHitStamps] = useState<Array<number>>([]);
   const [successfulNewMessage, setSuccessfulNewMessage] = useState<boolean | Message>(false);
   const [userPromptThinking, setUserPromptThinking] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
   const [accurateTokenizer, setAccurateTokenizer] = useState(true); // toggle it yourself .
+
+  const inputDiv = useRef<HTMLDivElement>(null);
+  const inputAbsolutePositions = useRef<{ top: number; left: number }>({ top: 0, left: 0 });
+  useEffect(() => {
+    if (inputDiv.current) {
+      const { top, left } = inputDiv.current.getBoundingClientRect();
+      inputAbsolutePositions.current = { top, left };
+    }
+  }, [inputDiv]);
 
   const [baseURL, setBaseURL] = useState("https://cvai.mhi.im/v1");
   const [apiKey, setApiKey] = useState("none");
@@ -406,7 +418,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       if (!force && e?.key !== "Enter") return;
     }
 
-    const messageId = crypto.randomUUID()
+    const messageId = newMessageId
 
     loadSettingsFromLocalStorage();
     if (!baseURL.includes("http")) {
@@ -452,14 +464,16 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         ? optionalMessage.trim()
         : newMessage.trim();
       if (userMessageContent && userMSGaddOnList) {
+        setLastNewMessage(userMessageContent);
         messagesList.push({
-          id: crypto.randomUUID(),
+          id: messageId,
           role: "user",
           content: userMessageContent,
           stillGenerating: false,
         });
         setMessages(messagesList);
         setNewMessage("");
+        setNewMessageId(crypto.randomUUID());
         textareaRef.current?.focus();
       }
       setIsThinking(true);
@@ -717,7 +731,7 @@ ${entryTitle}
         toast.error(
           "Error: " + (err instanceof Error ? err.message : String(err))
         );
-        navigator.clipboard.writeText(JSON.stringify(finalMessages));
+        // navigator.clipboard.writeText(JSON.stringify(finalMessages));
       }
     } finally {
       abortController.current = null;
@@ -945,7 +959,7 @@ ${entryTitle}
 
   // Auto-scroll to Bottom
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messageEndRef.current?.scrollIntoView({ behavior: "instant" });
   }, [messages]);
 
   // Load from chat ID if any (and if PalMirror Secure active)
@@ -1192,21 +1206,23 @@ ${entryTitle}
                       ref={isSecondLast ? secondLastMessageRef : null}
                       className={`${
                         message.role === "user"
-                          ? "origin-bottom-right"
+                          ? "origin-bottom-right ml-auto"
                           : "origin-bottom-left"
-                      } overflow-hidden`}
-                      initial={{
-                        scale: 0.8,
-                        opacity: 0,
-                        x: message.role === "user" ? 100 : -100,
-                      }}
-                      animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+                      } overflow-hidden w-fit`}
+                      // initial={{
+                      //   scale: 0.8,
+                      //   opacity: 0,
+                      //   x: message.role === "user" ? 100 : -100,
+                      // }}
+                      // animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
                       exit={{ height: 0, opacity: 0, filter: "blur(5px)" }}
                       transition={{
                         type: "spring",
                         stiffness: 215,
                         damping: 25,
                       }}
+                      layout="position"
+                      layoutId={message.id}
                     >
                       <MessageCard
                         index={index}
@@ -1244,19 +1260,32 @@ ${entryTitle}
           manageSteerModal={manageSteerModal}
           setManageSteerModal={setManageSteerModal}
         />
-        <MessageInput
-          newMessage={newMessage}
-          setNewMessage={setNewMessage}
-          handleSendMessage={handleSendMessage}
-          onCancel={cancelRequest}
-          isThinking={isThinking}
-          userPromptThinking={userPromptThinking}
-          tokenHitStamps={tokenHitStamps}
-          suggestReply={suggestReply}
-          rewriteMessage={rewriteMessage}
-          showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
-          showSteerModal={() => setManageSteerModal(true)}
-        />
+        <div ref={inputDiv} className="z-[-5]">
+          <MessageInput
+            newMessage={newMessage}
+            setNewMessage={setNewMessage}
+            handleSendMessage={handleSendMessage}
+            onCancel={cancelRequest}
+            isThinking={isThinking}
+            userPromptThinking={userPromptThinking}
+            tokenHitStamps={tokenHitStamps}
+            suggestReply={suggestReply}
+            rewriteMessage={rewriteMessage}
+            showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
+            showSteerModal={() => setManageSteerModal(true)}
+          />
+        </div>
+
+        
+        <AnimatePresence>
+          <motion.div
+          initial={{ opacity: 0, zIndex: 0 }}
+          animate={{ opacity: 0, zIndex: 0 }}
+          exit={{ opacity: 1, zIndex: 0 }}
+          transition={{ opacity: { duration: 0 } }} className="pt-2" layout="position" key={newMessageId} layoutId={newMessageId} style={{ position: "absolute", top: inputAbsolutePositions.current.top + 14, left: 33, zIndex: 9999 }}>
+            <MessageCardDisplayOnly role="user" content={newMessage} stillGenerating={false} characterData={characterData} />
+          </motion.div>
+        </AnimatePresence>
       </motion.div>
       <TokenCounter tokenCount={tokenCount} />
       <input
