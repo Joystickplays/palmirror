@@ -158,7 +158,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           >
             <span className="flex items-center gap-2">
               <MessageSquareQuote className="h-4 w-4" />
-              Suggest a reply
+              Suggest replies...
             </span>
           </ContextMenuItem>
 

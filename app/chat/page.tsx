@@ -33,6 +33,9 @@ import { encodingForModel } from "js-tiktoken";
 import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
+import SuggestionBar from "@/components/SuggestionBar";
+import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
 
 
 let openai: OpenAI;
@@ -92,6 +95,10 @@ const ChatPage = () => {
   const [modelInstructions, setModelInstructions] = useState("");
   const [modelName, setModelName] = useState("");
   
+  const [showSuggestionBar, setShowSuggestionBar] = useState(false);
+  const [suggestionBarGenerating, setSuggestionBarGenerating] = useState(false);
+  const [replySuggestions, setReplySuggestions] = useState<string[]>([]);
+
   const [userPersonality, setUserPersonality] = useState({ name: "", personality: "" })
 
   const {
@@ -491,7 +498,21 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         {
           role: "user",
           name: "user",
-          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality. Reply must be thoughtful and quick. IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* BE THE CHARACTER!\n\nPlease note this is an exception to the "No talking as user" rule. I specifically request this.\nAvoid leading with "Understood, here's a...", JUST GENERATE THE REPLY STRAIGHT UP. Now, generate.`,
+          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality. THIS REPLY should be about the {{user}} doing this: "${rewriteBase}". IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* BE THE CHARACTER!\n\nPlease note this is an exception to the "No talking as user" rule. I specifically request this.\nAvoid leading with "Understood, here's a...", JUST GENERATE THE REPLY STRAIGHT UP. Now, generate.`,
+        },
+      ];
+    } else if (mode === "suggest-bar") {
+      finalMessages = [
+        {
+          role: "system" as "user" | "assistant" | "system",
+          content: systemPrompt,
+          name: "system",
+        },
+        ...messagesList.map((m) => ({ ...m, name: "-" })),
+        {
+          role: "user",
+          name: "user",
+          content: suggestionBarSysInst
         },
       ];
     } else if (mode === "rewrite") {
@@ -652,7 +673,7 @@ ${entryTitle}
           include_usage: true,
         },
         temperature: generationTemperature,
-      });
+      }, { signal: abortController.current?.signal });
 
       let assistantMessage = "";
 
@@ -691,6 +712,21 @@ ${entryTitle}
           content: assistantMessage,
           stillGenerating: false,
         });
+      } else if (destination === "suggest-bar") {
+        for await (const chunk of comp) {
+          if (abortController.current?.signal.aborted) break;
+
+          const c = chunk.choices[0].delta.content || "";
+          assistantMessage += c;
+          
+          const suggestions: string[] = assistantMessage
+            .replace(/`/g, "")
+            .split("|")
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+
+          setReplySuggestions(suggestions);
+        }
       } else {
         for await (const chunk of comp) {
           if (abortController.current?.signal.aborted) break;
@@ -762,6 +798,44 @@ ${entryTitle}
 
 
   const suggestReply = async () => {
+    let canGenerate = false;
+    if (!suggestionBarGenerating && !showSuggestionBar) {
+      canGenerate = true;
+      setShowSuggestionBar(true);
+    }
+    if (canGenerate) {
+      setSuggestionBarGenerating(true);
+      setIsThinking(true);
+      setReplySuggestions([]);
+      await handleSendMessage(
+        null,
+        true,
+        false,
+        "",
+        false,
+        "suggest-bar",
+        "",
+        "suggest-bar"
+      );
+      setSuggestionBarGenerating(false);
+      setIsThinking(false);
+    }
+    // setUserPromptThinking(true);
+    // await handleSendMessage(
+    //   null,
+    //   true,
+    //   false,
+    //   "",
+    //   false,
+    //   "suggest",
+    //   "",
+    //   "input"
+    // );
+    // setUserPromptThinking(false);
+  };
+
+  const suggestReplyFromChip = async (chip: string) => {
+    setShowSuggestionBar(false);
     setUserPromptThinking(true);
     await handleSendMessage(
       null,
@@ -770,7 +844,7 @@ ${entryTitle}
       "",
       false,
       "suggest",
-      "",
+      chip,
       "input"
     );
     setUserPromptThinking(false);
@@ -1232,7 +1306,7 @@ ${entryTitle}
         </div>
 
         <SkipToSceneModal modalState={skipToSceneModalState} setModalState={setSkipToSceneModalState} skipToSceneCallback={(b) => skipToScene(b)}/>
-
+              
         <SteerBar
           activeSteers={activeSteers}
           addSteer={addSteer}
@@ -1244,6 +1318,20 @@ ${entryTitle}
           manageSteerModal={manageSteerModal}
           setManageSteerModal={setManageSteerModal}
         />
+        <AnimateChangeInHeight>
+          <AnimatePresence mode="popLayout">
+            {showSuggestionBar && ( <motion.div className="origin-bottom" key="suggestionBarWrapper" exit={{ opacity: 0, scaleY: 0 }}>
+              
+                <SuggestionBar 
+                  generating={suggestionBarGenerating}
+                  suggestions={replySuggestions}
+                  suggestionPicked={(suggestion) => {suggestReplyFromChip(suggestion)}}
+                  requestHide={() => {setShowSuggestionBar(false)}}
+                />
+              
+            </motion.div> )}
+          </AnimatePresence>
+        </AnimateChangeInHeight>
         <MessageInput
           newMessage={newMessage}
           setNewMessage={setNewMessage}
