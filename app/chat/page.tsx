@@ -753,7 +753,6 @@ ${entryTitle}
         toast.error(
           "Error: " + (err instanceof Error ? err.message : String(err))
         );
-        navigator.clipboard.writeText(JSON.stringify(finalMessages));
       }
     } finally {
       abortController.current = null;
