@@ -110,22 +110,24 @@ export function useTypewriter(
 
     const initialDelay = effectiveSpeed + openingQuoteBoundary;
 
-    let showTimer: ReturnType<typeof setTimeout> | undefined;
-    let resumeTimer: ReturnType<typeof setTimeout> | undefined;
-
-    showTimer = setTimeout(() => {
+    const showTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
       setText(next);
       const totalAfterDelay = (punctuationDelay || 0) + closingQuoteBoundary;
       if (totalAfterDelay > 0) {
         lockUntilRef.current = Date.now() + totalAfterDelay;
-        resumeTimer = setTimeout(() => setTick((t) => t + 1), totalAfterDelay);
+        const resumeTimer: ReturnType<typeof setTimeout> = setTimeout(
+          () => setTick((t) => t + 1),
+          totalAfterDelay
+        );
+
+        return () => clearTimeout(resumeTimer);
       }
     }, initialDelay);
 
     return () => {
-      if (showTimer) clearTimeout(showTimer);
-      if (resumeTimer) clearTimeout(resumeTimer);
+      clearTimeout(showTimer);
     };
+
   }, [target, text, speed, inBatchesOf, punctuationDelays, tick]);
 
   return text;
