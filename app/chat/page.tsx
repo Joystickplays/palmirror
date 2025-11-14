@@ -498,7 +498,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         {
           role: "user",
           name: "user",
-          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality. THIS REPLY should be about the {{user}} doing this: "${rewriteBase}". IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* BE THE CHARACTER!\n\nPlease note this is an exception to the "No talking as user" rule. I specifically request this.\nAvoid leading with "Understood, here's a...", JUST GENERATE THE REPLY STRAIGHT UP. Now, generate.`,
+          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality. THIS REPLY should be about the {{user}} doing this: "${rewriteBase}". IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* BE THE CHARACTER!\n\nPlease note this is an exception to the "No talking as user" rule. I specifically request this.\nAvoid leading with "Understood, here's a...", JUST GENERATE THE REPLY STRAIGHT UP. [AVOID CREATING THE Status SECTION. AVOID CREATING ANY TAGS, LIKE TIMESTEPS.] Now, generate.`,
         },
       ];
     } else if (mode === "suggest-bar") {
@@ -528,7 +528,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
           name: "user",
           content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${rewriteBase}\`
 Your enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.
-Do not lead with anything like "Sure. Here's an enhanced version..." or anything similar. Be invisible. Do not create the status section here. JUST THE REWRITTEN MESSAGE.`,
+Do not lead with anything like "Sure. Here's an enhanced version..." or anything similar. Be invisible.
+[AVOID CREATING THE Status SECTION. AVOID CREATING ANY TAGS, LIKE TIMESTEPS.]`,
         },
       ];
     } else if (mode === "call-steer") {
@@ -596,7 +597,7 @@ Do not lead with anything like "Sure. Here's an enhanced version..." or anything
                 role: "user" as "user" | "assistant" | "system",
                 name: "user",
                 content:
-                  "[Continue the story naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
+                  "[Continue the story from this point naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
               },
             ]
           : []),
@@ -796,13 +797,14 @@ ${entryTitle}
   };
 
 
-  const suggestReply = async () => {
+  const suggestReply = async (generate?: boolean) => {
     let canGenerate = false;
-    if (!suggestionBarGenerating && !showSuggestionBar) {
+    setReplySuggestions([]);
+    if (!suggestionBarGenerating) {
       canGenerate = true;
       setShowSuggestionBar(true);
     }
-    if (canGenerate) {
+    if (canGenerate && generate) {
       setSuggestionBarGenerating(true);
       setIsThinking(true);
       setReplySuggestions([]);
@@ -1324,6 +1326,7 @@ ${entryTitle}
                 <SuggestionBar 
                   generating={suggestionBarGenerating}
                   suggestions={replySuggestions}
+                  startGeneration={() => suggestReply(true)}
                   suggestionPicked={(suggestion) => {suggestReplyFromChip(suggestion)}}
                   requestHide={() => {setShowSuggestionBar(false)}}
                 />
@@ -1339,7 +1342,7 @@ ${entryTitle}
           isThinking={isThinking}
           userPromptThinking={userPromptThinking}
           tokenHitStamps={tokenHitStamps}
-          suggestReply={suggestReply}
+          suggestReply={() => suggestReply(false)}
           rewriteMessage={rewriteMessage}
           showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
           showSteerModal={() => setManageSteerModal(true)}

@@ -8,10 +8,11 @@ import { Input } from "./ui/input";
 interface SuggestionBarProps {
     generating: boolean;
     suggestions: string[],
+    startGeneration: () => void;
     suggestionPicked: (suggestion: string) => void;
     requestHide: () => void;
 }
-const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, suggestionPicked, requestHide }) => {
+const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, startGeneration, suggestionPicked, requestHide }) => {
     const [arbitrarySuggestionDialogShow, setArbitrarySuggestionDialogShow] = useState(false);
     const [arbitrarySuggestionInput, setArbitrarySuggestionInput] = useState("");
 
@@ -25,10 +26,22 @@ const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, 
                 <Button onClick={() => requestHide()} className="p-4" size="smIcon" variant="outline"><X /></Button>
                 <div className="w-0.5 h-full bg-white/5 rounded-full"></div>
                 <AnimatePresence mode="popLayout">
-                    {generating && suggestions.length === 0 ? (
+                    {!generating && suggestions.length === 0 ? (
+                        <motion.div
+                        key={"generatePrompt"}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 18 }}>
+                            <Button onClick={startGeneration} className="!p-4 h-8 text-xs">
+                                Generate suggestion prompts
+                            </Button>
+                        </motion.div>
+                    ) : generating && suggestions.length === 0 ? (
                         <motion.div
                         key="generatingSkeleton"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 18 }}
                         className="flex gap-2">
                             <div className="w-32 h-8 bg-white/30 rounded-lg animate-pulse"></div>
                             <div className="w-32 h-8 bg-white/30 rounded-lg animate-pulse delay-150"></div>
@@ -53,10 +66,11 @@ const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, 
                         key={"arbitrarySuggestion"}
                         initial={{ y: 100 }}
                         animate={{ y: 0 }}
+                        layout="position"
                         transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 22 }}
                     >
                         <Button variant="outline" onClick={() => setArbitrarySuggestionDialogShow(true)} disabled={generating} className="!p-4 h-8 text-xs">
-                            Create suggestion from prompt
+                            Create suggestion from self-prompt
                         </Button>
                     </motion.div>
                 </AnimatePresence>
