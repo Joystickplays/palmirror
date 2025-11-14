@@ -40,7 +40,8 @@ import {
     generateChatCompletion
 } from "@/utils/portableAi";
 
-import { CharacterData, defaultCharacterData, AlternateInitialMessage, DomainAttributeEntry } from "@/types/CharacterData";
+import { CharacterData, defaultCharacterData, AlternateInitialMessage } from "@/types/CharacterData";
+import { DomainAttributeEntry } from "@/types/EEDomain"
 
 
 export default function Home() {

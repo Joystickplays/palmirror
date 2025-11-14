@@ -31,7 +31,9 @@ import { ToastContainer, toast } from "react-toastify";
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
-import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry } from "@/types/CharacterData";
+import { CharacterData, ChatMetadata, defaultCharacterData } from "@/types/CharacterData";
+import { DomainAttributeEntry, DomainMemoryEntry } from "@/types/EEDomain"
+
 import { deleteMemoryFromMessageIfAny, removeDomainTimestep, reverseDomainAttribute, setDomainMemories } from "@/utils/domainData";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";

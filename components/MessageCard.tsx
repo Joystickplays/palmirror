@@ -36,6 +36,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CharacterData } from "@/types/CharacterData";
 
 import TypingIndication from "@/components/Typing"
+import { useTypewriter } from './Typewriter';
 
 function fixEmphasisStyling(): void {
 
@@ -100,6 +101,7 @@ interface MessageCardProps {
   editMessage: (index: number, content: string) => void;
   rewindTo: (index: number) => void;
   changeStatus: (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => void;
+  messageListRef: React.RefObject<HTMLDivElement>;
 }
 
 interface AlternateInitialMessage {
@@ -132,6 +134,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   editMessage,
   rewindTo,
   changeStatus,
+  messageListRef,
 }) => {
   const [{ scale }, apiScaleSpring] = useSpring(() => ({
     scale: 1,
@@ -165,6 +168,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const [canRegenerate, setCanRegenerate] = useState(false);
 
+  const [cleanedContent, setCleanedContent] = useState("");
+  const messageTyped = useTypewriter(cleanedContent, { speed: 5, inBatchesOf: 5 })
  
   const triggerRegenerate = useCallback(() => {
     regenerateFunction();
@@ -304,7 +309,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   };
 
 
-  const rpTextRender = (content: string, usingInvocationHolder: boolean = true) => {
+  const rpTextRender = (content: string, usingInvocationHolder: boolean = true, typewrite = true) => {
     let processedContent = content
 
     try {
@@ -317,6 +322,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
     processedContent = cleanAllTags(processedContent)
     } catch (e) { console.log("Text rendering failed; proceeding with raw"); console.log(e); }
     
+    if (typewrite) {
+      setCleanedContent(processedContent)
+    }
     return processedContent
   }
 
@@ -325,6 +333,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
   }, [showAltDrawer])
  
   useEffect(() => {
+    rpTextRender(content)
+
     fixEmphasisStyling();
     try {
     setStatuses(extractStatusData(content));
@@ -342,37 +352,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
     
   }, [content])
 
-  const toolbarVariants = {
-    hidden: { opacity: 0, scale: 0, height: 0 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      height: "auto",
-      transition: {
-        staggerChildren: 0.3,
-        type: 'spring',
-        mass: 1,
-        stiffness: 251,
-        damping: 22,
-      },
-    },
-  };
-
-  const toolItemVariants = {
-    hidden: { opacity: 0, scale: 0 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        type: 'spring',
-        mass: 1,
-        stiffness: 251,
-        damping: 22,
-        duration: 0.5,
-        delay: index,
-      },
-    },
-  };
+  useEffect(() => {
+    if (messageListRef.current) {
+      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+      fixEmphasisStyling();
+    }
+  }, [messageTyped])
 
 
   const renderContent = () => {
@@ -404,14 +389,14 @@ const MessageCard: React.FC<MessageCardProps> = ({
           <TypingIndication />
         ) : (
           <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
-            {rpTextRender(content)}
+            {messageTyped}
           </ReactMarkdown>
         )}
 
         {imageInvocations.length > 0 && (
           <div className="flex gap-4">
             {imageInvocations.map((src, idx) => (
-              <img key={idx} src={src} alt={`Invocation ${idx}`} className="rounded-lg w-48 h-48 object-cover saturate-0 blur-md scale-90 hover:saturate-100 hover:blur-none hover:scale-100 transition-all" />
+              <img key={idx} src={src} alt={`Invocation ${idx}`} className="rounded-lg w-48 h-48 object-cover" />
             ))}
           </div>
         )}
@@ -511,7 +496,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 <Card key={message} className="mb-4 p-3 text-left">
                   <CardContent>
                     <ReactMarkdown className="markdown-content">
-                      {rpTextRender(message)}
+                      {rpTextRender(message, true, false)}
                     </ReactMarkdown>
                     <DrawerClose asChild>
                       <Button onClick={() => {

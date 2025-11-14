@@ -1,3 +1,5 @@
+import { DomainTimestepEntry, EXDomain } from "./EEDomain";
+
 export interface DynamicStatus {
   key: number;
   name: string;
@@ -17,30 +19,7 @@ export interface AlternateInitialMessage {
     initialMessage: string;
 }
 
-export interface DomainMemoryEntry {
-    key: number;
-    memory: string;
-    state: "remembering" | "forgotten";
-    lifetime: number;
-    associatedMessage: string;
-}
 
-export interface DomainAttributeHistory {
-    associatedMessage: string;
-    change: number;
-}
-export interface DomainAttributeEntry {
-    key: number;
-    attribute: string;
-    value: number;
-    history: DomainAttributeHistory[]
-}
-
-export interface DomainTimestepEntry {
-    key: number;
-    associatedMessage: string;
-    entry: string;
-}
 
 export interface CharacterData {
   image: string;
@@ -53,11 +32,7 @@ export interface CharacterData {
   tags: string[];
   alternateInitialMessages: Array<string> | Array<AlternateInitialMessage>;
   plmex: {
-    domain?: {
-      active: boolean;
-      memories: Array<DomainMemoryEntry>;
-      attributes: Array<DomainAttributeEntry>;
-    },
+    domain?: EXDomain;
     dynamicStatuses: Array<DynamicStatus>;
     invocations: Array<Invocation>;
   };

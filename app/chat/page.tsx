@@ -15,7 +15,8 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/utils/systemMessageGeneration";
 import OpenAI from "openai";
-import { CharacterData, ChatMetadata, defaultCharacterData, DomainAttributeEntry, DomainMemoryEntry, DomainTimestepEntry } from "@/types/CharacterData";
+import { CharacterData, ChatMetadata, defaultCharacterData } from "@/types/CharacterData";
+import { DomainAttributeEntry, DomainMemoryEntry, DomainTimestepEntry } from "@/types/EEDomain"
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import {
@@ -115,6 +116,7 @@ const ChatPage = () => {
   const abortController = useRef<AbortController | null>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
   const secondLastMessageRef = useRef<HTMLDivElement | null>(null);
+  const messageListRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [skipToSceneModalState, setSkipToSceneModalState] = useState(false);
@@ -1248,7 +1250,7 @@ ${entryTitle}
           }}
           importMessages={openFilePicker}
         />
-        <div className="overflow-y-auto overflow-x-hidden max-w-[40rem]">
+        <div  ref={messageListRef} className="overflow-y-auto overflow-x-hidden max-w-[40rem]">
           <div className="flex flex-col justify-end min-h-full">
             <div style={{ height:  "60vh" }}></div>
             {characterData.name.length < 1 ? (
@@ -1296,6 +1298,7 @@ ${entryTitle}
                         editMessage={editMessage}
                         rewindTo={rewindTo}
                         changeStatus={changeStatus}
+                        messageListRef={messageListRef}
                       />
                     </motion.div>
                   );

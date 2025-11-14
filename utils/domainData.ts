@@ -5,7 +5,8 @@ import { getAttributesSysInst } from './domainInstructionShaping/attributesSysIn
 import { ChatHistory, getTotalChatsSysInst } from './domainInstructionShaping/chatHistorySysInst';
 import { getMemorySysInst } from './domainInstructionShaping/memorySysInst';
 
-import { CharacterData, DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, DomainTimestepEntry } from '@/types/CharacterData';
+import { CharacterData } from '@/types/CharacterData';
+import { DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, DomainTimestepEntry } from "@/types/EEDomain"
 import { getTimestepSysInst } from './domainInstructionShaping/timestepSysInst';
 import { getTaggingSysInst } from './domainInstructionShaping/taggingSysInst';
 import { getRecallSysInst } from './domainInstructionShaping/recallSysInst';
