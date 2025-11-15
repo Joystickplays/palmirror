@@ -1,4 +1,4 @@
-import { DomainAttributeEntry } from "@/types/CharacterData";
+import { DomainAttributeEntry } from "@/types/EEDomain";
 
 export function getAttributesSysInst(attributes: DomainAttributeEntry[]) {
     return `ATTRIBUTES
