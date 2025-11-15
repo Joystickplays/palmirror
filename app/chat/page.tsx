@@ -1242,7 +1242,7 @@ ${entryTitle}
         }}
         className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto relative"
       >
-        <div className="fixed w-full h-[10rem] z-[1]"
+        {/* <div className="fixed w-full h-[10rem] z-[1]"
         >
           {Array.from( {length: 40 }).map((_, idx) => {
           return (<div key={idx} className="w-full absolute pointer-events-none touch-none"
@@ -1251,7 +1251,7 @@ ${entryTitle}
               backdropFilter: `blur(${Math.min(5, idx / 4)}px)`,
               maskImage: 'linear-gradient( to bottom, black 0%, black 90%, transparent 100% );' }}></div>)
           })}
-        </div> {/* im sincesirely sorry for the low-ended users omg */}
+        </div> im sincesirely sorry for the low-ended users omg */}
         <ChatHeader
           characterData={characterData}
           fromDomain={!!entryTitle}
