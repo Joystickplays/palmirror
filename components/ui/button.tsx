@@ -47,7 +47,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // const Comp = asChild ? Slot : "button"
     return (
       // f u in particular
-      // @ts-expect-error
+      // @ts-expect-error   bc idgaf ab typing this??? who r u
       <motion.button
         whileTap={{ scale: 0.95 }}
         transition={{ duration: 0.1 }}
