@@ -1245,7 +1245,7 @@ ${entryTitle}
         <div className="fixed w-full h-[10rem] z-[1]"
         >
           {Array.from( {length: 40 }).map((_, idx) => {
-          return (<div className="w-full absolute pointer-events-none touch-none"
+          return (<div key={idx} className="w-full absolute pointer-events-none touch-none"
             style={{ 
               height: `${10 - idx / 4}rem`,
               backdropFilter: `blur(${Math.min(5, idx / 4)}px)`,
