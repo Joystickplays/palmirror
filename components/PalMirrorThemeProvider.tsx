@@ -16,7 +16,7 @@ const themes = {
   palmirror: {
     userBg: "bg-blue-950/20",
     assistantBg: "bg-gray-900/10",
-    bg: "",
+    bg: "bg-[#0c0a09]",
     showUserName: false,
   },
   palmirrorSunset: {

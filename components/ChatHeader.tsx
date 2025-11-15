@@ -34,8 +34,9 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getE
   }, [])
 
   return (
-    <Card>
-      <CardContent className={`flex relative justify-between items-center p-5 w-full ${currentTheme.bg} overflow-hidden`}>
+    <Card className={`absolute inset-1 md:inset-6 box-border h-fit ${currentTheme.bg} overflow-hidden p-5 z-[100]`}>
+
+      <CardContent className={`flex justify-between items-center ${currentTheme.bg} overflow-hidden p-0`}>
 
         {characterData.image !== "" && (
           <img src={characterData.image !== "" ? characterData.image : undefined}

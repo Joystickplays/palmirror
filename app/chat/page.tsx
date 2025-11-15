@@ -1230,8 +1230,8 @@ ${entryTitle}
         theme="dark"
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, filter: "blur(5px)" }}
-        animate={loaded ? { opacity: 1, scale: 1, filter: "blur(0px)" } : false}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={loaded ? { opacity: 1, scale: 1 } : false}
         transition={{
           type: "spring",
           mass: 1,
@@ -1240,8 +1240,18 @@ ${entryTitle}
           restDelta: 0.00001,
           filter: { type: "spring", mass: 1, damping: 38, stiffness: 161 },
         }}
-        className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto"
+        className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto relative"
       >
+        <div className="fixed w-full h-[10rem] z-[1]"
+        >
+          {Array.from( {length: 40 }).map((_, idx) => {
+          return (<div className="w-full absolute pointer-events-none touch-none"
+            style={{ 
+              height: `${10 - idx / 4}rem`,
+              backdropFilter: `blur(${Math.min(5, idx / 4)}px)`,
+              maskImage: 'linear-gradient( to bottom, black 0%, black 90%, transparent 100% );' }}></div>)
+          })}
+        </div> {/* im sincesirely sorry for the low-ended users omg */}
         <ChatHeader
           characterData={characterData}
           fromDomain={!!entryTitle}

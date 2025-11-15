@@ -43,11 +43,11 @@ const SkipToSceneModal: React.FC<SkipToSceneModalProps> = ({
       <DrawerContent className="flex flex-col gap-2 items-center px-6 pb-4 w-full font-sans">
         <div className="flex gap-3 items-center my-6 mb-3">
         <FastForward className="w-6 h-6"/>
-          <DrawerTitle className="text-2xl text-2xl">Skip to scene</DrawerTitle>
+          <DrawerTitle className="text-2xl">Skip to scene</DrawerTitle>
         </div>
-        <p className="opacity-75 text-xs italic mb-2 max-w-[20rem] text-center">Skip ahead to the one scene you&apos;ve been longing for. Less awkward, more drama.</p>
+        <p className="opacity-75 text-xs italic mb-2 max-w-[20rem] text-center">Skip to a specific scene/moment quickly.</p>
         <div className="flex gap-2 w-full">
-          <Input type="text" value={requestedScene} onChange={(e) => {setRequestedScene(e.target.value)}} placeholder={"we become lovers lol"} />
+          <Input type="text" value={requestedScene} onChange={(e) => {setRequestedScene(e.target.value)}} placeholder={"they hold hands"} />
           <Button onClick={() => {if (requestedScene.length < 1) {return;} setModalState(false); skipToSceneCallback(requestedScene); setRequestedScene("")}}>Skip to</Button>
         </div>
       </DrawerContent>
