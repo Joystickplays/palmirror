@@ -58,7 +58,7 @@ export const PLMGlobalConfigProvider = ({ children }: { children: ReactNode }) =
   );
 
   const get = useCallback(
-    <T = any,>(key: string): T | undefined => {
+    <T = any,>(key: string): T | undefined => { // this cahtgpt crazy vsc dont even know how to color code the rest
       if (key in store) {
         return store[key] as T;
       }
@@ -75,12 +75,19 @@ export const PLMGlobalConfigProvider = ({ children }: { children: ReactNode }) =
     [store]
   );
 
+  useEffect(() => {
+    import("./PLMGlobalConfigService").then(({ PLMGlobalConfigServiceInstance }) => {
+      PLMGlobalConfigServiceInstance.register(set, get);
+    });
+  }, [set, get]);
+
   return (
     <PLMGlobalConfigContext.Provider value={{ set, get }}>
       {children}
     </PLMGlobalConfigContext.Provider>
   );
 };
+
 
 export const usePLMGlobalConfig = () => {
   const ctx = useContext(PLMGlobalConfigContext);

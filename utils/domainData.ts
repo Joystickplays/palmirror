@@ -10,6 +10,7 @@ import { DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, Domain
 import { getTimestepSysInst } from './domainInstructionShaping/timestepSysInst';
 import { getTaggingSysInst } from './domainInstructionShaping/taggingSysInst';
 import { getRecallSysInst } from './domainInstructionShaping/recallSysInst';
+import { PLMGlobalConfigServiceInstance } from '@/context/PLMGlobalConfigService';
 
 
 interface ChatMetadata {
@@ -359,7 +360,9 @@ export async function structureDomainTimesteps(chatID: string): Promise<string> 
     const timesteps = await getDomainTimesteps(chatID);
     let structuredTimesteps = "";
 
-    timesteps.forEach((timestep, index) => {
+    const timestepRecall = PLMGlobalConfigServiceInstance.get("domains_timestep_recall")
+    
+    timesteps.slice(-(timestepRecall ?? 20)).forEach((timestep, index) => {
         structuredTimesteps += `Timestep ${index + 1}: ${timestep.entry}\n`;
     });
     return structuredTimesteps;

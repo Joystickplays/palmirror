@@ -316,18 +316,22 @@ const MessageCard: React.FC<MessageCardProps> = ({
     return message.replace(/<ATR_CHANGE\s+[^>]+>/gi, "").replace(/<NEW_MEMORY\s+[^>]+>/g, "").replace(/<TIMESTEP\s+[^>]+>/g, "").trim();
   };
 
-  function closeUnclosedSymbols(input: string) {
-      const closeIfOdd = (str: string, symbol: string) => {
-          let count = 0;
-          for (const c of str) if (c === symbol) count++;
-          return (count % 2 !== 0) ? str + symbol : str;
-      };
+  const closeStars = (str: string) => {
+    let starOpen = false;
+    let result = "";
 
-      let result = input;
-      // result = closeIfOdd(result, '"'); 
-      result = closeIfOdd(result, '*');
-      return result;
-  }
+    for (let c of str) {
+        if (c === '*') {
+            starOpen = !starOpen;
+        }
+        result += c;
+    }
+
+    if (starOpen) result += '*';
+    return result;
+}
+
+
 
   const rpTextRender = (content: string, usingInvocationHolder: boolean = true, typewrite = true) => {
     let processedContent = content
@@ -409,7 +413,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
           <TypingIndication />
         ) : (
           <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
-            {(messageTyped)}
+            {closeStars(messageTyped)}
           </ReactMarkdown>
         )}
 
