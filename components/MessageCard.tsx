@@ -320,7 +320,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     let starOpen = false;
     let result = "";
 
-    for (let c of str) {
+    for (const c of str) {
         if (c === '*') {
             starOpen = !starOpen;
         }
