@@ -324,7 +324,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
       };
 
       let result = input;
-      result = closeIfOdd(result, '"'); 
+      // result = closeIfOdd(result, '"'); 
       result = closeIfOdd(result, '*');
       return result;
   }
@@ -409,7 +409,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
           <TypingIndication />
         ) : (
           <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
-            {closeUnclosedSymbols(messageTyped)}
+            {(messageTyped)}
           </ReactMarkdown>
         )}
 
