@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@/components/theme-provider";
-import { PMThemeProvider } from "@/components/PalMirrorThemeProvider";
+import { PMThemeProvider } from "@/context/PalMirrorThemeProvider";
 import { PLMSecureProvider } from "@/context/PLMSecureContext";
 import { WebAuthnProvider } from "@/context/PLMSecureWebAuthnContext";
 import { RecProvider } from "@/context/PLMRecSystemContext";
@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import MemoryNotificationProvider from "@/components/MemoryNotificationProvider";
+import { PLMGlobalConfigProvider } from "@/context/PLMGlobalConfig";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -47,31 +48,33 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <MemoryNotificationProvider>
-          <AttributeNotificationProvider>
-            <PLMSecureProvider>
-              <RecProvider>
-                <WebAuthnProvider>
-                  <PMThemeProvider>
-                    <ThemeProvider attribute="class" defaultTheme="dark">
-                      {/* <AnimatePresence>
-                    <motion.div
-                    key={"h"}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.3 }}> */}
-                      {children}
+        <PLMGlobalConfigProvider>
+          <PLMSecureProvider>
+            <RecProvider>
+              <WebAuthnProvider>
+                <PMThemeProvider>
+                  <ThemeProvider attribute="class" defaultTheme="dark">
+                    <MemoryNotificationProvider>
+                      <AttributeNotificationProvider>
+                        {/* <AnimatePresence>
+                      <motion.div
+                      key={"h"}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.3 }}> */}
+                        {children}
 
-                      {/* </motion.div>
-                  </AnimatePresence> */}
-                    </ThemeProvider>
-                  </PMThemeProvider>
-                </WebAuthnProvider>
-              </RecProvider>
-            </PLMSecureProvider>
-          </AttributeNotificationProvider>
-        </MemoryNotificationProvider>
+                        {/* </motion.div>
+                    </AnimatePresence> */}
+                      </AttributeNotificationProvider>
+                    </MemoryNotificationProvider>
+                  </ThemeProvider>
+                </PMThemeProvider>
+              </WebAuthnProvider>
+            </RecProvider>
+          </PLMSecureProvider>
+        </PLMGlobalConfigProvider>
       </body>
     </html>
   );

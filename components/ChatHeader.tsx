@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useTheme } from '@/components/PalMirrorThemeProvider';
+import { useTheme } from '@/context/PalMirrorThemeProvider';
 import { Settings } from 'lucide-react';
 import { CharacterData } from "@/types/CharacterData";
 import { useRouter } from 'next/navigation';

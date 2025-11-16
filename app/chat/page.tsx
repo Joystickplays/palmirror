@@ -10,7 +10,7 @@ import TokenCounter from "@/components/TokenCounter";
 import NewcomerDrawer from "@/components/NewcomerDrawer";
 import SkipToSceneModal, { skipPromptBuilder } from "@/components/SkipToSceneModal";
 import { useThrottle } from "@/utils/useThrottle";
-import { useTheme } from "@/components/PalMirrorThemeProvider";
+import { useTheme } from "@/context/PalMirrorThemeProvider";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/utils/systemMessageGeneration";
@@ -37,6 +37,7 @@ import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
 import SuggestionBar from "@/components/SuggestionBar";
 import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
+import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 
 
 let openai: OpenAI;
@@ -68,6 +69,9 @@ interface Message {
 
 
 const ChatPage = () => {
+
+  const PLMGC = usePLMGlobalConfig();
+
   const [messages, setMessages] = useState<
     Array<Message>
   >([]);
@@ -1242,16 +1246,25 @@ ${entryTitle}
         }}
         className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto relative"
       >
-        {/* <div className="fixed w-full h-[10rem] z-[1]"
+        <div className="fixed w-full h-[10rem] z-[1]"
         >
-          {Array.from( {length: 40 }).map((_, idx) => {
+          {PLMGC.get("highend") ?
+          Array.from( {length: 80 }).map((_, idx) => {
           return (<div key={idx} className="w-full absolute pointer-events-none touch-none"
             style={{ 
-              height: `${10 - idx / 4}rem`,
-              backdropFilter: `blur(${Math.min(5, idx / 4)}px)`,
-              maskImage: 'linear-gradient( to bottom, black 0%, black 90%, transparent 100% );' }}></div>)
-          })}
-        </div> im sincesirely sorry for the low-ended users omg */}
+              height: `${10 - idx / 8}rem`,
+              backdropFilter: `blur(${Math.min(5, idx / 16)}px)`,
+              maskImage: 'linear-gradient( to bottom, black 0%, black 90%, transparent 100% )' }}></div>)
+          }) : (
+            <div
+            style={{ 
+              maskImage: 'linear-gradient( to bottom, black 0%, black 50%, transparent 100% )' 
+            }}
+            className="h-full backdrop-blur-md">
+              
+            </div>
+          )}
+        </div> 
         <ChatHeader
           characterData={characterData}
           fromDomain={!!entryTitle}

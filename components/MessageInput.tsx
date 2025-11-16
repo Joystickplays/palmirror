@@ -15,7 +15,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { useTheme } from "@/components/PalMirrorThemeProvider";
+import { useTheme } from "@/context/PalMirrorThemeProvider";
 import { AnimatePresence, motion } from "framer-motion";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 

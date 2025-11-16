@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { useTheme } from '@/components/PalMirrorThemeProvider';
+import { useTheme } from '@/context/PalMirrorThemeProvider';
 import { Settings, Check } from 'lucide-react';
 import {
   Drawer,
