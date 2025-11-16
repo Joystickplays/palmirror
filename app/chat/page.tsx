@@ -71,6 +71,10 @@ interface Message {
 const ChatPage = () => {
 
   const PLMGC = usePLMGlobalConfig();
+  const [configHighend, setConfigHighend] = useState(false);
+  useEffect(() => {
+    setConfigHighend(!!PLMGC.get("highend"))
+  }, [])
 
   const [messages, setMessages] = useState<
     Array<Message>
@@ -1248,7 +1252,7 @@ ${entryTitle}
       >
         <div className="fixed w-full h-[10rem] z-[1]"
         >
-          {PLMGC.get("highend") ?
+          {configHighend ?
           Array.from( {length: 80 }).map((_, idx) => {
           return (<div key={idx} className="w-full absolute pointer-events-none touch-none"
             style={{ 
