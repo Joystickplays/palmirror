@@ -37,6 +37,7 @@ import { CharacterData } from "@/types/CharacterData";
 
 import TypingIndication from "@/components/Typing"
 import { useTypewriter } from './Typewriter';
+import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
 
 function fixEmphasisStyling(): void {
 
@@ -136,6 +137,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
   changeStatus,
   messageListRef,
 }) => {
+
+  const PLMGC = usePLMGlobalConfig();
+  const [configHighend, setConfigHighend] = useState(false);
+  useEffect(() => {
+    setConfigHighend(!!PLMGC.get("highend"))
+  }, [])
+
   const [{ scale }, apiScaleSpring] = useSpring(() => ({
     scale: 1,
     config: { tension: 100, friction: 20 },
@@ -200,7 +208,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
         : 0,
       y: 0,
       height: 100,
-      blur: isRegenerateAction ? 4 : (down && canRegenerate ? 0.01 * -mx : 0),
+      blur: isRegenerateAction ? 4 : (down && canRegenerate && configHighend ? 0.01 * -mx : 0),
       fontSize: 1,
       config: { tension: 190, friction: 18 },
     });
