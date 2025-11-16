@@ -319,7 +319,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   function closeUnclosedSymbols(input: string) {
       const closeIfOdd = (str: string, symbol: string) => {
           let count = 0;
-          for (let c of str) if (c === symbol) count++;
+          for (const c of str) if (c === symbol) count++;
           return (count % 2 !== 0) ? str + symbol : str;
       };
 
