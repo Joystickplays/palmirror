@@ -329,9 +329,26 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
     result = result.trim();
     if (starOpen) result += '*';
-    
+
     return result;
-}
+  }
+
+  const closeQuotes = (str: string) => {
+    let quoteOpen = false;
+    let result = "";
+
+    for (const c of str) {
+        if (c === '"') {
+            quoteOpen = !quoteOpen;
+        }
+        result += c;
+    }
+
+    result = result.trim();
+    if (quoteOpen) result += '"';
+
+    return result;
+  }
 
 
 
@@ -415,7 +432,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
           <TypingIndication />
         ) : (
           <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
-            {closeStars(messageTyped)}
+            {closeQuotes(closeStars(messageTyped))}
           </ReactMarkdown>
         )}
 

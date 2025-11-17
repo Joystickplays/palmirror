@@ -709,7 +709,7 @@ ${entryTitle}
                 stillGenerating: true,
               },
             ]);
-            vibrate(10);
+            // vibrate(10);
           }
         setMessages((p) => [
           ...p.slice(0, -1),
@@ -744,7 +744,7 @@ ${entryTitle}
           const c = chunk.choices[0].delta.content || "";
           assistantMessage += c;
           setNewMessage(assistantMessage);
-          vibrate(10);
+          // vibrate(10);
         }
       }
     } catch (err) {
