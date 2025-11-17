@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-
+// just chatgpted everything and hoped for the best imsorry
 interface UseTypewriterOptions {
   speed?: number;
   inBatchesOf?: number;
@@ -126,7 +126,7 @@ export function useTypewriter(
     const effectiveSpeed = insideQuotes ? speed * 7 : speed;
     const effectiveBatch = hasUppercase ? 1 : insideQuotes ? Math.max(1, Math.floor(inBatchesOf / 7)) : inBatchesOf;
 
-    let firstAddedChar = addedSegment[0];
+    const firstAddedChar = addedSegment[0];
     let punctuationDelay = 0;
     let openingQuoteBoundary = 0;
     let closingQuoteBoundary = 0;
