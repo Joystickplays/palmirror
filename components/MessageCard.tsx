@@ -327,7 +327,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
         result += c;
     }
 
+    result = result.trim();
     if (starOpen) result += '*';
+    
     return result;
 }
 
