@@ -38,6 +38,7 @@ import SuggestionBar from "@/components/SuggestionBar";
 import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
+import { MessagePreview } from "@/components/MessagePreview";
 
 
 let openai: OpenAI;
@@ -76,6 +77,16 @@ const ChatPage = () => {
     setConfigHighend(!!PLMGC.get("highend"))
   }, [])
 
+  const [configTokenWatch, setConfigTokenWatch] = useState(true);
+  useEffect(() => {
+    setConfigTokenWatch(PLMGC.get("tokenCounter") ?? true)
+  }, [])
+
+  const [configTyping, setConfigTyping] = useState(false);
+  useEffect(() => {
+    setConfigTyping(!!PLMGC.get("typing"))
+  }, [])
+
   const [messages, setMessages] = useState<
     Array<Message>
   >([]);
@@ -96,6 +107,10 @@ const ChatPage = () => {
   const [successfulNewMessage, setSuccessfulNewMessage] = useState<boolean | Message>(false);
   const [userPromptThinking, setUserPromptThinking] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
+  
+  const [textMessagePreview, setTextMessagePreview] = useState("");
+  const [openMessagePreview, setOpenMessagePreview] = useState(false);
+
   const [accurateTokenizer, setAccurateTokenizer] = useState(true); // toggle it yourself .
 
   const [baseURL, setBaseURL] = useState("https://cvai.mhi.im/v1");
@@ -697,9 +712,10 @@ ${entryTitle}
           if (abortController.current?.signal.aborted) break;
           const c = chunk.choices?.[0]?.delta?.content || "";
           assistantMessage += c;
-          if ("usage" in chunk && chunk.usage?.total_tokens)
-            setTokenCount(chunk.usage.total_tokens);
-            setTokenHitStamps((p) => [...p, Date.now()]);
+          if ("usage" in chunk && chunk.usage?.total_tokens) setTokenCount(chunk.usage.total_tokens);
+            if (configTokenWatch) {
+              setTokenHitStamps((p) => [...p, Date.now()]);
+            }
             setMessages((p) => [
               ...p.slice(0, -1),
               {
@@ -709,13 +725,17 @@ ${entryTitle}
                 stillGenerating: true,
               },
             ]);
-            // vibrate(10);
+            if (!configTyping) {
+              vibrate(10);
+            }
           }
         setMessages((p) => [
           ...p.slice(0, -1),
           { ...p[p.length - 1], stillGenerating: false },
         ]);
-        setTokenHitStamps([]);
+        if (configTokenWatch) {
+          setTokenHitStamps([]);
+        }
         if (mode === "send") setIsThinking(false);
         setSuccessfulNewMessage({
           id: messageId,
@@ -744,8 +764,10 @@ ${entryTitle}
           const c = chunk.choices[0].delta.content || "";
           assistantMessage += c;
           setNewMessage(assistantMessage);
-          // vibrate(10);
+          vibrate(10);
         }
+        setTextMessagePreview(assistantMessage);
+        setOpenMessagePreview(true);
       }
     } catch (err) {
       if (!abortController.current?.signal.aborted) {
@@ -1326,6 +1348,7 @@ ${entryTitle}
                         rewindTo={rewindTo}
                         changeStatus={changeStatus}
                         messageListRef={messageListRef}
+                        configTyping={configTyping}
                       />
                     </motion.div>
                   );
@@ -1376,9 +1399,17 @@ ${entryTitle}
           rewriteMessage={rewriteMessage}
           showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
           showSteerModal={() => setManageSteerModal(true)}
+          configTokenWatch={configTokenWatch}
         />
       </motion.div>
       <TokenCounter tokenCount={tokenCount} />
+
+      <MessagePreview 
+        open={openMessagePreview}
+        setOpen={setOpenMessagePreview}
+        content={textMessagePreview}
+        approved={(e) => { setNewMessage(e) }}
+      />
       <input
         ref={fileInputRef}
         type="file"

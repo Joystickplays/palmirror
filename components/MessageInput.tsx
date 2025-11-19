@@ -38,6 +38,7 @@ interface MessageInputProps {
   rewriteMessage: (base: string) => void;
   showSkipToSceneModal: () => void;
   showSteerModal: () => void;
+  configTokenWatch: boolean;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -52,6 +53,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   rewriteMessage,
   showSkipToSceneModal,
   showSteerModal,
+  configTokenWatch,
 }) => {
   const [localMessage, setLocalMessage] = useState(newMessage);
   const localMessageRef = useRef<string>("");
@@ -128,7 +130,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       />
       <div className="absolute right-2 top-0 px-2 pt-1">
         {
-          isThinking && ( <Stopwatch startDate={firstThinking} tokenHitStamps={tokenHitStamps}/> )
+          configTokenWatch && isThinking && ( <Stopwatch startDate={firstThinking} tokenHitStamps={tokenHitStamps}/> )
         }
       </div>
       <ContextMenu>

@@ -73,6 +73,12 @@ export default function SettingsPage() {
                     label: "Enhanced textures & effects",
                     onChange: (value) => value && setShowHighend(true),
                 },
+                tokenCounter: {
+                    type: "boolean",
+                    key: "tokenCounter",
+                    default: true,
+                    label: "Response token watching",
+                },
             },
         },
         domains: {
@@ -86,6 +92,17 @@ export default function SettingsPage() {
                     min: 3,
                     max: 30,
                     step: 1,
+                },
+            },
+        },
+        experiments: {
+            title: "Experiments",
+            items: {
+                typing: {
+                    type: "boolean",
+                    key: "typing",
+                    default: false,
+                    label: "Message typing effects",
                 },
             },
         },
@@ -176,7 +193,7 @@ export default function SettingsPage() {
 
             {Object.entries(settingsSchema).map(([groupId, group]) => (
                 <div key={groupId} className="flex flex-col gap-2">
-                    <h2 className="font-bold">{group.title}</h2>
+                    <h2 className={`font-bold ${group.title === "Experiments" && "text-xl text-yellow-400 mt-12"}`}>{group.title}</h2>
                     {Object.entries(group.items).map(([settingId, cfg]) => renderSetting(settingId, cfg))}
                 </div>
             ))}

@@ -103,6 +103,7 @@ interface MessageCardProps {
   rewindTo: (index: number) => void;
   changeStatus: (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => void;
   messageListRef: React.RefObject<HTMLDivElement>;
+  configTyping: boolean;
 }
 
 interface AlternateInitialMessage {
@@ -136,6 +137,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   rewindTo,
   changeStatus,
   messageListRef,
+  configTyping,
 }) => {
 
   const PLMGC = usePLMGlobalConfig();
@@ -176,8 +178,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const [canRegenerate, setCanRegenerate] = useState(false);
 
-  const [cleanedContent, setCleanedContent] = useState("");
-  const messageTyped = useTypewriter(cleanedContent, { speed: 5, inBatchesOf: 5 })
+  const [typewrittenContent, setTypewrittenContent] = useState("");
+  const messageTyped = useTypewriter(typewrittenContent, { speed: 5, inBatchesOf: 5 })
+
+  const [presentableText, setPresentableText] = useState("");
  
   const triggerRegenerate = useCallback(() => {
     regenerateFunction();
@@ -365,9 +369,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
     processedContent = cleanAllTags(processedContent)
     } catch (e) { console.log("Text rendering failed; proceeding with raw"); console.log(e); }
     
-    if (typewrite) {
-      setCleanedContent(processedContent)
+    if (typewrite && configTyping) {
+      setTypewrittenContent(processedContent)
     }
+    setPresentableText(processedContent)
     return processedContent
   }
 
@@ -432,7 +437,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
           <TypingIndication />
         ) : (
           <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
-            {closeQuotes(closeStars(messageTyped))}
+            {
+              closeQuotes(closeStars(configTyping
+                ? 
+              messageTyped
+                :
+              presentableText)) 
+            }
           </ReactMarkdown>
         )}
 
