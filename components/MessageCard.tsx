@@ -40,15 +40,14 @@ import { useTypewriter } from './Typewriter';
 import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
 import { AnimateChangeInHeight } from './AnimateHeight';
 
-const MarkdownView = React.memo(({ content, className }: { content: string; className?: string }) => {
-    
-    console.log("oops rerendered")
-    console.log(content.slice(-10))
-    console.log(className)
+const MarkdownView = React.memo(
+  ({ content, className }: { content: string; className?: string }) => {
     return <ReactMarkdown className={className}>{content}</ReactMarkdown>;
-  });
+  }
+);
 
-(MarkdownView as any).displayName = "MarkdownView";
+MarkdownView.displayName = "MarkdownView";
+
 
 function fixEmphasisStyling(): void {
 
