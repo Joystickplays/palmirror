@@ -48,6 +48,8 @@ const MarkdownView = React.memo(({ content, className }: { content: string; clas
     return <ReactMarkdown className={className}>{content}</ReactMarkdown>;
   });
 
+(MarkdownView as any).displayName = "MarkdownView";
+
 function fixEmphasisStyling(): void {
 
   const nestedEms = document.querySelectorAll<HTMLElement>(".markdown-content em em");
