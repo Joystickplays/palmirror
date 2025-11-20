@@ -164,8 +164,8 @@ const ChatPage = () => {
   useMotionValueEvent(scrollY, "change", (current: number) => {
     if (Date.now() - graceWait < 2000) { return; }
     const prev =
-      typeof (scrollY as any).getPrevious === "function"
-        ? ((scrollY as any).getPrevious() as number)
+      typeof (scrollY).getPrevious === "function"
+        ? ((scrollY).getPrevious() as number)
         : 0;
     const diff = current - prev;
     setScrollDirection(diff > 0 ? "down" : "up");
