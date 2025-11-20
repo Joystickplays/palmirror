@@ -393,7 +393,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
       setShowReasoning(false);
     }
 
-    fixEmphasisStyling();
+    // fixEmphasisStyling();
     try {
       setStatuses(extractStatusData(content));
       if (characterData.plmex.invocations.length > 0) {
@@ -428,6 +428,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
   //     setShowReasoning(false);
   //   }
   // }, [stillGenerating])
+
+  useEffect(() => {
+    fixEmphasisStyling()
+    // setInterval(() => {
+    // }, 1000)
+  }, [presentableText])
 
 
   const renderContent = () => {
@@ -499,7 +505,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 </div>
               </AnimateChangeInHeight>
             )}
-            <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
+            <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95 markdown-content`}>
               {
                 closeQuotes(closeStars(configTyping
                   ?
