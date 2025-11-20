@@ -1,5 +1,5 @@
 // components/MessageCard.tsx
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
 import { useSpring, animated } from '@react-spring/web';
@@ -39,6 +39,14 @@ import TypingIndication from "@/components/Typing"
 import { useTypewriter } from './Typewriter';
 import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
 import { AnimateChangeInHeight } from './AnimateHeight';
+
+const MarkdownView = React.memo(({ content, className }: { content: string; className?: string }) => {
+    
+    console.log("oops rerendered")
+    console.log(content.slice(-10))
+    console.log(className)
+    return <ReactMarkdown className={className}>{content}</ReactMarkdown>;
+  });
 
 function fixEmphasisStyling(): void {
 
@@ -433,7 +441,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
     fixEmphasisStyling()
     // setInterval(() => {
     // }, 1000)
+
   }, [presentableText])
+
+
+  
 
 
   const renderContent = () => {
@@ -461,7 +473,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
     return (
       <div>
-        {stillGenerating && content.length < 1 && (reasoningContent && reasoningContent.length < 1) ? (
+        {stillGenerating && content.length === 0 && (!reasoningContent || reasoningContent.length === 0)? (
           <TypingIndication />
         ) : (
           <>
@@ -505,15 +517,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 </div>
               </AnimateChangeInHeight>
             )}
-            <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95 markdown-content`}>
-              {
-                closeQuotes(closeStars(configTyping
-                  ?
-                  messageTyped
-                  :
-                  presentableText))
-              }
-            </ReactMarkdown>
+
+            <MarkdownView
+              className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95 markdown-content`}
+              content={configTyping ? messageTyped : presentableText}
+            />
+
           </>
         )}
 

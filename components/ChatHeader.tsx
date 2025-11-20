@@ -8,6 +8,8 @@ import { CharacterData } from "@/types/CharacterData";
 import { useRouter } from 'next/navigation';
 import { PLMSecureContext } from '@/context/PLMSecureContext';
 import dynamic from 'next/dynamic'
+import { motion } from 'motion/react';
+import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
 
 const ChatSettings = dynamic(() => import('./ChatSettings'), { ssr: false })
 
@@ -16,9 +18,16 @@ interface ChatHeaderProps {
   fromDomain: boolean;
   getExportedMessages: () => void;
   importMessages: () => void;
+  visible: boolean;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getExportedMessages, importMessages }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getExportedMessages, importMessages, visible }) => {
+  const PLMGC = usePLMGlobalConfig();
+  const [configHighend, setConfigHighend] = useState(false);
+  useEffect(() => {
+    setConfigHighend(!!PLMGC.get("highend"))
+  }, [])
+  
   const [showPMSysInstSuggestion, setShowPMSysInstSuggestion] = useState(true);
 
   const PLMSecContext = useContext(PLMSecureContext);
@@ -32,9 +41,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getE
       setShowPMSysInstSuggestion(false)
     }
   }, [])
-
   return (
-    <Card className={`absolute inset-1 md:inset-6 box-border h-fit ${currentTheme.bg} overflow-hidden p-5 z-[10]`}>
+    <motion.div 
+    animate={visible ? {
+      y: 0,
+      opacity: 1,
+      filter: 'blur(0px)'
+    } : {
+      y: -40,
+      opacity: 0.5,
+      filter: configHighend ? 'blur(5px)' : 'blur(0px)'
+    }}
+    transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
+    className={`border border-white/10 rounded-xl absolute inset-1 md:inset-6 box-border h-fit ${currentTheme.bg} overflow-hidden p-5 z-[10]`}>
 
       <CardContent className={`flex justify-between items-center ${currentTheme.bg} overflow-hidden p-0`}>
 
@@ -51,7 +70,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getE
         <ChatSettings getExportedMessages={getExportedMessages} importMessages={importMessages} />
 
       </CardContent>
-    </Card>
+    </motion.div>
   );
 };
 

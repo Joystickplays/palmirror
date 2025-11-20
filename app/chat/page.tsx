@@ -27,7 +27,7 @@ import {
 
 import { usePalRec } from "@/context/PLMRecSystemContext"
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
@@ -132,6 +132,8 @@ const ChatPage = () => {
   const [suggestionBarGenerating, setSuggestionBarGenerating] = useState(false);
   const [replySuggestions, setReplySuggestions] = useState<string[]>([]);
 
+  
+
   const [userPersonality, setUserPersonality] = useState({ name: "", personality: "" })
 
   const {
@@ -152,6 +154,28 @@ const ChatPage = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [skipToSceneModalState, setSkipToSceneModalState] = useState(false);
+
+  const { scrollY } = useScroll({
+    container: messageListRef
+  })
+  const [scrollDirection, setScrollDirection] = useState<"up" | "down">("up");
+  const [graceWait, setGraceWait] = useState(Date.now());
+
+  useMotionValueEvent(scrollY, "change", (current: number) => {
+    if (Date.now() - graceWait < 2000) { return; }
+    const prev =
+      typeof (scrollY as any).getPrevious === "function"
+        ? ((scrollY as any).getPrevious() as number)
+        : 0;
+    const diff = current - prev;
+    setScrollDirection(diff > 0 ? "down" : "up");
+  })
+  
+  // useEffect(() => {
+  //   if (loaded) {
+      
+  //   }
+  // }, [loaded])
 
   const [activeSteers, setActiveSteers] = useState<string[]>([]);
   const [manageSteerModal, setManageSteerModal] = useState(false);
@@ -700,27 +724,40 @@ ${entryTitle}
     }
 
     try {
-      abortController.current = new AbortController();
-      const comp = await openai.chat.completions.create({
-        model: modelName,
-        messages: finalMessages,
-        stream: true,
-        // @ts-expect-error lowk idk
-        reasoning_effort: reasoningEffortOptions[reasoningEffort],
-        stream_options: {
-          include_usage: true,
-        },
-        temperature: generationTemperature,
-      }, { signal: abortController.current?.signal });
-
-      let assistantMessage = "";
-      let reasoning = "";
 
       if (destination === "chat") {
         setMessages((p) => [
           ...p,
           { id: messageId, role: "assistant", content: "", stillGenerating: true },
         ]);
+      }
+
+      abortController.current = new AbortController();
+      const filteredMessages = finalMessages.map((m) => ({
+        role: m.role,
+        content: m.content ?? "",
+      }));
+
+      const comp = await openai.chat.completions.create(
+        {
+          model: modelName,
+          messages: filteredMessages,
+          stream: true,
+          // @ts-expect-error lowk idk
+          reasoning_effort: reasoningEffortOptions[reasoningEffort],
+          stream_options: {
+            include_usage: true,
+          },
+          temperature: generationTemperature,
+        },
+        { signal: abortController.current?.signal }
+      );
+
+      let assistantMessage = "";
+      let reasoning = "";
+
+      if (destination === "chat") {
+        
         for await (const chunk of comp) {
           if (abortController.current?.signal.aborted) break;
           const c = chunk.choices?.[0]?.delta?.content || "";
@@ -1316,6 +1353,7 @@ ${entryTitle}
             encodeMessages(false);
           }}
           importMessages={openFilePicker}
+          visible={scrollDirection === "up"}
         />
         <div  ref={messageListRef} className="overflow-y-auto overflow-x-hidden max-w-[40rem]">
           <div className="flex flex-col justify-end min-h-full">

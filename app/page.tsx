@@ -992,7 +992,7 @@ export default function Home() {
                       ? "blur(5px)"
                       : "blur(0px)",
                 }}
-                exit={{ y: "calc(100vh + 100px)" }}
+                exit={{ scale: 0.9, opacity: 0, filter: 'blur(5px)' }}
                 transition={{
                   type: "spring",
                   mass: 1,
