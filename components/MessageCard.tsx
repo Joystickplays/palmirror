@@ -1,10 +1,10 @@
 // components/MessageCard.tsx
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
 import { useSpring, animated } from '@react-spring/web';
 import { useDrag } from '@use-gesture/react';
-import { Pencil, Rewind, Check, MessagesSquare, RotateCw } from 'lucide-react';
+import { Pencil, Rewind, Check, MessagesSquare, RotateCw, ChevronDown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox"
@@ -38,6 +38,7 @@ import { CharacterData } from "@/types/CharacterData";
 import TypingIndication from "@/components/Typing"
 import { useTypewriter } from './Typewriter';
 import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
+import { AnimateChangeInHeight } from './AnimateHeight';
 
 function fixEmphasisStyling(): void {
 
@@ -92,6 +93,7 @@ function fixEmphasisStyling(): void {
 interface MessageCardProps {
   index: number;
   content: string;
+  reasoningContent?: string;
   role: string;
   stillGenerating: boolean;
   regenerateFunction: () => void;
@@ -126,6 +128,7 @@ const MotionButton = motion(Button);
 const MessageCard: React.FC<MessageCardProps> = ({
   index,
   content,
+  reasoningContent,
   role,
   stillGenerating,
   regenerateFunction,
@@ -178,11 +181,14 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const [canRegenerate, setCanRegenerate] = useState(false);
 
+  const [showReasoning, setShowReasoning] = useState(true);
+  const reasoningDivRef = useRef<HTMLDivElement>(null);
+
   const [typewrittenContent, setTypewrittenContent] = useState("");
   const messageTyped = useTypewriter(typewrittenContent, { speed: 5, inBatchesOf: 5 })
 
   const [presentableText, setPresentableText] = useState("");
- 
+
   const triggerRegenerate = useCallback(() => {
     regenerateFunction();
   }, [regenerateFunction]);
@@ -220,7 +226,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     apiScaleSpring.start({
       scale: down ? (isRegenerateAction ? 0.95 : 1) : 1,
     });
-  
+
     if (((vx > 2 && mx < 0) || mx < dragThreshold) && !down && isEligibleForRegenerate) {
       apiSpring.start({
         x: -500,
@@ -268,8 +274,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
     const regex = /`([^`]+)`/g;
     const foundStrings: string[] = [];
     let match;
-    
-    
+
+
     while ((match = regex.exec(input)) !== null) {
       foundStrings.push(`\`${match[1]}\``);
     }
@@ -305,7 +311,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
           const audio = new Audio(foundInvocation.data);
           audio.play();
         } else if (foundInvocation.type === "image" && !imageInvocations.includes(foundInvocation.data)) {
-          setImageInvocations(prev => { return Array.from(new Set([...prev, foundInvocation.data]))});
+          setImageInvocations(prev => { return Array.from(new Set([...prev, foundInvocation.data])) });
         }
       }
     });
@@ -325,10 +331,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
     let result = "";
 
     for (const c of str) {
-        if (c === '*') {
-            starOpen = !starOpen;
-        }
-        result += c;
+      if (c === '*') {
+        starOpen = !starOpen;
+      }
+      result += c;
     }
 
     result = result.trim();
@@ -342,10 +348,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
     let result = "";
 
     for (const c of str) {
-        if (c === '"') {
-            quoteOpen = !quoteOpen;
-        }
-        result += c;
+      if (c === '"') {
+        quoteOpen = !quoteOpen;
+      }
+      result += c;
     }
 
     result = result.trim();
@@ -360,15 +366,15 @@ const MessageCard: React.FC<MessageCardProps> = ({
     let processedContent = content
 
     try {
-    if (usingInvocationHolder && characterData.plmex.invocations.length > 0) {
-      processedContent = filterInvocationTags(content)
-    }
-    processedContent = processedContent.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
+      if (usingInvocationHolder && characterData.plmex.invocations.length > 0) {
+        processedContent = filterInvocationTags(content)
+      }
+      processedContent = processedContent.replace(/\{\{user\}\}/g, characterData.userName || "Y/N").replace(/\{\{char\}\}/g, characterData.name || "C/N")
 
-    processedContent = removeStatusSection(processedContent)
-    processedContent = cleanAllTags(processedContent)
+      processedContent = removeStatusSection(processedContent)
+      processedContent = cleanAllTags(processedContent)
     } catch (e) { console.log("Text rendering failed; proceeding with raw"); console.log(e); }
-    
+
     if (typewrite && configTyping) {
       setTypewrittenContent(processedContent)
     }
@@ -379,25 +385,29 @@ const MessageCard: React.FC<MessageCardProps> = ({
   useEffect(() => {
     document.body.style.removeProperty("pointer-events");
   }, [showAltDrawer])
- 
+
   useEffect(() => {
     rpTextRender(content)
 
+    if (reasoningContent !== "" && content !== "" && showReasoning) {
+      setShowReasoning(false);
+    }
+
     fixEmphasisStyling();
     try {
-    setStatuses(extractStatusData(content));
-    if (characterData.plmex.invocations.length > 0) {
-      const { foundStrings, modifiedString } = invocationTagsDetection(content);
-      const { foundPhrases, modifiedString2 } = phraseDetection(modifiedString, characterData.plmex.invocations.map(invocation => invocation.trigger));
-      setInvocationHolder(prev => {
-        const newInvocationHolder = prev === "" ? modifiedString2 : prev;
-        const newInvocations = [...foundStrings, ...foundPhrases].filter(trigger => !prev.includes(trigger));
-        invocationProcessor(newInvocations);
-        return newInvocationHolder;
-      });
-    }
+      setStatuses(extractStatusData(content));
+      if (characterData.plmex.invocations.length > 0) {
+        const { foundStrings, modifiedString } = invocationTagsDetection(content);
+        const { foundPhrases, modifiedString2 } = phraseDetection(modifiedString, characterData.plmex.invocations.map(invocation => invocation.trigger));
+        setInvocationHolder(prev => {
+          const newInvocationHolder = prev === "" ? modifiedString2 : prev;
+          const newInvocations = [...foundStrings, ...foundPhrases].filter(trigger => !prev.includes(trigger));
+          invocationProcessor(newInvocations);
+          return newInvocationHolder;
+        });
+      }
     } catch (e) { console.log(e) }
-    
+
   }, [content])
 
   useEffect(() => {
@@ -406,6 +416,18 @@ const MessageCard: React.FC<MessageCardProps> = ({
       fixEmphasisStyling();
     }
   }, [messageTyped])
+
+  useEffect(() => {
+    if (reasoningContent && reasoningDivRef.current) {
+      reasoningDivRef.current.scrollTop = reasoningDivRef.current?.scrollHeight;
+    }
+  }, [reasoningContent])
+
+  // useEffect(() => {
+  //   if (!stillGenerating) {
+  //     setShowReasoning(false);
+  //   }
+  // }, [stillGenerating])
 
 
   const renderContent = () => {
@@ -433,18 +455,60 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
     return (
       <div>
-        {stillGenerating && content.length < 1 ? (
+        {stillGenerating && content.length < 1 && (reasoningContent && reasoningContent.length < 1) ? (
           <TypingIndication />
         ) : (
-          <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
-            {
-              closeQuotes(closeStars(configTyping
-                ? 
-              messageTyped
-                :
-              presentableText)) 
-            }
-          </ReactMarkdown>
+          <>
+            {reasoningContent && (
+              <AnimateChangeInHeight className="border border-white/10 rounded-xl mb-4 font-sans">
+                <div className="p-4 flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <motion.div
+                      animate={{
+                        rotate: showReasoning ? '0deg' : '180deg'
+                      }}
+                      className="w-6 h-6">
+                      <Button onClick={() => { setShowReasoning(!showReasoning); console.log("e") }} size="icon" variant="ghost" className="w-6 h-6">
+                        <ChevronDown />
+                      </Button>
+                    </motion.div>
+                    <p className="italic font-bold text-sm opacity-25 text-end w-full tracking-wider">Thinking</p>
+                  </div>
+                  <AnimatePresence mode="popLayout">
+                    {showReasoning && (
+                      <motion.div
+                        className="max-h-[100px] overflow-y-auto flex flex-col"
+                        style={{
+                          maskImage: stillGenerating ? 'linear-gradient(transparent, black 80%, black)' : "",
+                        }}
+                        ref={reasoningDivRef}
+                        initial={{ y: -10, scale: 0.9, opacity: 0, filter: 'blur(5px)' }}
+                        animate={{ y: 0, scale: 1, opacity: 1, filter: 'blur(0px)' }}
+                        exit={{ y: -10, scale: 0.9, opacity: 0, filter: 'blur(5px)' }}
+                        transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
+                      >
+                        <div className="mt-auto">
+                          <ReactMarkdown className="italic font-light opacity-50">
+                            {reasoningContent}
+                          </ReactMarkdown>
+                        </div>
+                      </motion.div>
+
+                    )}
+                  </AnimatePresence>
+                </div>
+              </AnimateChangeInHeight>
+            )}
+            <ReactMarkdown className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95`}>
+              {
+                closeQuotes(closeStars(configTyping
+                  ?
+                  messageTyped
+                  :
+                  presentableText))
+              }
+            </ReactMarkdown>
+          </>
         )}
 
         {imageInvocations.length > 0 && (
@@ -532,48 +596,48 @@ const MessageCard: React.FC<MessageCardProps> = ({
       <animated.p className={`${role === "user" ? "ml-auto" : "mr-auto"} opacity-50`} style={{ fontSize: fontSize.to(s => `${s / 1.5}rem`) }}>
         {role === "user" ? `${currentTheme.showUserName ? characterData.userName || "Y/N" : ""}` : characterData.name || "Character"}
       </animated.p>
-      <Drawer  open={showAltDrawer}  onOpenChange={(open) => { setShowAltDrawer(open) }} > {/* Alternate messages Drawer */}
-         <DrawerContent className="w-auto max-w-[750px] min-w-[50vw] font-sans overflow-y-visible">
+      <Drawer open={showAltDrawer} onOpenChange={(open) => { setShowAltDrawer(open) }} > {/* Alternate messages Drawer */}
+        <DrawerContent className="w-auto max-w-[750px] min-w-[50vw] font-sans overflow-y-visible">
           <div className="max-h-[80vh] overflow-y-auto">
-          <div>
-          <DrawerHeader>
-            <DrawerTitle className="mb-2 text-center">Choose an alternate initial message</DrawerTitle>
-            {/* <Select>
+            <div>
+              <DrawerHeader>
+                <DrawerTitle className="mb-2 text-center">Choose an alternate initial message</DrawerTitle>
+                {/* <Select>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Choose an alternate initial message" />
               </SelectTrigger>
               <SelectContent> */}
-            <p className="opacity-75 text-xs mb-8 palmirror-exc-text text-center !font-normal">Swipe left to generate a new initial message!</p>
-            {characterData.alternateInitialMessages && [...(characterData.alternateInitialMessages)].map((message: AlternateInitialMessage | string, index) => {
-              message = typeof message == "string" ? message : message?.initialMessage ?? "";
-              return (
-                <Card key={message} className="mb-4 p-3 text-left">
-                  <CardContent>
-                    <ReactMarkdown className="markdown-content">
-                      {rpTextRender(message, true, false)}
-                    </ReactMarkdown>
-                    <DrawerClose asChild>
-                      <Button onClick={() => {
-                        editMessage(0, message);
-                        setInvocationHolder("");
-                        setImageInvocations([]);
-                        setSeenInvocations([]);
-                        setIsEditing(false);
-                      }} className="mt-5 w-full">Use</Button>
-                    </DrawerClose>
-                  </CardContent>
-                </Card>
-              );
-            })}
-            {/* </SelectContent>
+                <p className="opacity-75 text-xs mb-8 palmirror-exc-text text-center !font-normal">Swipe left to generate a new initial message!</p>
+                {characterData.alternateInitialMessages && [...(characterData.alternateInitialMessages)].map((message: AlternateInitialMessage | string, index) => {
+                  message = typeof message == "string" ? message : message?.initialMessage ?? "";
+                  return (
+                    <Card key={message} className="mb-4 p-3 text-left">
+                      <CardContent>
+                        <ReactMarkdown className="markdown-content">
+                          {rpTextRender(message, true, false)}
+                        </ReactMarkdown>
+                        <DrawerClose asChild>
+                          <Button onClick={() => {
+                            editMessage(0, message);
+                            setInvocationHolder("");
+                            setImageInvocations([]);
+                            setSeenInvocations([]);
+                            setIsEditing(false);
+                          }} className="mt-5 w-full">Use</Button>
+                        </DrawerClose>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                {/* </SelectContent>
             </Select> */}
-          </DrawerHeader>
-         </div>
-         </div>
+              </DrawerHeader>
+            </div>
+          </div>
         </DrawerContent>
       </Drawer>
-        <ContextMenu>
-          <ContextMenuTrigger asChild>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
           <div>
             <Card
               {...bind()}
@@ -596,7 +660,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 style={{
                   opacity: canRegenerate ? x.to(val => -val / 100) : x.to(() => 0)
                 }}>
-                
+
                 <RotateCw className="animate-[spin_2s_infinite]" />
                 <p>Swipe left to rewrite...</p>
               </animated.div>
@@ -616,32 +680,32 @@ const MessageCard: React.FC<MessageCardProps> = ({
               )}
             </AnimatePresence> */}
           </div>
-          </ContextMenuTrigger>
-          <ContextMenuContent className="w-64 font-sans font-semibold">
-            {isGreetingMessage && characterData.alternateInitialMessages && (
-                <ContextMenuItem onClick={() => setShowAltDrawer(true)} asChild>
-                  <span className="flex items-center gap-2">
-                    <MessagesSquare className="h-4 w-4" />
-                    Choose an alternate initial message
-                  </span>
-                </ContextMenuItem>
-
-
-            )}
-           <ContextMenuItem onClick={() => rewindTo(index)} disabled={stillGenerating} asChild>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-64 font-sans font-semibold">
+          {isGreetingMessage && characterData.alternateInitialMessages && (
+            <ContextMenuItem onClick={() => setShowAltDrawer(true)} asChild>
               <span className="flex items-center gap-2">
-                <Rewind className="h-4 w-4" />
-                Rewind to here
+                <MessagesSquare className="h-4 w-4" />
+                Choose an alternate initial message
               </span>
             </ContextMenuItem>
-            <ContextMenuItem onClick={startEditing} disabled={stillGenerating} asChild>
-              <span className="flex items-center gap-2">
-                <Pencil className="h-4 w-4" />
-                Edit
-              </span>
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
+
+
+          )}
+          <ContextMenuItem onClick={() => rewindTo(index)} disabled={stillGenerating} asChild>
+            <span className="flex items-center gap-2">
+              <Rewind className="h-4 w-4" />
+              Rewind to here
+            </span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={startEditing} disabled={stillGenerating} asChild>
+            <span className="flex items-center gap-2">
+              <Pencil className="h-4 w-4" />
+              Edit
+            </span>
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
 
     </animated.div >
   );

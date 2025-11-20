@@ -34,7 +34,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getE
   }, [])
 
   return (
-    <Card className={`absolute inset-1 md:inset-6 box-border h-fit ${currentTheme.bg} overflow-hidden p-5 z-[100]`}>
+    <Card className={`absolute inset-1 md:inset-6 box-border h-fit ${currentTheme.bg} overflow-hidden p-5 z-[10]`}>
 
       <CardContent className={`flex justify-between items-center ${currentTheme.bg} overflow-hidden p-0`}>
 

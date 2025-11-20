@@ -64,6 +64,7 @@ type UserPersonality = {
 interface Message {
     id: string;
     role: "user" | "assistant" | "system";
+    reasoningContent?: string;
     content: string;
     stillGenerating: boolean;
 }
@@ -116,6 +117,14 @@ const ChatPage = () => {
   const [baseURL, setBaseURL] = useState("https://cvai.mhi.im/v1");
   const [apiKey, setApiKey] = useState("none");
   const [generationTemperature, setTemperature] = useState(0.5);
+  const [reasoningEffort, setReasoningEffort] = useState(0);
+  const reasoningEffortOptions = [
+    "none",
+    "minimal",
+    "low",
+    "medium",
+    "high"
+  ]
   const [modelInstructions, setModelInstructions] = useState("");
   const [modelName, setModelName] = useState("");
   
@@ -358,17 +367,18 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
   };
 
   const loadSettingsFromLocalStorage = () => {
-    const settings = localStorage.getItem("Proxy_settings");
+    const settings = localStorage.getItem('Proxy_settings');
     if (settings) {
       const parsedSettings = JSON.parse(settings);
-      setBaseURL(parsedSettings.baseURL || "");
-      setModelName(parsedSettings.modelName || "");
+      setBaseURL(parsedSettings.baseURL || '');
+      setModelName(parsedSettings.modelName || '');
       setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
-      setModelInstructions(parsedSettings.modelInstructions || "");
+      setReasoningEffort(parseInt(parsedSettings.reasoningEffort) || 0);
+      setModelInstructions(parsedSettings.modelInstructions || '')
     } else {
-      setBaseURL("https://cvai.mhi.im/v1");
+      setBaseURL("https://cvai.mhi.im/v1")
     }
-  };
+  }
 
   useEffect(() => {
     loadSettingsFromLocalStorage();
@@ -695,6 +705,8 @@ ${entryTitle}
         model: modelName,
         messages: finalMessages,
         stream: true,
+        // @ts-expect-error lowk idk
+        reasoning_effort: reasoningEffortOptions[reasoningEffort],
         stream_options: {
           include_usage: true,
         },
@@ -702,6 +714,7 @@ ${entryTitle}
       }, { signal: abortController.current?.signal });
 
       let assistantMessage = "";
+      let reasoning = "";
 
       if (destination === "chat") {
         setMessages((p) => [
@@ -712,6 +725,10 @@ ${entryTitle}
           if (abortController.current?.signal.aborted) break;
           const c = chunk.choices?.[0]?.delta?.content || "";
           assistantMessage += c;
+          // @ts-expect-error openai has no official implementation of returning reasoning yet
+          let c_reason = chunk.choices?.[0]?.delta?.reasoning_content?.[0]?.thinking || ""; 
+          // if (c_reason === "") some other provider implementation here; 
+          reasoning += c_reason;
           if ("usage" in chunk && chunk.usage?.total_tokens) setTokenCount(chunk.usage.total_tokens);
             if (configTokenWatch) {
               setTokenHitStamps((p) => [...p, Date.now()]);
@@ -721,6 +738,7 @@ ${entryTitle}
               {
                 id: messageId,
                 role: "assistant",
+                reasoningContent: reasoning === "" ? undefined : reasoning,
                 content: assistantMessage,
                 stillGenerating: true,
               },
@@ -1166,7 +1184,7 @@ ${entryTitle}
   }, []);
 
   
-
+  // Domain tagging system
   useEffect(() => {
     if (successfulNewMessage && typeof successfulNewMessage !== 'boolean' && associatedDomain) {
       const lastMessage = successfulNewMessage.content;
@@ -1338,6 +1356,7 @@ ${entryTitle}
                         index={index}
                         role={message.role}
                         content={message.content}
+                        reasoningContent={message.reasoningContent}
                         stillGenerating={message.stillGenerating}
                         regenerateFunction={regenerateMessage}
                         globalIsThinking={isThinking}
