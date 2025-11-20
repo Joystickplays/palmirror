@@ -726,7 +726,7 @@ ${entryTitle}
           const c = chunk.choices?.[0]?.delta?.content || "";
           assistantMessage += c;
           // @ts-expect-error openai has no official implementation of returning reasoning yet
-          let c_reason = chunk.choices?.[0]?.delta?.reasoning_content?.[0]?.thinking || ""; 
+          const c_reason = chunk.choices?.[0]?.delta?.reasoning_content?.[0]?.thinking || ""; 
           // if (c_reason === "") some other provider implementation here; 
           reasoning += c_reason;
           if ("usage" in chunk && chunk.usage?.total_tokens) setTokenCount(chunk.usage.total_tokens);
