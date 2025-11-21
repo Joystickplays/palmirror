@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useContext } from "react";
+import { useState, useEffect, useRef, useContext, useCallback, useLayoutEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,7 +62,223 @@ import { useDebounce } from "@/utils/useDebounce";
 import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 
 import discord from "@/public/discord.svg"
+import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+  function sortByLastUpdated(
+    data: ChatMetadata[]
+  ): ChatMetadata[] {
+    return data.sort(
+      (a, b) =>
+        new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+    );
+  }
+
+
+const formatDateWithLocale = (dateInput: string | Date): string => {
+    const date = new Date(dateInput); // Ensure the input is a Date object
+
+    if (isNaN(date.getTime())) {
+      throw new Error("Invalid Date");
+    }
+
+    const options: Intl.DateTimeFormatOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true, // Ensures am/pm format
+      month: "long",
+    };
+
+    const time = date.toLocaleString("en-US", options); // Get time in "hh:mm am/pm" format
+    const day = String(date.getDate()).padStart(2, "0"); // Ensure day is 2 digits
+    const month = date.toLocaleString("en-US", { month: "long" }); // Month name (e.g., "January")
+
+    return `${day} ${time}`;
+  };
+
+function getScreenCenterOrigin(element: HTMLDivElement) {
+    const rect = element.getBoundingClientRect();
+    const centerX = window.innerWidth / 2.2;
+    const centerY = window.innerHeight / 2;
+
+    const originX = centerX - rect.left;
+    const originY = centerY - rect.top;
+
+    console.log(originX, originY)
+
+    return `${originX}px ${originY}px`
+}
+
+const cardDelays: number[] = [
+  200, 100, 200,
+  100, 0, 100,
+  200, 100, 200,
+];
+
+function ChatCard({
+  chat,
+  index,
+  PLMsecureContext,
+  setChatList,
+  router,
+}: {
+  chat: ChatMetadata;
+  index: number;
+  PLMsecureContext: any;
+  setChatList: any;
+  router: any;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const setAlready = useRef(false)
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    if (ref.current && !setAlready.current && PLMGlobalConfigServiceInstance.get("cardFlyIn")) {
+      if (window.innerWidth > 1080) {
+        ref.current.style.transformOrigin = getScreenCenterOrigin(ref.current);
+      }
+      setAlready.current = true
+
+      setTimeout(() => {
+        setSettled(true);
+        console.log('sett')
+      }, 1200)
+    }
+  }, []);
+
+  if (chat.associatedDomain) return null;
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={
+        (
+          window.innerWidth < 640
+            ? index < 6
+            : PLMGlobalConfigServiceInstance.get("cardFlyIn")
+              ? true
+              : index < 9
+        )
+          ? (
+            window.innerWidth < 640
+              ? {
+                opacity: 0,
+                scale: 0.7,
+                y: -600,
+                filter: PLMGlobalConfigServiceInstance.get("highend") ? "blur(50px)" : ""
+              }
+              : PLMGlobalConfigServiceInstance.get("cardFlyIn")
+                ? {
+                  opacity: 0,
+                  scale: 1.5
+                }
+                : {
+                  opacity: 0,
+                  scale: 0.7,
+                  y: -600,
+                  filter: PLMGlobalConfigServiceInstance.get("highend") ? "blur(50px)" : ""
+                }
+          )
+          : {
+            opacity: 0,
+            scale: 1.2
+          }
+      }
+      animate={{
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        filter: "blur(0px)",
+      }}
+      exit={{ opacity: 0, scale: 0.5 }}
+      transition={ PLMGlobalConfigServiceInstance.get("cardFlyIn") && window.innerWidth > 640 ? {
+        delay: window.innerWidth > 1080 ? (cardDelays[index] ?? 0) / 1500 : index * 0.05,
+        type: "spring",
+        duration: 1.2 - (cardDelays[index] ?? 0) / 1500,
+        bounce: 0.3,
+        restDelta: 0.001,
+      } : {
+        delay: index * 0.05,
+        type: "spring",
+        mass: 1,
+        damping: 27,
+        stiffness: 161,
+        restDelta: 0.001,
+        filter: { duration: 0.3 + index * 0.1, },
+        y: {
+          type: "spring",
+          mass: 1,
+          damping: 17,
+          stiffness: 97,
+          delay: index * 0.05,
+        },
+      }}
+      key={chat.lastUpdated}
+      className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full ${
+        chat.plmex.domain?.active && "palmirror-exc"
+      }`}
+      layout={PLMGlobalConfigServiceInstance.get("cardFlyIn") ? settled : true}
+    >
+      {chat.image && (
+        <div>
+          <img
+            src={chat.image}
+            className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-[200px] h-full rounded-xl object-cover object-[50%_30%] pointer-events-none"
+            style={{
+              maskImage:
+                "linear-gradient(to right, rgba(0, 0, 0, 1), transparent)",
+            }}
+          />
+        </div>
+      )}
+
+      <h2
+        className={`font-bold ml-auto ${
+          chat.plmex.domain?.active && "palmirror-exc-text"
+        }`}
+      >
+        {chat.name}
+      </h2>
+
+      <p className="opacity-70 ml-auto text-xs">
+        {formatDateWithLocale(chat.lastUpdated)}
+      </p>
+
+      <div className="flex justify-end gap-2">
+        {!chat.plmex.domain?.active && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              PLMsecureContext?.removeKey(chat.id);
+              PLMsecureContext?.removeKey(`METADATA${chat.id}`);
+              setChatList((prevList: any) =>
+                prevList.filter((item: any) => item.id !== chat.id)
+              );
+            }}
+          >
+            <Trash2 />
+          </Button>
+        )}
+
+        <Button
+          variant="outline"
+          onClick={() => {
+            sessionStorage.setItem("chatSelect", chat.id);
+
+            if (chat.plmex.domain?.active) {
+              router.push("/experience/domain");
+              return;
+            }
+            router.push(`/chat`);
+          }}
+        >
+          {chat.plmex.domain?.active ? "Enter" : "Continue"} <ArrowRight />
+        </Button>
+      </div>
+    </motion.div>
+  );
+}
+
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 function GetFromPlatform({
   router,
@@ -761,37 +977,9 @@ export default function Home() {
     });
   };
 
-  const formatDateWithLocale = (dateInput: string | Date): string => {
-    const date = new Date(dateInput); // Ensure the input is a Date object
+  
 
-    if (isNaN(date.getTime())) {
-      throw new Error("Invalid Date");
-    }
-
-    const options: Intl.DateTimeFormatOptions = {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true, // Ensures am/pm format
-      month: "long",
-    };
-
-    const time = date.toLocaleString("en-US", options); // Get time in "hh:mm am/pm" format
-    const day = String(date.getDate()).padStart(2, "0"); // Ensure day is 2 digits
-    const month = date.toLocaleString("en-US", { month: "long" }); // Month name (e.g., "January")
-
-    return `${day} ${time}`;
-  };
-
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  function sortByLastUpdated(
-    data: { [key: string]: any }[]
-  ): { [key: string]: any }[] {
-    return data.sort(
-      (a, b) =>
-        new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
-    );
-  }
-  /* eslint-enable @typescript-eslint/no-explicit-any */
+  
 
   useEffect(() => {
     isPalMirrorSecureActivated().then((activated) => {
@@ -918,6 +1106,8 @@ export default function Home() {
     return () => clearInterval(i);
   });
 
+
+
   return isSecureActivated ? (
     <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
       <div className="z-[100] fixed flex justify-center lg:justify-start w-screen mix-blend-color-dodge">
@@ -992,7 +1182,7 @@ export default function Home() {
                       ? "blur(5px)"
                       : "blur(0px)",
                 }}
-                exit={{ scale: 0.9, opacity: 0, filter: 'blur(5px)' }}
+                exit={{ scale: 0.9, opacity: 0, filter: PLMGlobalConfigServiceInstance.get("highend") ? 'blur(5px)' : '' }}
                 transition={{
                   type: "spring",
                   mass: 1,
@@ -1056,104 +1246,18 @@ export default function Home() {
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow w-full justify-center items-start ">
                 <AnimatePresence mode="popLayout">
-                  {chatList.length > 0 ? (
-                    sortByLastUpdated(chatList).map((chat, index) => {
-                      if (chat.associatedDomain) {
-                        return null;
-                      }
-                      return (
-                      <motion.div
-                        initial={
-                          (window.innerWidth < 640 && index < 4) ||
-                          window.innerWidth > 640
-                            ? {
-                                opacity: 0,
-                                scale: 0.7,
-                                y: -600,
-                                filter: "blur(3px)",
-                              }
-                            : {
-                                opacity: 0,
-                                scale: 1.1,
-                              }
-                        }
-                        animate={{
-                          opacity: 1,
-                          scale: 1,
-                          y: 0,
-                          filter: "blur(0px)",
-                        }}
-                        exit={{ opacity: 0, scale: 0.5 }}
-                        transition={{
-                          delay: index * 0.05,
-                          type: "spring",
-                          mass: 1,
-                          damping: 27,
-                          stiffness: 161,
-                          restDelta: 0.001,
-                          y: {
-                            type: "spring",
-                            mass: 1,
-                            damping: 17,
-                            stiffness: 97,
-                            delay: index * 0.05,
-                          },
-                        }}
-                        key={chat.lastUpdated}
-                        className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full ${chat.plmex.domain?.active && "palmirror-exc"}`}
-                        layout
-                      >
-                        {chat.image && (
-                          <div>
-                            <img
-                              src={chat.image}
-                              className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-[200px] h-full rounded-xl object-cover object-[50%_30%] pointer-events-none"
-                              style={{
-                                maskImage:
-                                  "linear-gradient(to right, rgba(0, 0, 0, 1), transparent)",
-                              }}
-                            />
-                          </div>
-                        )}
-                        <h2 className={`font-bold ml-auto ${chat.plmex.domain?.active && "palmirror-exc-text"}`}>{chat.name}</h2>
-                        <p className="opacity-70 ml-auto text-xs">
-                          {formatDateWithLocale(chat.lastUpdated)}
-                        </p>
-                        <div className="flex justify-end gap-2">
-                          {!chat.plmex.domain?.active && (
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                PLMsecureContext?.removeKey(chat.id);
-                                PLMsecureContext?.removeKey(`METADATA${chat.id}`);
-                                setChatList((prevList) =>
-                                  prevList.filter(
-                                    (chatItem) => chatItem.id !== chat.id
-                                  )
-                                );
-                              }}
-                            >
-                              <Trash2 />
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              sessionStorage.setItem("chatSelect", chat.id);
-                              if (chat.plmex.domain?.active) {
-                                router.push("/experience/domain")
-                                return;
-                              }
-                              router.push(`/chat`);
-                            }}
-                          >
-                            {chat.plmex.domain?.active ? "Enter" : "Continue"} <ArrowRight />
-                          </Button>
-                        </div>
-                      </motion.div>
-                    )
-                    })
-                  ) : (
+                  {chatList.length > 0 ?
+                  sortByLastUpdated(chatList).map((chat, i) => (
+                    <ChatCard
+                      key={chat.id}
+                      chat={chat}
+                      index={i}
+                      PLMsecureContext={PLMsecureContext}
+                      setChatList={setChatList}
+                      router={router}
+                    />
+                  ))
+ : (
                     <p className="opacity-50 text-sm">
                       {chatsLoading
                         ? "Loading your chats..."

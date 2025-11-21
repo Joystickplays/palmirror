@@ -104,6 +104,12 @@ export default function SettingsPage() {
                     default: false,
                     label: "Message typing effects",
                 },
+                cardFlyIn: {
+                    type: "boolean",
+                    key: "cardFlyIn",
+                    default: false,
+                    label: "Home card fly in animation",
+                },
             },
         },
     };
