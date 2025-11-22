@@ -27,4 +27,5 @@ export interface EXDomain {
     active: boolean;
     memories: Array<DomainMemoryEntry>;
     attributes: Array<DomainAttributeEntry>;
+    guide?: string;
 }

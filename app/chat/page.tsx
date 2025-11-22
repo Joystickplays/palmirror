@@ -169,6 +169,7 @@ const ChatPage = () => {
         : 0;
     const diff = current - prev;
     setScrollDirection(diff > 0 ? "down" : "up");
+    // setGraceWait(Date.now() - 1000)
   })
   
   // useEffect(() => {

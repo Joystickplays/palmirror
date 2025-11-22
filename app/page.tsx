@@ -1247,7 +1247,12 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow w-full justify-center items-start ">
                 <AnimatePresence mode="popLayout">
                   {chatList.length > 0 ?
-                  sortByLastUpdated(chatList).map((chat, i) => (
+                  sortByLastUpdated(chatList).filter((chat) => { 
+                    if (chat.associatedDomain) {
+                      return false;
+                    }
+                    return true
+                  }).map((chat, i) => (
                     <ChatCard
                       key={chat.id}
                       chat={chat}

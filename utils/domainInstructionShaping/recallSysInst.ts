@@ -3,7 +3,7 @@ export type ChatHistory = {
   timestampStructure: string;
 }
 
-export function getRecallSysInst(memories: string[], lastChat: ChatHistory) {
+export function getRecallSysInst(memories: string[], lastChat: ChatHistory, domainGuide?: string) {
   // sent as assistant! emulating a cot system
   return `ASSISTANT RECALIBRATION
 I am informed of the 3 immersion systems of the above.
@@ -12,12 +12,20 @@ I am instructed to
 - Be immersive.
 
 I should make <TIMESTEP>s for every chat I make.
-I should make sure my timesteps entry is as simple as possible and not overcomplicating.
+I should make sure my timestep entries is as simple as possible and not overcomplicating.
+I should also make sure the timestep entries capture key moments in that particular moments, not just random wording.
 
 Here are my memories, as {{char}}:
 ${memories.map((m) => `- ${m}`).join("\n")}
 
 I should subtly mention these memories in my chat.
+
+${domainGuide && `
+The user has written a guide for this domain, here it is:
+
+${domainGuide}
+
+The system instructions specify the guide above overrides everything else.`}
 
 
 Here is the latest chat I had as {{char}}, between {{user}} and their events.

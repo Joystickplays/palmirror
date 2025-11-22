@@ -21,7 +21,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check } from 'lucide-react';
 
 import AttributeProgress from "@/components/AttributeProgress";
 
@@ -34,9 +34,10 @@ import { PLMSecureContext } from "@/context/PLMSecureContext";
 import { CharacterData, ChatMetadata, defaultCharacterData } from "@/types/CharacterData";
 import { DomainAttributeEntry, DomainMemoryEntry } from "@/types/EEDomain"
 
-import { deleteMemoryFromMessageIfAny, removeDomainTimestep, reverseDomainAttribute, setDomainMemories } from "@/utils/domainData";
+import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, reverseDomainAttribute, setDomainGuide, setDomainMemories } from "@/utils/domainData";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 
 
 
@@ -69,6 +70,9 @@ const ExperienceDomainPage: React.FC = () => {
     const [selectedChat, setSelectedChat] = useState<ChatMetadata | null>(null);
 
     const [showDomainIntro, setShowDomainIntro] = useState(false);
+
+    const [domainGuideText, setDomainGuideText] = useState("");
+    const [showDomainGuideEditor, setShowDomainGuideEditor] = useState(false);
 
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
@@ -179,6 +183,13 @@ const ExperienceDomainPage: React.FC = () => {
         }
     }, [])
 
+    useEffect(() => {
+        if (character.plmex.domain?.guide) {
+            setDomainGuideText(character.plmex.domain.guide)
+        }
+    }, [character])
+    
+
     return (
         <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-[family-name:var(--font-geist-sans)]">
             <motion.div
@@ -221,8 +232,8 @@ const ExperienceDomainPage: React.FC = () => {
                 </div>
             </motion.div>
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1 }}
                 className="flex flex-col gap-4 h-full">
                 
@@ -237,6 +248,7 @@ const ExperienceDomainPage: React.FC = () => {
                         </PopoverTrigger>
                         <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans p-4">
                             <Button className="p-1 px-3 !justify-start" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button>
+                            <Button className="p-1 px-3 !justify-start" variant="outline" onClick={() => setShowDomainGuideEditor(true)}><Book />Domain guide</Button>
                             <Button className="p-1 px-3 !justify-start" variant="outline" onClick={() => setShowDomainIntro(true)}><Info />Help</Button>
                         </PopoverContent>
                     </Popover>
@@ -247,7 +259,6 @@ const ExperienceDomainPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-grow w-full justify-center items-start">
                     {sortByLastUpdated(chatList).map((chat: ChatMetadata, idx: number) => {
-                        console.log(chat)
                         if (chat.associatedDomain !== domainId) {
                             return null;
                         }
@@ -499,6 +510,24 @@ const ExperienceDomainPage: React.FC = () => {
                         PLMsecureContext?.removeKey("METADATA" + domainId)
                         router.push("/")
                     }}>Confirm deletion</Button>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showDomainGuideEditor} onOpenChange={setShowDomainGuideEditor}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Domain guide</DialogTitle>
+                    </DialogHeader>
+                    <p className="opacity-50 text-xs whitespace-pre-line">{`Domain guides help set the overall context and rules for how the character should behave within this domain.
+                        
+                        Add manual memory, core moments, or specific instructions to shape the character's behavior and interactions. If PalMirror can't catch a relevant memory from your past chats, the domain guide will help fill in the gaps.
+                    `}</p>
+
+                    <Textarea value={domainGuideText} onChange={(e) => setDomainGuideText(e.target.value)} rows={10}></Textarea>
+                    <div className="flex gap-2 w-full">
+                        <Button className="w-full" variant="outline" onClick={() => setShowDomainGuideEditor(false)}>Discard</Button>
+                        <Button className="w-full" onClick={() => {setDomainGuide( domainId, domainGuideText ); setShowDomainGuideEditor(false)}}><Check /> Apply</Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 

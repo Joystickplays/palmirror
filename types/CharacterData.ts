@@ -62,6 +62,7 @@ export const defaultCharacterData: CharacterData = {
       active: false,
       memories: [],
       attributes: [],
+      guide: "",
     },
     dynamicStatuses: [],
     invocations: [], 

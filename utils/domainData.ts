@@ -5,12 +5,13 @@ import { getAttributesSysInst } from './domainInstructionShaping/attributesSysIn
 import { ChatHistory, getTotalChatsSysInst } from './domainInstructionShaping/chatHistorySysInst';
 import { getMemorySysInst } from './domainInstructionShaping/memorySysInst';
 
-import { CharacterData } from '@/types/CharacterData';
+import { CharacterData, defaultCharacterData } from '@/types/CharacterData';
 import { DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, DomainTimestepEntry } from "@/types/EEDomain"
 import { getTimestepSysInst } from './domainInstructionShaping/timestepSysInst';
 import { getTaggingSysInst } from './domainInstructionShaping/taggingSysInst';
 import { getRecallSysInst } from './domainInstructionShaping/recallSysInst';
 import { PLMGlobalConfigServiceInstance } from '@/context/PLMGlobalConfigService';
+import { getDomainGuideSysInst } from './domainInstructionShaping/domainGuideSysInst';
 
 
 interface ChatMetadata {
@@ -409,6 +410,64 @@ export async function totalChatsFromDomain(domainID: string) {
     }
 }
 
+export async function getDomainGuide(domainID: string): Promise<string | null> {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return null;
+    }
+
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+
+        if (
+            data &&
+            data.plmex &&
+            data.plmex.domain &&
+            data.plmex.domain.guide
+        ) {
+            return data.plmex.domain.guide as string;
+        }
+
+        return null;
+    } catch (error) {
+        console.error("Failed to get domain guide:", error);
+        return null;
+    }
+}
+
+export async function setDomainGuide(domainID: string, guideText: string) {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return;
+    }
+
+    try {
+        const data: CharacterData = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        
+        if (data) {
+            if (!data.plmex) {
+                data.plmex = defaultCharacterData.plmex;
+            }
+            if (!data.plmex.domain) {
+                data.plmex.domain = defaultCharacterData.plmex.domain;
+            }
+            data.plmex.domain!.guide = guideText;
+            await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+        }
+    }
+    catch (error) {
+        console.error("Failed to set domain guide:", error);
+    }
+}
+
 
 
 export async function buildFullDomainInstruction(domainID: string, entryTitle: string) {
@@ -419,6 +478,7 @@ ${getMemorySysInst(getTrueDomainMemories(await getDomainMemories(domainID)))}
 
 ${getTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)}
 
+${ !!(await getDomainGuide(domainID)) ? getDomainGuideSysInst(await getDomainGuide(domainID) as string) : ""}
 
 ${getTaggingSysInst()}
     `;
@@ -440,5 +500,5 @@ export async function buildAssistantRecall(domainID: string) {
   if (allChats.length < 2) {
     return "";
   }
-  return getRecallSysInst(memories, sortByLastUpdated(allChats)[1])
+  return getRecallSysInst(memories, sortByLastUpdated(allChats)[1], !!(await getDomainGuide(domainID)) ? await getDomainGuide(domainID) as string : undefined);
 }
