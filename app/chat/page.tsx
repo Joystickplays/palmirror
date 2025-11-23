@@ -1358,7 +1358,7 @@ ${entryTitle}
         />
         <div  ref={messageListRef} className="overflow-y-auto overflow-x-hidden max-w-[40rem]">
           <div className="flex flex-col justify-end min-h-full">
-            <div style={{ height:  "60vh" }}></div>
+            <div className="min-h-screen"></div>
             {characterData.name.length < 1 ? (
               <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{duration:1, delay:10}}>
                 <p className="block mt-auto text-sm">but no one came</p>

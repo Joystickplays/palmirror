@@ -369,6 +369,26 @@ const MessageCard: React.FC<MessageCardProps> = ({
     return result;
   }
 
+  const processContent = (raw: string, usingInvocationHolder: boolean = true) => {
+    let processedContent = raw;
+    try {
+      if (usingInvocationHolder && characterData.plmex.invocations.length > 0) {
+        processedContent = filterInvocationTags(processedContent);
+      }
+      processedContent = processedContent
+        .replace(/\{\{user\}\}/g, characterData.userName || "Y/N")
+        .replace(/\{\{char\}\}/g, characterData.name || "C/N");
+
+      processedContent = removeStatusSection(processedContent);
+      processedContent = cleanAllTags(processedContent);
+    } catch (e) {
+      console.log("Text processing failed; using raw content", e);
+    }
+    processedContent = closeStars(processedContent);
+    processedContent = closeQuotes(processedContent);
+
+    return processedContent;
+  };
 
 
   const rpTextRender = (content: string, usingInvocationHolder: boolean = true, typewrite = true) => {
@@ -396,13 +416,17 @@ const MessageCard: React.FC<MessageCardProps> = ({
   }, [showAltDrawer])
 
   useEffect(() => {
-    rpTextRender(content)
+    const processed = processContent(content);
+
+    if (configTyping) {
+      setTypewrittenContent(processed);
+    }
+    setPresentableText(processed);
 
     if (reasoningContent !== "" && content !== "" && showReasoning) {
       setShowReasoning(false);
     }
 
-    // fixEmphasisStyling();
     try {
       setStatuses(extractStatusData(content));
       if (characterData.plmex.invocations.length > 0) {
@@ -416,7 +440,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
         });
       }
     } catch (e) { console.log(e) }
-
   }, [content])
 
   useEffect(() => {
@@ -630,7 +653,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                     <Card key={message} className="mb-4 p-3 text-left">
                       <CardContent>
                         <ReactMarkdown className="markdown-content">
-                          {rpTextRender(message, true, false)}
+                          {processContent(message, true)}
                         </ReactMarkdown>
                         <DrawerClose asChild>
                           <Button onClick={() => {
