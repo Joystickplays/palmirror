@@ -25,7 +25,7 @@ export const MessagePreview: React.FC<MessagePreviewProps> = ({ open, setOpen, c
   }, [content])
 
   return (
-    <Drawer open={open} onOpenChange={setOpen} dismissible={false}>
+    <Drawer repositionInputs={false} open={open} onOpenChange={setOpen} dismissible={false}>
       <DrawerContent className="w-auto max-w-[750px] min-w-[50vw] font-sans overflow-y-visible px-4 md:px-12 pb-6">
         <div className="max-h-[80vh] overflow-y-auto">
           <div>

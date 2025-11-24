@@ -290,6 +290,29 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     return matches;
   }
 
+  const saveTimesteps = (chats: Message[], notify = false) => {
+    if (associatedDomain) {
+        const timestepsToSet: Array<DomainTimestepEntry> = [];
+        for (const msg of chats) {
+          if (!msg?.content) continue;
+          const extracted = extractTimesteps(msg.content);
+          for (const ts of extracted) {
+            timestepsToSet.push({
+              key: Math.floor(Math.random() * 69420),
+              associatedMessage: msg.id,
+              entry: ts,
+            });
+          }
+        }
+        if (timestepsToSet.length > 0) {
+          setChatTimesteps(timestepsToSet);
+          if (notify) {
+            toast.info(`Found timesteps from messages, imported ${timestepsToSet.length} timesteps`);
+          }
+        }
+      }
+  }
+
   // Function to download a file
   const downloadFile = (
     content: string,
@@ -341,6 +364,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         const parsedMessages = JSON.parse(json);
         setMessages(parsedMessages);
         // toast.success("Chat imported successfully!");
+        saveTimesteps(parsedMessages, false)
         return;
       }
       const fileContent = await file.text(); // Read the file content
@@ -355,24 +379,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       setMessages(parsedMessages);
       toast.success("Chat imported successfully!");
 
-      if (associatedDomain) {
-        const timestepsToSet: Array<DomainTimestepEntry> = [];
-        for (const msg of parsedMessages) {
-          if (!msg?.content) continue;
-          const extracted = extractTimesteps(msg.content);
-          for (const ts of extracted) {
-            timestepsToSet.push({
-              key: Math.floor(Math.random() * 69420),
-              associatedMessage: msg.id,
-              entry: ts,
-            });
-          }
-        }
-        if (timestepsToSet.length > 0) {
-          setChatTimesteps(timestepsToSet);
-          toast.info(`Found timesteps from messages, imported ${timestepsToSet.length} timesteps`);
-        }
-      }
+      saveTimesteps(parsedMessages, true)
     } catch (error) {
       toast.error("Failed to decode messages: " + error);
     }

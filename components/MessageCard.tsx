@@ -384,8 +384,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
     } catch (e) {
       console.log("Text processing failed; using raw content", e);
     }
-    processedContent = closeStars(processedContent);
-    processedContent = closeQuotes(processedContent);
+    // processedContent = closeStars(processedContent);
+    // processedContent = closeQuotes(processedContent);
 
     return processedContent;
   };
@@ -544,7 +544,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
             <MarkdownView
               className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95 markdown-content`}
-              content={configTyping ? messageTyped : presentableText}
+              content={closeStars(closeQuotes(configTyping ? messageTyped : presentableText))}
             />
 
           </>
