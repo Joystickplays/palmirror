@@ -110,6 +110,12 @@ export default function SettingsPage() {
                     default: false,
                     label: "Home card fly in animation",
                 },
+                autoCloseFormatting: {
+                    type: 'boolean',
+                    key: 'autoCloseFormatting',
+                    default: false,
+                    label: "Automatically close formatting (italics, quotes)"
+                }
             },
         },
     };

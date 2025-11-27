@@ -39,6 +39,8 @@ import TypingIndication from "@/components/Typing"
 import { useTypewriter } from './Typewriter';
 import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
 import { AnimateChangeInHeight } from './AnimateHeight';
+import { AnimateChangeInSize } from './AnimateSize';
+import { Label } from "@/components/ui/label"
 
 const MarkdownView = React.memo(
   ({ content, className }: { content: string; className?: string }) => {
@@ -115,6 +117,8 @@ interface MessageCardProps {
   changeStatus: (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => void;
   messageListRef: React.RefObject<HTMLDivElement>;
   configTyping: boolean;
+  configHighend: boolean;
+  configAutoCloseFormatting: boolean;
 }
 
 interface AlternateInitialMessage {
@@ -150,13 +154,15 @@ const MessageCard: React.FC<MessageCardProps> = ({
   changeStatus,
   messageListRef,
   configTyping,
+  configHighend,
+  configAutoCloseFormatting
 }) => {
 
-  const PLMGC = usePLMGlobalConfig();
-  const [configHighend, setConfigHighend] = useState(false);
-  useEffect(() => {
-    setConfigHighend(!!PLMGC.get("highend"))
-  }, [])
+  // const PLMGC = usePLMGlobalConfig();
+  // const [configHighend, setConfigHighend] = useState(false);
+  // useEffect(() => {
+  //   setConfigHighend(!!PLMGC.get("highend"))
+  // }, [])
 
   const [{ scale }, apiScaleSpring] = useSpring(() => ({
     scale: 1,
@@ -189,6 +195,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [showAltDrawer, setShowAltDrawer] = useState(false);
 
   const [canRegenerate, setCanRegenerate] = useState(false);
+  const [userAboutToRegen, setUserAboutToRegen] = useState(false);
 
   const [showReasoning, setShowReasoning] = useState(true);
   const reasoningDivRef = useRef<HTMLDivElement>(null);
@@ -215,10 +222,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
     if (isRegenerateAction && !aboutToRegenerate) {
       aboutToRegenerate = true;
       vibrate(50);
+      setUserAboutToRegen(true);
       // console.log("Message card - regen vibrate...")
       //debugger;
     } else if (!isRegenerateAction) {
       aboutToRegenerate = false;
+      setUserAboutToRegen(false);
     }
 
     apiSpring.start({
@@ -227,7 +236,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
         : 0,
       y: 0,
       height: 100,
-      blur: isRegenerateAction ? 4 : (down && canRegenerate && configHighend ? 0.01 * -mx : 0),
+      blur: configHighend ? (isRegenerateAction ? 4 : (down && canRegenerate ? 0.01 * -mx : 0)) : 0,
       fontSize: 1,
       config: { tension: 190, friction: 18 },
     });
@@ -544,7 +553,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
             <MarkdownView
               className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95 markdown-content`}
-              content={closeStars(closeQuotes(configTyping ? messageTyped : presentableText))}
+              content={
+                configAutoCloseFormatting ? 
+                closeStars(closeQuotes(configTyping ? messageTyped : presentableText))
+                : configTyping ? messageTyped : presentableText
+              }
             />
 
           </>
@@ -573,40 +586,51 @@ const MessageCard: React.FC<MessageCardProps> = ({
                       {status.key}: <span className="opacity-50">{status.value}</span>
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="!font-sans">
                     <DialogHeader>
                       <DialogTitle>Change this dynamic status</DialogTitle>
-
-                      <div className="flex flex-col gap-4 !mt-4">
-                        <div className="flex flex-col gap-1">
-                          <p className="text-sm">{changingStatus}</p>
-                          <Input onChange={(e) => setChangingStatusValue(e.target.value)} value={changingStatusValue} />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            checked={changingStatusCharReacts}
-                            onCheckedChange={(checked) => setChangingStatusCharReacts(checked === true)}
-                          />
-                          <p>Have {characterData.name} react to the change?</p>
-                        </div>
-                        {changingStatusCharReacts && (
-                          <motion.textarea
-                            className="bg-transparent resize-none border rounded-xl w-full h-20 p-3 mt-2"
-                            placeholder="Reason for change"
-                            value={changingStatusReason}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setChangingStatusReason(e.target.value)}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0 }}
-                          />
-                        )}
-                      </div>
+                    </DialogHeader>
+                      <AnimateChangeInHeight>
+                        <AnimatePresence mode="popLayout">
+                          <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-1">
+                              <p className="text-sm">{changingStatus}</p>
+                              <Input onChange={(e) => setChangingStatusValue(e.target.value)} value={changingStatusValue} />
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Checkbox
+                                id="react"
+                                checked={changingStatusCharReacts}
+                                onCheckedChange={(checked) => setChangingStatusCharReacts(checked === true)}
+                              />
+                              <Label htmlFor="react">Have {characterData.name} react to the change?</Label>
+                            </div>
+                            {changingStatusCharReacts && (
+                              <motion.textarea
+                                key="textarea"
+                                className="bg-transparent resize-none border rounded-xl w-full h-20 p-3 mt-2 origin-top-left"
+                                placeholder="Reason for change"
+                                value={changingStatusReason}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setChangingStatusReason(e.target.value)}
+                                initial={{ opacity: 0, scale: 0.8, y: -70 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0 }}
+                                transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 17,
+                                  y: { type: 'spring', mass: 1, stiffness: 240, damping: 20 }
+                                }}
+                              />
+                            )}
+                          </div>
+                        </AnimatePresence>
+                      </AnimateChangeInHeight>
+                      
                       <DialogClose asChild>
                         <Button onClick={() => {
                           changeStatus(changingStatus, changingStatusValue, changingStatusCharReacts, changingStatusReason);
-                        }}>Save</Button>
+                        }}>
+                          {changingStatusCharReacts ? "Save & react" : "Save"}
+                        </Button>
                       </DialogClose>
-                    </DialogHeader>
                   </DialogContent>
                 </Dialog>
               </AnimatePresence>
@@ -695,14 +719,44 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   {/* Swipe to regenerate overlay */}
                 </animated.div>
               </CardContent>
-              <animated.div className="absolute inset-0 bg-black flex gap-2 items-end justify-end z-10 text-white bg-opacity-0 pointer-events-none select-none"
-                style={{
-                  opacity: canRegenerate ? x.to(val => -val / 100) : x.to(() => 0)
-                }}>
+              {!configHighend && (
+                <animated.div className="absolute inset-0 bg-black flex items-end justify-end z-10 text-white bg-opacity-0 pointer-events-none select-none"
+                  style={{
+                    opacity: canRegenerate ? x.to(val => -val / 100) : x.to(() => 0)
+                  }}>
 
-                <RotateCw className="animate-[spin_2s_infinite]" />
-                <p>Swipe left to rewrite...</p>
-              </animated.div>
+                  <AnimateChangeInSize className="bg-black/50 rounded-2xl">
+                    <div className="flex gap-2 p-2 whitespace-nowrap">
+                      <RotateCw className="animate-[spin_2s_infinite] min-w-6" />
+                      <p>
+                        <AnimatePresence mode="popLayout">
+                          {
+                            userAboutToRegen ? (
+                              <motion.span 
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
+                              key="gonnaRegen">
+                                Release
+                              </motion.span>
+                            ) : (
+                              <motion.span 
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
+                              key="howtoRegen">
+                                Swipe left
+                              </motion.span>
+                            )
+                          }
+                        </AnimatePresence>
+                        {" "}to rewrite...</p>
+                    </div>
+                  </AnimateChangeInSize>
+                </animated.div>
+              )}
             </Card>
             {/* <AnimatePresence>
             {!globalIsThinking && isLastMessage && role === "assistant" && !isEditing && (

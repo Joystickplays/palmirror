@@ -74,18 +74,15 @@ const ChatPage = () => {
 
   const PLMGC = usePLMGlobalConfig();
   const [configHighend, setConfigHighend] = useState(false);
+  const [configTokenWatch, setConfigTokenWatch] = useState(true);
+  const [configTyping, setConfigTyping] = useState(false);
+  const [configAutoCloseFormatting, setConfigAutoCloseFormatting] = useState(false);
+  
   useEffect(() => {
     setConfigHighend(!!PLMGC.get("highend"))
-  }, [])
-
-  const [configTokenWatch, setConfigTokenWatch] = useState(true);
-  useEffect(() => {
     setConfigTokenWatch(PLMGC.get("tokenCounter") ?? true)
-  }, [])
-
-  const [configTyping, setConfigTyping] = useState(false);
-  useEffect(() => {
     setConfigTyping(!!PLMGC.get("typing"))
+    setConfigAutoCloseFormatting(!!PLMGC.get("autoCloseFormatting"))
   }, [])
 
   const [messages, setMessages] = useState<
@@ -1349,9 +1346,9 @@ ${entryTitle}
             style={{ 
               maskImage: 'linear-gradient( to bottom, black 0%, black 50%, transparent 100% )' 
             }}
-            className="h-full backdrop-blur-md">
-              
-            </div>
+            className="h-full backdrop-blur-md pointer-events-none touch-none">
+              {/* poor man's blur */}
+             </div> 
           )}
         </div> 
         <ChatHeader
@@ -1413,7 +1410,9 @@ ${entryTitle}
                         rewindTo={rewindTo}
                         changeStatus={changeStatus}
                         messageListRef={messageListRef}
+                        configHighend={configHighend}
                         configTyping={configTyping}
+                        configAutoCloseFormatting={configAutoCloseFormatting}
                       />
                     </motion.div>
                   );
