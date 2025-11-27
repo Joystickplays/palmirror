@@ -39,6 +39,7 @@ import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 import { MessagePreview } from "@/components/MessagePreview";
+import { LinearBlur } from "@/components/LinearBlur";
 
 
 let openai: OpenAI;
@@ -1335,21 +1336,17 @@ ${entryTitle}
         <div className="fixed w-full h-[10rem] z-[1]"
         >
           {configHighend ?
-          Array.from( {length: 80 }).map((_, idx) => {
-          return (<div key={idx} className="w-full absolute pointer-events-none touch-none"
-            style={{ 
-              height: `${10 - idx / 8}rem`,
-              backdropFilter: `blur(${Math.min(5, idx / 16)}px)`,
-              maskImage: 'linear-gradient( to bottom, black 0%, black 90%, transparent 100% )' }}></div>)
-          }) : (
-            <div
-            style={{ 
-              maskImage: 'linear-gradient( to bottom, black 0%, black 50%, transparent 100% )' 
-            }}
-            className="h-full backdrop-blur-md pointer-events-none touch-none">
-              {/* poor man's blur */}
-             </div> 
-          )}
+            
+            <LinearBlur  className="w-full h-full"></LinearBlur>
+            : (
+              <div
+                style={{
+                  maskImage: 'linear-gradient( to bottom, black 0%, black 50%, transparent 100% )'
+                }}
+                className="h-full backdrop-blur-md pointer-events-none touch-none">
+                {/* poor man's blur */}
+              </div>
+            )}
         </div> 
         <ChatHeader
           characterData={characterData}
