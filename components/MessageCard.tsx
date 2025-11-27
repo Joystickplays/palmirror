@@ -221,7 +221,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
     setCanRegenerate(isEligibleForRegenerate)
     if (isRegenerateAction && !aboutToRegenerate) {
       aboutToRegenerate = true;
-      vibrate(50);
       setUserAboutToRegen(true);
       // console.log("Message card - regen vibrate...")
       //debugger;
@@ -478,7 +477,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
   }, [presentableText])
 
 
-  
+  useEffect(() => {
+    if (userAboutToRegen) {
+      vibrate(50);
+    }
+  }, [userAboutToRegen])  
 
 
   const renderContent = () => {
