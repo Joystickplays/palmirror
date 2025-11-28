@@ -115,6 +115,12 @@ export default function SettingsPage() {
                     key: 'autoCloseFormatting',
                     default: false,
                     label: "Automatically close formatting (italics, quotes)"
+                },
+                limitedChatRender: {
+                    type: 'boolean',
+                    key: 'limitChatRenders',
+                    default: false,
+                    label: "Limit rendered chat messages at once"
                 }
             },
         },

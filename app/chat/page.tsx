@@ -40,6 +40,7 @@ import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 import { MessagePreview } from "@/components/MessagePreview";
 import { LinearBlur } from "@/components/LinearBlur";
+import { ListCollapse } from "lucide-react";
 
 
 let openai: OpenAI;
@@ -78,17 +79,21 @@ const ChatPage = () => {
   const [configTokenWatch, setConfigTokenWatch] = useState(true);
   const [configTyping, setConfigTyping] = useState(false);
   const [configAutoCloseFormatting, setConfigAutoCloseFormatting] = useState(false);
+  const [configLimitChatRenders, setConfigLimitChatRenders] = useState(false);
+  const [configLimitChatRendersCount, setConfigLimitChatRendersCount] = useState(3);
   
   useEffect(() => {
     setConfigHighend(!!PLMGC.get("highend"))
     setConfigTokenWatch(PLMGC.get("tokenCounter") ?? true)
     setConfigTyping(!!PLMGC.get("typing"))
     setConfigAutoCloseFormatting(!!PLMGC.get("autoCloseFormatting"))
+    setConfigLimitChatRenders(!!PLMGC.get("limitChatRenders"))
   }, [])
 
   const [messages, setMessages] = useState<
     Array<Message>
   >([]);
+  const [showCollapsedChats, setShowCollapsedChats] = useState(false);
   const [characterData, setCharacterData] =
     useState<CharacterData>(defaultCharacterData);
   const [chatId, setChatId] = useState("");
@@ -1337,7 +1342,7 @@ ${entryTitle}
         >
           {configHighend ?
             
-            <LinearBlur  className="w-full h-full"></LinearBlur>
+            <LinearBlur className="w-full h-full"></LinearBlur>
             : (
               <div
                 style={{
@@ -1368,7 +1373,22 @@ ${entryTitle}
               : (<></>)} {/* i just wanna do this for shits and giggles ok long live undertale */}
             <div>
               <AnimatePresence>
+                {messages.length > configLimitChatRendersCount && (
+                  <motion.button
+                  layout="position"
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => setShowCollapsedChats(!showCollapsedChats)}
+                  className="w-full h-24 border border-white border-dashed rounded-xl flex justify-around items-center opacity-30 mb-2">
+                    <ListCollapse />
+                    <p>{
+                      showCollapsedChats ? "Hide back the" : "Show the other"
+                      } {messages.length - configLimitChatRendersCount} messages</p>
+                  </motion.button>
+                )}
                 {messages.map((message, index) => {
+                  if (!showCollapsedChats && configLimitChatRenders && index < (messages.length - configLimitChatRendersCount)) {
+                    return null;
+                  }
                   const isSecondLast = index === messages.length - 2;
                   return (
                     <motion.div
