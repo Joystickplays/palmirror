@@ -1373,7 +1373,7 @@ ${entryTitle}
               : (<></>)} {/* i just wanna do this for shits and giggles ok long live undertale */}
             <div>
               <AnimatePresence>
-                {messages.length > configLimitChatRendersCount && (
+                {configLimitChatRenders && messages.length > configLimitChatRendersCount && (
                   <motion.button
                   layout="position"
                   whileTap={{ scale: 0.96 }}

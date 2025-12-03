@@ -116,11 +116,17 @@ export default function SettingsPage() {
                     default: false,
                     label: "Automatically close formatting (italics, quotes)"
                 },
-                limitedChatRender: {
+                limitChatRenders: {
                     type: 'boolean',
                     key: 'limitChatRenders',
                     default: false,
                     label: "Limit rendered chat messages at once"
+                },
+                novelImageGeneration: {
+                    type: 'boolean',
+                    key: 'novelImageGeneration',
+                    default: false,
+                    label: "Generate visual novel-like images"
                 }
             },
         },
