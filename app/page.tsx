@@ -635,67 +635,16 @@ export default function Home() {
   const [chatList, setChatList] = useState<Array<ChatMetadata>>([]);
   const [chatsLoading, setChatsLoading] = useState(true);
 
-  const taglines = [
-    "password plz",
-    "What's the password? (It's not 1234.. hopefully.)",
-    "Locked up tighter than a snack stash.",
-    "We just need your key to your.. private space.",
-    "Go on, unlock it.",
-    "Have the password? Cool.",
-    "You know the drill. Password.",
-    "Nothing to see here.. promise.",
-    "Password, or go home.",
-    "Unless you know the password, LEAVE.",
-    "Access denied... unless?",
-    "Your secret phrase, please.",
-    "Psst, what's the magic word?",
-    "Knock knock. Who's there? Password.",
-    "Got the code? Prove it.",
-    "You didn't forget it, did you?",
-    "Passwords: Keeping nosy people out since forever.",
-    "The door's locked. You have the key?",
-    "Halt! Who goes there? Password required.",
-    "No password? No entry.",
-    "Think you can guess? Think again.",
-    "This isn't a guessing game, or is it?",
-    "Enter the magic word to continue.",
-    "It's password time, don't mess it up.",
-    "Nope, still waiting for that password.",
-    "Hey, sharing passwords is a no-no.",
-    "Forgot your password? Awkward.",
-    "This is the part where you type the password.",
-    "Passwords: Small but mighty.",
-    "Shh... it's a secret.",
-    "One does not simply enter without the password.",
-    "No password? No fun.",
-    "Hint: It's not 'password'.",
-    "Your ticket in? The password.",
-    "The secret handshake won't work here.",
-    "Access is one password away.",
-    "Don't worry, we're not judging your password strength. (Much.)",
-    "Guessing won't get you far.",
-    "Is it your pet's name? Be honest.",
-    "One tiny word stands between you and glory.",
-    "You bring the password, we'll bring the access.",
-    "Your move. Password time.",
-    "No password? No dice.",
-    "Spoiler alert: You need the password.",
-    "Type it carefully… no pressure.",
-    "The gates are locked. What's the code?",
-    "Security is fun, isn't it?",
-    "Trust us, it's worth it. Enter the password.",
-    "Not taking user data as bribery.",
-    "Just hoping that the password manager doesn't autofill the input...",
-  ];
+  
 
   const lockScreenControl = useAnimation();
 
-  const getRandomTagline = () => {
-    return taglines[Math.floor(Math.random() * taglines.length)];
-  };
-  useEffect(() => {
-    setTagline(getRandomTagline());
-  }, []);
+  // const getRandomTagline = () => {
+  //   return taglines[Math.floor(Math.random() * taglines.length)];
+  // };
+  // useEffect(() => {
+  //   setTagline(getRandomTagline());
+  // }, []);
 
   const loadCharacterData = () => {
     const storedData = localStorage.getItem("characterData");
@@ -1197,13 +1146,13 @@ export default function Home() {
                 <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight pb-2 text-center">
                   {tagline}
                 </h1>
-                <p>PalMirror Secure is active and encrypted.</p>
+                <p>Enter Passcode</p>
                 {/* <Button onClick={authPasskey}>Use passkey</Button> */}
-                <hr className="m-2! w-full max-w-(--breakpoint-sm) h-px" />
+                {/* <hr className="m-2! w-full max-w-(--breakpoint-sm) h-px" /> */}
                 <div className="flex gap-2 w-full max-w-(--breakpoint-sm)">
                   {localStorage.getItem("secureMetadata") ? (
                     <div className="w-full">
-                      <PinDisplay input={PLMSecurePass} show={false} />
+                      <PinDisplay input={PLMSecurePass} show={false} many={JSON.parse(localStorage.getItem("secureMetadata") || "[]").length} />
                       <Keypad onKeyPress={handleKeyPressPin} fromBottom={true} />
                     </div>
                   ) : (
