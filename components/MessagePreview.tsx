@@ -33,7 +33,7 @@ export const MessagePreview: React.FC<MessagePreviewProps> = ({ open, setOpen, c
               <DrawerTitle className="mb-2 text-center">Preview generated message</DrawerTitle>
             </DrawerHeader>
             <AnimateChangeInHeight className={`border border-white/10 text-right rounded-xl`}>
-              <div className={`p-3 ${editing && "!p-1"}`}>
+              <div className={`p-3 ${editing && "p-1!"}`}>
                 <CardContent className="p-2">
                   <AnimatePresence mode="popLayout">
                     {

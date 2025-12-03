@@ -29,7 +29,7 @@ const NewcomerDrawer: React.FC<NewcomerDrawerProps> = ({
  
   return (
     <Drawer open={open} dismissible={false} onOpenChange={onChange}>
-      <DrawerContent className="font-sans !text-left">
+      <DrawerContent className="font-sans text-left!">
         <DrawerHeader>
           <DrawerTitle>Welcome to PalMirror!</DrawerTitle>
           <DrawerDescription>While PalMirror is traditionally a bring-your-own-AI character chat frontend, we also provide PalAI, a free AI service for newcomers made for PalMirror by default. Here are some alternatives you may like:

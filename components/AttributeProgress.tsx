@@ -28,7 +28,7 @@ const AttributeProgress: React.FC<AttributeProgressProps> = ({ attr, animated = 
           <NumberFlow animated={animated} plugins={[continuous]} value={progressValue} />%
         </p>
       </div>
-      <Progress innerClassName={`${!animated ? "!duration-0" : "duration-1000"}`} className={`!h-[12px]`} value={progressValue} max={100} />
+      <Progress innerClassName={`${!animated ? "duration-0!" : "duration-1000"}`} className={`h-3!`} value={progressValue} max={100} />
     </div>
   );
 }

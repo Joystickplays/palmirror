@@ -188,9 +188,9 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
   return (
     <Drawer repositionInputs={false} direction={"right"}>
       <DrawerTrigger asChild>
-        <Button variant="outline" className={`p-3 size-8 z-[2] ${currentTheme.assistantBg}`}><Settings /></Button>
+        <Button variant="outline" className={`p-3 size-8 z-2 ${currentTheme.assistantBg}`}><Settings /></Button>
       </DrawerTrigger>
-      <DrawerContent className={`w-auto max-h-[80vh] max-w-[350px] sm:max-h-auto ml-10 sm:ml-auto mr-3 mb-4 rounded-xl overflow-x-hidden font-sans ${showSecureDialog && "blur-sm"} `}
+      <DrawerContent className={`w-auto max-h-[80vh] max-w-[350px] sm:max-h-auto ml-10 sm:ml-auto mr-3 mb-4 rounded-xl overflow-x-hidden font-sans ${showSecureDialog && "blur-xs"} `}
         style={{ '--initial-transform': 'calc(100% + 16px)' } as React.CSSProperties}>
         <div className="overflow-y-auto overflow-x-hidden">
           <DrawerHeader>
@@ -205,13 +205,13 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
                   value={baseURL}
                   onChange={handleBaseURLChange}
                 />
-                {showReloadSuggestion && (<p className="opacity-50 text-xs">Base URL changes require a <Button variant="outline" className="!p-2" onClick={() => window.location.reload()}>reload</Button> to work properly.</p>)}
+                {showReloadSuggestion && (<p className="opacity-50 text-xs">Base URL changes require a <Button variant="outline" className="p-2!" onClick={() => window.location.reload()}>reload</Button> to work properly.</p>)}
                 <Button variant="outline" size="sm" onClick={handleToggleRecommendations}>
                   {showRecommendations ? "Hide Recommendations" : "Show Recommendations"}
                 </Button>
                 {showRecommendations && (
                   <Card>
-                    <CardContent className="flex flex-col gap-3 !p-4">
+                    <CardContent className="flex flex-col gap-3 p-4!">
                       <p className="text-xs opacity-50">Recommendations</p>
                       <div className="flex gap-4">
                         <Button variant="outline" size="sm" onClick={() => handleProviderSelect("OpenAI")}>OpenAI</Button>
@@ -224,7 +224,7 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
                   <Card className="mt-4">
                     <CardContent className="font-sans p-3">
                       <p>OpenAI is a leading AI research lab. They provide a powerful API for text generation.</p>
-                      <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
+                      <div className="flex flex-col gap-1 my-4! p-2 border rounded-lg">
                         <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Excellent quality</p>
                         <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Fast responses</p>
                         <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Uses industry-leading AI models</p>
@@ -238,7 +238,7 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
                   <Card className="mt-4">
                     <CardContent className="font-sans p-3">
                       <p>PalAI is the proprietary PalMirror AI provider and the default, using OpenRouter to give you access to flagship, openweight models for free. Thanks to <a href="https://hostedon.mochig.com" target="_blank" className="text-blue-300 underline">Mochig</a> for hosting!</p>
-                      <div className="flex flex-col gap-1 !my-4 p-2 border rounded-lg">
+                      <div className="flex flex-col gap-1 my-4! p-2 border rounded-lg">
                         <p className="flex gap-2 text-sm"><Check className="opacity-50" /> Made for PalMirror</p>
                         <p className="flex gap-2 text-sm"><Check className="opacity-50" /><b>No</b> API Keys</p>
                         <p className="flex gap-2 text-sm"><Check className="opacity-50" /><b>No</b> response logging</p>
@@ -287,7 +287,7 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
                     <h1 className="font-extrabold">PalMirror Proprietary Prompt</h1>
                     <p className="text-xs mt-1">Guide generic assistant LLMs to <i>specifically</i> generate for immersive roleplay!</p>
                     <div className="flex flex-col gap-2 w-full mt-4">
-                      <Button className="flex-grow" onClick={() => { setModelInstructions(pmPropSysInst); setInputChangedYet(true); }}>Use P3</Button>
+                      <Button className="grow" onClick={() => { setModelInstructions(pmPropSysInst); setInputChangedYet(true); }}>Use P3</Button>
                       <Button variant="outline" size="sm" onClick={() => { setShowPMSysInstSuggestion(false); localStorage.setItem("PMPSIDontShowAgain", "hi everybody") }} >Don&apos;t show again</Button>
                     </div>
                   </div>

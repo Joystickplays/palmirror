@@ -184,7 +184,7 @@ export default function Search() {
   }, [])
 
   return (
-    <div className="flex flex-col gap-6 min-h-screen px-8 lg:px-48 pb-20 p-8 sm:p-10 font-[family-name:var(--font-geist-sans)]">
+    <div className="flex flex-col gap-6 min-h-screen px-8 lg:px-48 pb-20 p-8 sm:p-10 font-(family-name:--font-geist-sans)">
       <div className="flex justify-center sm:justify-between w-full">
         <h1 className="text-xl font-extrabold tracking-tight">Search Characters</h1>
         <Button variant="outline" onClick={() => router.back()} className="hidden sm:block"> Back </Button>

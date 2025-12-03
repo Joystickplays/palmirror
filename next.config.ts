@@ -1,10 +1,10 @@
-import withPWA from 'next-pwa';
+import withPWAInit from 'next-pwa';
 
-export default withPWA({
+const withPWA = withPWAInit({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
+  disable: process.env.NODE_ENV === 'development', 
   runtimeCaching: [
     {
       urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
@@ -29,3 +29,10 @@ export default withPWA({
     },
   ],
 });
+
+const nextConfig = {
+  turbopack: {
+  },
+};
+
+export default withPWA(nextConfig);

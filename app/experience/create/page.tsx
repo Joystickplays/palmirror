@@ -247,8 +247,8 @@ export default function Home() {
 
 
     return (
-        <div className="flex flex-col justify-center min-h-screen p-2 sm:p-8 gap-4 font-[family-name:var(--font-geist-sans)]">
-            <div className="flex justify-around items-center w-full !h-fit">
+        <div className="flex flex-col justify-center min-h-screen p-2 sm:p-8 gap-4 font-(family-name:--font-geist-sans)">
+            <div className="flex justify-around items-center w-full h-fit!">
                 <h1 className="scroll-m-20 text-2xl font-extrabold tracking-tight mt-8 sm:mt-0 pb-2 palmirror-exc-text w-full sm:w-auto text-center">
                     PalMirror Experience
                 </h1>
@@ -371,7 +371,7 @@ export default function Home() {
                                                             transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 16 }}
                                                             key={idx} className="flex items-center bg-white/10 rounded-full px-3 py-2 gap-1">
                                                             <input
-                                                                className="bg-transparent border-none outline-none w-14 lg:w-24 text-sm"
+                                                                className="bg-transparent border-none outline-hidden w-14 lg:w-24 text-sm"
                                                                 placeholder={"Attribute name"}
                                                                 value={tag.tag}
                                                                 onChange={e => {

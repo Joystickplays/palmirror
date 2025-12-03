@@ -31,7 +31,7 @@ const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, 
                         key={"generatePrompt"}
                         exit={{ scale: 0.8, opacity: 0 }}
                         transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 18 }}>
-                            <Button onClick={startGeneration} className="!p-4 h-8 text-xs">
+                            <Button onClick={startGeneration} className="p-4! h-8 text-xs">
                                 Generate suggestion prompts
                             </Button>
                         </motion.div>
@@ -56,7 +56,7 @@ const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, 
                                 animate={{ y: 0 }}
                                 transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 22, delay: 0.1 * idx }}
                             >
-                                <Button onClick={() => suggestionPicked(suggestion)} disabled={generating} className="!p-4 h-8 text-xs">
+                                <Button onClick={() => suggestionPicked(suggestion)} disabled={generating} className="p-4! h-8 text-xs">
                                     {suggestion}
                                 </Button>
                             </motion.div>
@@ -69,7 +69,7 @@ const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, 
                         layout="position"
                         transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 22 }}
                     >
-                        <Button variant="outline" onClick={() => setArbitrarySuggestionDialogShow(true)} disabled={generating} className="!p-4 h-8 text-xs">
+                        <Button variant="outline" onClick={() => setArbitrarySuggestionDialogShow(true)} disabled={generating} className="p-4! h-8 text-xs">
                             Create suggestion from self-prompt
                         </Button>
                     </motion.div>

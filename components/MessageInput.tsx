@@ -96,7 +96,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
-  const handleButtonClick = () => {
+  const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    
+    // if (e && e.button !== 0) {
+    //   return;
+    // }
     if (isThinking || userPromptThinking) {
       onCancel();
     } else {
@@ -137,8 +141,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
         <ContextMenuTrigger asChild>
           <motion.div
           className="absolute right-2 bottom-2"
-          whileTap={{ scale: 0.8 }}
-          transition={{ type: 'spring', mass: 1, stiffness: 200, damping: 11 }}>
+          // whileTap={{ scale: 0.8 }}
+          // transition={{ type: 'spring', mass: 1, stiffness: 200, damping: 11 }}
+          >
             <Button
               className=" p-2 rounded-full"
               size="icon"
@@ -155,7 +160,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
         <ContextMenuContent className="w-64 font-sans font-semibold">
           <ContextMenuItem
-            onClick={suggestReply}
+            onSelect={(e) => {
+              e.stopPropagation(); 
+              suggestReply();
+            }}
             disabled={isThinking || userPromptThinking}
           >
             <span className="flex items-center gap-2">
@@ -174,7 +182,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
             </span>
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={showSkipToSceneModal}
+          <ContextMenuItem 
+            onSelect={showSkipToSceneModal}
             disabled={isThinking || userPromptThinking}>
             <span className="flex items-center gap-2">
               <ArrowDownNarrowWide className="h-4 w-4" />

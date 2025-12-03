@@ -191,7 +191,7 @@ const ExperienceDomainPage: React.FC = () => {
     
 
     return (
-        <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-[family-name:var(--font-geist-sans)]">
+        <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-(family-name:--font-geist-sans)">
             <motion.div
                 initial={{ opacity: 0, scale: 0.8, y: -100 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -204,7 +204,7 @@ const ExperienceDomainPage: React.FC = () => {
                         damping: 10,
                     }
                 }}
-                className={`palmirror-exc border border-white/20 rounded-[24px] w-full min-h-24 p-8 py-6 flex flex-col md:flex-row items-center justify-around ${character.image && "pt-24 md:pt-6"}`}
+                className={`palmirror-exc border border-white/20 rounded-3xl w-full min-h-24 p-8 py-6 flex flex-col md:flex-row items-center justify-around ${character.image && "pt-24 md:pt-6"}`}
             >   
                 <motion.img
                     src={character.image}
@@ -225,7 +225,7 @@ const ExperienceDomainPage: React.FC = () => {
                 />
                 <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text md:min-w-[16rem]">{character.name}</h1>
                 <div className=""></div>
-                <div className="flex overflow-x-scroll max-w-full md:max-w-[32rem] pb-2 mt-4 md:pb-0 md:my-0 md:grid md:grid-cols-3 md:grid-rows-2 md:grid-flow-col md:auto-cols-max gap-4">
+                <div className="flex overflow-x-scroll max-w-full md:max-w-lg pb-2 mt-4 md:pb-0 md:my-0 md:grid md:grid-cols-3 md:grid-rows-2 md:grid-flow-col md:auto-cols-max gap-4">
                     {character.plmex.domain?.attributes.map(attr => (
                         <AttributeProgress key={attr.key} attr={attr} />
                     ))}
@@ -237,7 +237,7 @@ const ExperienceDomainPage: React.FC = () => {
                 transition={{ duration: 1 }}
                 className="flex flex-col gap-4 h-full">
                 
-                <Button className="fixed bottom-4 right-4 p-8 px-6 rounded-full !bg-background backdrop-blur-sm z-[100]" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus className="scale-150" /></Button>
+                <Button className="fixed bottom-4 right-4 p-8 px-6 rounded-full bg-background! backdrop-blur-xs z-100" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus className="scale-150" /></Button>
 
                 <div className="flex gap-2 h-12 overflow-x-scroll -mt-4">
                     <Button variant="outline" onClick={() => router.push("/")}><ArrowLeft /></Button>
@@ -247,9 +247,9 @@ const ExperienceDomainPage: React.FC = () => {
                             <Button className="p-1 px-3" variant="outline"><EllipsisVertical /></Button>
                         </PopoverTrigger>
                         <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans p-4">
-                            <Button className="p-1 px-3 !justify-start" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button>
-                            <Button className="p-1 px-3 !justify-start" variant="outline" onClick={() => setShowDomainGuideEditor(true)}><Book />Domain guide</Button>
-                            <Button className="p-1 px-3 !justify-start" variant="outline" onClick={() => setShowDomainIntro(true)}><Info />Help</Button>
+                            <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button>
+                            <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowDomainGuideEditor(true)}><Book />Domain guide</Button>
+                            <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowDomainIntro(true)}><Info />Help</Button>
                         </PopoverContent>
                     </Popover>
                     {/* <Button className="p-1 px-3" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button> */}
@@ -257,7 +257,7 @@ const ExperienceDomainPage: React.FC = () => {
                 </div>
 
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-grow w-full justify-center items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 grow w-full justify-center items-start">
                     {sortByLastUpdated(chatList).map((chat: ChatMetadata, idx: number) => {
                         if (chat.associatedDomain !== domainId) {
                             return null;
@@ -298,7 +298,7 @@ const ExperienceDomainPage: React.FC = () => {
                                         </PopoverTrigger>
                                         <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans p-4">
                                             <Button
-                                                className="p-1 px-3 !justify-start"
+                                                className="p-1 px-3 justify-start!"
                                                 variant="destructive"
                                                 onClick={() => {
                                                     setChatAboutToDelete(chat.id);
@@ -308,7 +308,7 @@ const ExperienceDomainPage: React.FC = () => {
                                                 <Trash2 /> Delete
                                             </Button>
                                             <Button
-                                                className="p-1 px-3 !justify-start"
+                                                className="p-1 px-3 justify-start!"
                                                 variant="outline"
                                                 onClick={() => {
                                                     setSelectedChat(chat);
@@ -435,7 +435,7 @@ const ExperienceDomainPage: React.FC = () => {
                                         layout
                                         className="border border-white/10 rounded-2xl p-4 flex flex-col gap-2"
                                     >
-                                        <p className={isForgotten ? "blur-sm opacity-50 select-none" : ""}>{memory.memory}</p>
+                                        <p className={isForgotten ? "blur-xs opacity-50 select-none" : ""}>{memory.memory}</p>
                                         <div className="flex gap-2 justify-end">
                                             <Button variant={isForgotten ? "outline" : "destructive"}disabled={isForgotten}
                                                 onClick={() => {

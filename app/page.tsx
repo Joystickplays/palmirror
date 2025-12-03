@@ -490,9 +490,9 @@ function SetupCharacter({
             <div className="px-1">
           <DialogHeader>
             <DialogTitle>Setup character</DialogTitle>
-            <div className="palmirror-exc rounded-lg p-3 !my-4 flex flex-col xl:flex-row justify-around items-center">
+            <div className="palmirror-exc rounded-lg p-3 my-4! flex flex-col xl:flex-row justify-around items-center">
               <div className="flex justify-center items-center">
-                <h1 className="text-2xl !font-extrabold tracking-tight text-center w-full palmirror-exc-text">
+                <h1 className="text-2xl font-extrabold! tracking-tight text-center w-full palmirror-exc-text">
                   PalMirror Experience
                 </h1>
                 <PopoverTrigger asChild>
@@ -501,7 +501,7 @@ function SetupCharacter({
                   </Button>
                 </PopoverTrigger>
               </div>
-              <div className="flex justify-center items-center gap-2 xl:-order-1 !mt-2 xl:!mt-0">
+              <div className="flex justify-center items-center gap-2 xl:-order-1 mt-2! xl:mt-0!">
                 <Button
                   variant="palmirror"
                   onClick={() => {
@@ -610,7 +610,7 @@ function SetupCharacter({
         </DialogContent>
       </Dialog>
       <PopoverContent asChild>
-        <div className="z-[999999] min-w-80 font-sans">
+        <div className="z-999999 min-w-80 font-sans">
           <p>
             <span className="palmirror-exc-text">PalMirror Experience</span> characters are characters made in PalMirror supercharged with features that go <b>way</b> beyond basic back-and-forth chatting. Explore your character&quot;s immersive nature, have memories, and a lot more.
           </p>
@@ -1109,8 +1109,8 @@ export default function Home() {
 
 
   return isSecureActivated ? (
-    <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-[family-name:var(--font-geist-sans)]">
-      <div className="z-[100] fixed flex justify-center lg:justify-start w-screen mix-blend-color-dodge">
+    <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-(family-name:--font-geist-sans)">
+      <div className="z-100 fixed flex justify-center lg:justify-start w-screen mix-blend-color-dodge">
         <motion.h1
           initial={{ scale: 1, y: -100 }}
           animate={{ scale: 1, y: 0 }}
@@ -1127,7 +1127,7 @@ export default function Home() {
         </motion.h1>
       </div>
 
-      <div className="flex flex-grow w-full">
+      <div className="flex grow w-full">
         <AnimatePresence mode="popLayout">
           {!isSecureReady && (
             <motion.div
@@ -1189,7 +1189,7 @@ export default function Home() {
                   damping: 39,
                   stiffness: 400,
                 }}
-                className={`flex items-center justify-center gap-2 flex-col flex-grow absolute top-1/2 left-1/2 w-full ${
+                className={`flex items-center justify-center gap-2 flex-col grow absolute top-1/2 left-1/2 w-full ${
                   Date.now() < PLMSecureLockUntil ? "pointer-events-none" : null
                 }`}
                 key="passkeyNeed"
@@ -1199,15 +1199,15 @@ export default function Home() {
                 </h1>
                 <p>PalMirror Secure is active and encrypted.</p>
                 {/* <Button onClick={authPasskey}>Use passkey</Button> */}
-                <hr className="!m-2 w-full max-w-screen-sm h-px" />
-                <div className="flex gap-2 w-full max-w-screen-sm">
+                <hr className="m-2! w-full max-w-(--breakpoint-sm) h-px" />
+                <div className="flex gap-2 w-full max-w-(--breakpoint-sm)">
                   {localStorage.getItem("secureMetadata") ? (
                     <div className="w-full">
                       <PinDisplay input={PLMSecurePass} show={false} />
                       <Keypad onKeyPress={handleKeyPressPin} fromBottom={true} />
                     </div>
                   ) : (
-                    <div className="flex gap-2 w-full max-w-screen-sm">
+                    <div className="flex gap-2 w-full max-w-(--breakpoint-sm)">
                       <Input
                         value={PLMSecurePass}
                         onChange={(e) => setPLMSecurePass(e.target.value)}
@@ -1219,7 +1219,7 @@ export default function Home() {
                           }
                         }}
                         type="password"
-                        className="flex-grow"
+                        className="grow"
                       />
                       <Button onClick={() => PLMSecureAttemptUnlock()}>
                         Unlock
@@ -1244,7 +1244,7 @@ export default function Home() {
               className="w-full"
               key="chatList"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow w-full justify-center items-start ">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 grow w-full justify-center items-start ">
                 <AnimatePresence mode="popLayout">
                   {chatList.length > 0 ?
                   sortByLastUpdated(chatList).filter((chat) => { 
@@ -1288,7 +1288,7 @@ export default function Home() {
             stiffness: 161,
             delay: 0.1,
           }}
-          className="fixed bottom-0 translate-x-1/2 pb-7"
+          className="fixed bottom-0 pb-7"
         >
           <div className="flex items-center content-center justify-center gap-2 sm:gap-4 max-w-fit">
             <GetFromPlatform
@@ -1327,7 +1327,7 @@ export default function Home() {
       />
     </div>
   ) : (
-    <div className="grid items-center justify-items-start content-end min-h-screen p-8 pb-10 gap-4 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    <div className="grid items-center justify-items-start content-end min-h-screen p-8 pb-10 gap-4 sm:p-20 font-(family-name:--font-geist-sans)">
       <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight">
         PalMirror
       </h1>

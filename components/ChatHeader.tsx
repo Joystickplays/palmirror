@@ -53,7 +53,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getE
       filter: configHighend ? 'blur(5px)' : 'blur(0px)'
     }}
     transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 26 }}
-    className={`border border-white/10 rounded-xl absolute inset-1 md:inset-6 box-border h-fit ${currentTheme.bg} overflow-hidden p-5 z-[10]`}>
+    className={`border border-white/10 rounded-xl absolute inset-1 md:inset-6 box-border h-fit ${currentTheme.bg} overflow-hidden p-5 z-10`}>
 
       <CardContent className={`flex justify-between items-center ${currentTheme.bg} overflow-hidden p-0`}>
 
@@ -63,7 +63,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getE
             className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full object-cover rounded-lg object-[50%_35%] blur-[3px] hover:blur-none active:blur-none scale-110 hover:scale-100 active:scale-100 transition duration-300 ease-out" />
         )}
         <div className="flex gap-1 flex-col">
-          <h2 className="z-[2]"><span className={`font-bold ${fromDomain && "palmirror-exc-text"}`}>{characterData.name}</span></h2>
+          <h2 className="z-2"><span className={`font-bold ${fromDomain && "palmirror-exc-text"}`}>{characterData.name}</span></h2>
           <p className="text-xs font-bold opacity-50">On PalMirror {fromDomain && "Experience"}</p>
         </div>
 

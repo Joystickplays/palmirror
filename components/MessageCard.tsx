@@ -589,7 +589,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                       {status.key}: <span className="opacity-50">{status.value}</span>
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="!font-sans">
+                  <DialogContent className="font-sans!">
                     <DialogHeader>
                       <DialogTitle>Change this dynamic status</DialogTitle>
                     </DialogHeader>
@@ -673,7 +673,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 <SelectValue placeholder="Choose an alternate initial message" />
               </SelectTrigger>
               <SelectContent> */}
-                <p className="opacity-75 text-xs mb-8 palmirror-exc-text text-center !font-normal">Swipe left to generate a new initial message!</p>
+                <p className="opacity-75 text-xs mb-8 palmirror-exc-text text-center font-normal!">Swipe left to generate a new initial message!</p>
                 {characterData.alternateInitialMessages && [...(characterData.alternateInitialMessages)].map((message: AlternateInitialMessage | string, index) => {
                   message = typeof message == "string" ? message : message?.initialMessage ?? "";
                   return (
@@ -713,7 +713,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 } ${isEditing ? "w-full" : ""}`}
             >
               <CardContent className="p-0">
-                <animated.div className="whitespace-pre-line break-words max-w-full markdown-content overflow-hidden" style={{
+                <animated.div className="whitespace-pre-line wrap-break-word max-w-full markdown-content overflow-hidden" style={{
                   padding: fontSize.to(s => `${s / 2}rem`),
                   paddingLeft: fontSize.to(s => `${s}rem`),
                   paddingRight: fontSize.to(s => `${s}rem`),

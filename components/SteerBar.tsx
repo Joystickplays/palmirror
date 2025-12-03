@@ -157,7 +157,7 @@ const SteerBar: React.FC<SteerBarProps> = ({
                     }}
                     className="border rounded-xl p-4 flex justify-between items-center"
                   >
-                    <p className="break-words">{steer}</p>
+                    <p className="wrap-break-word">{steer}</p>
                     <Button
                       size="icon"
                       variant="outline"

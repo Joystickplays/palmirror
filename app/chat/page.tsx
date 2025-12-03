@@ -1336,9 +1336,9 @@ ${entryTitle}
           restDelta: 0.00001,
           filter: { type: "spring", mass: 1, damping: 38, stiffness: 161 },
         }}
-        className="grid max-w-[40rem] w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto relative"
+        className="grid max-w-160 w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto relative"
       >
-        <div className="fixed w-full h-[10rem] z-[1]"
+        <div className="fixed w-full h-40 z-1"
         >
           {configHighend ?
             
@@ -1362,7 +1362,7 @@ ${entryTitle}
           importMessages={openFilePicker}
           visible={scrollDirection === "up"}
         />
-        <div  ref={messageListRef} className="overflow-y-auto overflow-x-hidden max-w-[40rem]">
+        <div  ref={messageListRef} className="overflow-y-auto overflow-x-hidden max-w-160">
           <div className="flex flex-col justify-end min-h-full">
             <div className="min-h-screen"></div>
             {characterData.name.length < 1 ? (

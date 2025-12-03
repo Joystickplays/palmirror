@@ -41,7 +41,7 @@ export default function AttributeNotificationProvider({ children }: { children: 
       {children}
 
       {/* Notification layer */}
-      <div className="fixed top-4 left-0 right-0 flex justify-center items-center gap-2 z-[9999] pointer-events-none w-full max-w-screen">
+      <div className="fixed top-4 left-0 right-0 flex justify-center items-center gap-2 z-9999 pointer-events-none w-full max-w-screen">
         <AnimatePresence mode="popLayout">
           {notifications.map((notif) => (
             <AttributeNotificationInstance
