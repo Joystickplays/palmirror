@@ -35,4 +35,12 @@ Format:
 Example (tone reference only):
 \`Take a daring bite of the cake|Lean closer, curiosity tugging at you|Brush stray crumbs aside with intent|Pull the plate nearer, anticipation rising|Break a piece off, savoring the aroma\`
 
+Make sure the suggestion is based ON THE LAST MESSAGE FROM THE CHARACTER.
+If the character is asking a question, make sure the suggestions are relevant to that question.
+For example:
+If the character says "Do you want to dance with me?", suggestions could be:
+\`Take her hand, heart racing|Step back, considering the offer|Smile warmly, nodding in agreement|Hesitate briefly, then accept|Look into her eyes, deciding\`
+
+Make sure the suggestions are variable as possible. Get both sides of the spectrum.
+
 Generate without prompting. Generate without anything extra/more, do not add "Got it! Here's a.." or anything similar. Just generate the 5 suggestions.`
