@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ToastContainer, toast } from "react-toastify";
-import { CircleHelp, ArrowRight, Trash2, Earth } from "lucide-react";
+import { CircleHelp, ArrowRight, Trash2, Earth, Settings, LayoutTemplate, Plus } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 
 import Keypad from "@/components/Keypad";
@@ -54,6 +54,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 import { useRouter } from "next/navigation";
 
@@ -285,16 +292,20 @@ function GetFromPlatform({
   linkChar,
   setLinkChar,
   getChubaiInfo,
+  iconForm,
 }: {
   router: ReturnType<typeof useRouter>;
   linkChar: string;
   setLinkChar: React.Dispatch<React.SetStateAction<string>>;
   getChubaiInfo: () => void;
+  iconForm?: boolean;
 }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>Get from a platform</Button>
+        {
+          iconForm ? (<Button size="icon" variant="ghost" className="p-1 rounded-full"><LayoutTemplate className="w-6! h-6!" /></Button>) : (<Button>Get from a platform</Button>)
+        }
       </DialogTrigger>
       <DialogContent className="w-full max-h-[80vh] overflow-y-auto flex flex-col gap-2 font-sans">
         <DialogHeader className="mb-2">
@@ -469,6 +480,7 @@ function SetupCharacter({
   characterData,
   handleInputChange,
   startChat,
+  iconForm,
 }: {
   router: ReturnType<typeof useRouter>;
   fileInputRef: React.RefObject<HTMLInputElement>;
@@ -478,12 +490,15 @@ function SetupCharacter({
     field: keyof CharacterData
   ) => void;
   startChat: () => void;
+  iconForm?: boolean;
 }) {
   return (
     <Popover>
       <Dialog>
         <DialogTrigger asChild>
-          <Button className="mx-auto">Setup character</Button>
+          {
+            iconForm ? (<Button className="h-full p-5 py-1.5 rounded-full"><Plus className="w-8! h-8!" /></Button>) : (<Button className="mx-auto">Setup character</Button>)
+          }
         </DialogTrigger>
         <DialogContent className="w-full max-w-[360px] xl:max-w-[960px] max-h-[80vh] overflow-y-auto font-sans">
           <AnimateChangeInHeight>
@@ -1089,7 +1104,7 @@ export default function Home() {
                   initial={{ opacity: 0, scale: 0.8, x: "-50%", y: "-50" }}
                   animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
                   transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full text-center"
+                  className="absolute top-1/2 left-1/2 transform w-full text-center"
                 >
                   <h1 className="font-bold mb-2 text-lg">
                     Too many incorrect attempts
@@ -1211,7 +1226,7 @@ export default function Home() {
                       router={router}
                     />
                   ))
- : (
+                  : (
                     <p className="opacity-50 text-sm">
                       {chatsLoading
                         ? "Loading your chats..."
@@ -1239,20 +1254,46 @@ export default function Home() {
           }}
           className="fixed bottom-0 pb-7"
         >
-          <div className="flex items-center content-center justify-center gap-2 sm:gap-4 max-w-fit">
-            <GetFromPlatform
-              router={router}
-              linkChar={linkChar}
-              setLinkChar={setLinkChar}
-              getChubaiInfo={getChubaiInfo}
-            />
-            <SetupCharacter
-              router={router}
-              fileInputRef={fileInputRef}
-              characterData={characterData}
-              handleInputChange={handleInputChange}
-              startChat={startChat}
-            />
+          <div className="flex items-center content-center justify-center gap-2 max-w-fit border border-white/10 p-2 rounded-full">
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger>
+                  <GetFromPlatform
+                    router={router}
+                    linkChar={linkChar}
+                    setLinkChar={setLinkChar}
+                    getChubaiInfo={getChubaiInfo}
+                    iconForm
+                  />
+              </TooltipTrigger>
+              <TooltipContent className="font-sans">
+                Get from a platform
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger>
+                <SetupCharacter
+                  router={router}
+                  fileInputRef={fileInputRef}
+                  characterData={characterData}
+                  handleInputChange={handleInputChange}
+                  startChat={startChat}
+                  iconForm
+                />
+              </TooltipTrigger>
+              <TooltipContent className="font-sans">
+                Setup character
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger>
+                <Button onClick={() => router.push("/settings")} className="rounded-full" size="icon" variant="ghost">
+                  <Settings className="w-6! h-6!" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="font-sans">
+                Settings
+              </TooltipContent>
+            </Tooltip>
           </div>
         </motion.div>
       )}

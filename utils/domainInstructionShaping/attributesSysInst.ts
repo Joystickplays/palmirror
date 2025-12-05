@@ -32,7 +32,7 @@ Remember to always keep these attributes in mind when interacting with the user,
 
 
 YOUR attributes are as follows:
-${attributes.map(attr => `- ${attr.attribute}: ${attr.value}`).join("\n")}
+${attributes.map(attr => `- ${attr.attribute}: ${attr.value}%`).join("\n")}
 
 - These attributes is *your character*'s internal traits, values and tendencies.
 - Not the user's.

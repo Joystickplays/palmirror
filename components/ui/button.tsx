@@ -47,10 +47,19 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // const Comp = asChild ? Slot : "button"
     return (
       // f u in particular
+      // the drag looks nice idc
       // @ts-expect-error   bc idgaf ab typing this??? who r u
       <motion.button
         whileTap={{ scale: 0.95 }}
         transition={{ duration: 0.1 }}
+        drag
+        dragElastic={0.01}
+        dragConstraints={{
+          left: 0,
+          right: 0,
+          bottom: 0,
+          top: 0
+        }}
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}

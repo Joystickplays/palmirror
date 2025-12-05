@@ -28,6 +28,7 @@ import AttributeProgress from "@/components/AttributeProgress";
 import { ToastContainer, toast } from "react-toastify";
 
 
+import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
@@ -41,6 +42,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 
 
+
 interface Message {
     id: string;
     role: "user" | "assistant" | "system";
@@ -50,6 +52,14 @@ interface Message {
 
 
 const ExperienceDomainPage: React.FC = () => {
+
+    const PLMGC = usePLMGlobalConfig();
+    const [configHighend, setConfigHighend] = useState(false);
+    
+    useEffect(() => {
+        setConfigHighend(!!PLMGC.get("highend"))
+    }, [])
+
     const PLMsecureContext = useContext(PLMSecureContext);
     const router = useRouter();
 
@@ -193,7 +203,7 @@ const ExperienceDomainPage: React.FC = () => {
     return (
         <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-(family-name:--font-geist-sans)">
             <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: -100 }}
+                initial={configHighend ? { opacity: 0, scale: 0.8, y: -100 } : { opacity: 0, scale: 1, y: -10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{
                     type: 'spring', mass: 1, stiffness: 100, damping: 16,
@@ -234,10 +244,10 @@ const ExperienceDomainPage: React.FC = () => {
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1 }}
+                transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4 h-full">
                 
-                <Button className="fixed bottom-4 right-4 p-8 px-6 rounded-full bg-background! backdrop-blur-xs z-100" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus className="scale-150" /></Button>
+                <Button className="fixed bottom-4 right-4 p-8 px-6 rounded-full bg-background! backdrop-blur-xs z-1" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus className="scale-150" /></Button>
 
                 <div className="flex gap-2 h-12 overflow-x-scroll -mt-4">
                     <Button variant="outline" onClick={() => router.push("/")}><ArrowLeft /></Button>
@@ -266,20 +276,17 @@ const ExperienceDomainPage: React.FC = () => {
                         return (
                             <motion.div
                                 initial={
-                                    { scale: 0.8, opacity: 0 }
+                                    { scale: configHighend ? 0.8 : 1, opacity: 0 }
                                 }
                                 animate={{
                                     opacity: 1,
                                     scale: 1,
-                                    filter: "blur(0px)",
                                 }}
                                 exit={{ opacity: 0, scale: 0.5 }}
                                 transition={{
-                                    type: "spring",
-                                    mass: 1,
-                                    damping: 27,
-                                    stiffness: 181,
-                                    restDelta: 0.001,
+                                    type: "tween",
+                                    duration: 0.3,
+                                    ease: "easeOut",
 
                                     delay: 0.05 * idx
                                 }}
