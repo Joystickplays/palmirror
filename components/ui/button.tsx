@@ -52,14 +52,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <motion.button
         whileTap={{ scale: 0.95 }}
         transition={{ duration: 0.1 }}
-        drag
-        dragElastic={0.01}
-        dragConstraints={{
-          left: 0,
-          right: 0,
-          bottom: 0,
-          top: 0
-        }}
+        // drag
+        // dragElastic={0.01}
+        // dragConstraints={{
+        //   left: 0,
+        //   right: 0,
+        //   bottom: 0,
+        //   top: 0
+        // }}
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
