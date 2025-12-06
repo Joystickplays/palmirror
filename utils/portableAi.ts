@@ -23,7 +23,11 @@ export function initializeOpenAI(baseURL: string, apiKey: string) {
 }
 
 export async function independentInitOpenAI() {
-    if (openai) { return openai };
+    if (openai) { 
+      if (openai.apiKey !== "none") {
+        return openai;
+      }
+     };
     let baseURL = "https://cvai.mhi.im/v1";
     let apiKey = "none";
 

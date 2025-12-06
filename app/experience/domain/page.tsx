@@ -21,7 +21,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Loader } from 'lucide-react';
 
 import AttributeProgress from "@/components/AttributeProgress";
 
@@ -39,6 +39,10 @@ import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, rev
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+import { generateChatCompletion, independentInitOpenAI } from "@/utils/portableAi";
+import { generateChatEntriesSysInst } from "@/utils/generateChatEntriesSysInst";
+import { UserPersonality } from "@/types/UserPersonality";
 
 
 
@@ -68,6 +72,9 @@ const ExperienceDomainPage: React.FC = () => {
 
     const [showingNewChat, setShowingNewChat] = useState(false);
     const [newChatName, setNewChatName] = useState("");
+    const [newChatSuggestionShow, setNewChatSuggestionShow] = useState(false);
+    const [newChatSuggestionGenerating, setNewChatSuggestionGenerating] = useState(false);
+    const [newChatSuggestions, setNewChatSuggestions] = useState("");
 
     const [showingMemoryManager, setShowingMemoryManager] = useState(false);
 
@@ -128,6 +135,74 @@ const ExperienceDomainPage: React.FC = () => {
             }
         }
     }
+
+    const generateScenarios = async () => {
+        setNewChatSuggestionGenerating(true);
+        setNewChatSuggestions("");
+        let modelName = "gpt-3.5-turbo"
+        const settings = localStorage.getItem("Proxy_settings");
+        if (settings) {
+            const settingsParse = JSON.parse(settings)
+            modelName = settingsParse.modelName
+        }
+
+
+        const sysInst = generateChatEntriesSysInst()
+
+        let userPersonality = null
+        const storedData = localStorage.getItem("userPersonalities");
+        if (storedData) { 
+            const userPrs = JSON.parse(storedData) 
+            const usingPrs = userPrs.find((p: UserPersonality) => p.using)
+            if (usingPrs) {
+                userPersonality = { name: usingPrs.name, personality: usingPrs.personality }
+            };
+        }
+
+        const userMsg = `
+CONTEXT:
+
+The lead character, ${character.name}'s personality:
+${character.personality}
+
+${userPersonality && `
+The second lead character, ${userPersonality.name}'s personality:
+${userPersonality.personality}`}
+
+Reference scenarios:
+${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map((chat) => `- ${chat.entryTitle}`).join("\n")}
+`
+        
+        try {
+            const block = await generateChatCompletion({
+                model: modelName,
+                temperature: 0.7,
+                stream: false,
+                messages: [{
+                    role: "system",
+                    content: sysInst
+                }, {
+                    role: "user",
+                    content: userMsg
+                }]
+            }).next()
+            if (block.value?.choices?.[0]?.message?.content) {
+                setNewChatSuggestions(block.value.choices[0].message.content);
+            }
+            setNewChatSuggestionGenerating(false);
+        } catch (e) {
+            toast.error("Failed to generate scenarios. Please try again.");
+            toast.error(e instanceof Error ? e.message : String(e));
+            setNewChatSuggestionGenerating(false);
+        }
+    }
+
+    useEffect(() => {
+        (async () => {
+            console.log(await independentInitOpenAI())
+        })();
+    }, [])
+
     useEffect(() => {
         reloadCharacter()
     }, [domainId]);
@@ -199,6 +274,7 @@ const ExperienceDomainPage: React.FC = () => {
         }
     }, [character])
     
+
 
     return (
         <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-(family-name:--font-geist-sans)">
@@ -397,13 +473,121 @@ const ExperienceDomainPage: React.FC = () => {
             </Dialog>
 
             <Dialog open={showingNewChat} onOpenChange={setShowingNewChat}>
-                <DialogContent className="font-sans">
+                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold mb-4">Start a new chat</DialogTitle>
                     </DialogHeader>
                     <Label htmlFor="chat-name">Entry name</Label>
                     <Input autoComplete="off" value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
                     <p className="text-xs opacity-50">{`A good entry name should the reflect the moment you're capturing in this new chat. For example, "First Encounter", "Moving Day", "Evening Complication", etc.`}<br /><br />{`PalMirror will look through your past chat entries and let your AI know how far you and this character has progressed together.`}</p>
+                    <AnimateChangeInHeight className="border border-white/10 rounded-xl">
+                        <motion.div
+                        className={`${newChatSuggestionShow ? "p-4" : "p-2 px-4"} flex flex-col gap-2`}>
+                            <div className={`flex ${newChatSuggestionShow ? "justify-center" : "justify-between"}`}>
+                                <motion.h1
+                                layoutId="needSome"
+                                layout="position"
+                                className={`w-fit font-bold text-xl`}>{`Need some help?`}</motion.h1>
+                                <AnimatePresence mode="popLayout">
+                                    {!newChatSuggestionShow && (
+                                        <motion.div
+                                        layout
+                                        layoutId="openclose"
+                                        key="open"
+                                        >
+                                            <Button onClick={() => setNewChatSuggestionShow(true)} className="h-6 w-12 text-xs">Open</Button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                            
+
+                            <AnimatePresence mode="popLayout">
+                                {newChatSuggestionShow && (
+                                    <motion.div
+                                    exit={{ opacity: 0, y: 20 }}
+                                    transition={{ duration: 0.1 }}
+                                    className="flex flex-col gap-6">
+                                        <p className="opacity-75 text-sm">{`Use your configured AI to generate multiple scenarios for this new chat, ensuring they're diverse, imaginative, and creatively unpredictable.`}
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button className="inline-block ml-1" variant="outline" size="smIcon"><Info /></Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="font-sans">
+                                                    {`To generate the scenarios, PalMirror will send your entire character's (& any active user) personality tokens, and also the last 3 of your own chat entries as reference.`}
+                                                </PopoverContent>
+                                            </Popover>
+                                        </p>
+                                        
+
+                                        <div className="flex flex-row gap-2 h-42 overflow-auto overflow-y-scroll pb-1">
+                                            {newChatSuggestions === "" ? (
+                                                <>
+                                                    <div className="flex-none h-full w-72 border border-white/10 rounded-xl p-4">
+                                                        <div className="flex flex-col gap-1 animate-pulse">
+                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                            <div className="h-4 w-3/4 rounded-md bg-white/50"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-none h-full w-72 border border-white/10 rounded-xl p-4">
+                                                        <div className="flex flex-col gap-1 animate-pulse">
+                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                            <div className="h-4 w-3/4 rounded-md bg-white/50"></div>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {newChatSuggestions.split("|").map((suggestion, idx) => (
+                                                        <motion.div 
+                                                        initial={{ scale: 0.8, opacity: 0, y: 100 }}
+                                                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                                                        transition={{ 
+                                                            type: 'spring', mass: 1, stiffness: 339, damping: 36,
+                                                            delay: 0.05 * idx,
+                                                            scale: {
+                                                                type: 'spring',
+                                                                mass: 1,
+                                                                stiffness: 160,
+                                                                damping: 40,
+                                                            }
+                                                        }}
+                                                        key={idx} className="flex-none flex flex-col gap-2 h-full w-72 border border-white/10 rounded-xl p-4">
+                                                            <p className="text-xs max-h-24 overflow-y-scroll">{suggestion.replace(/^- /, "")}</p>
+                                                            <Button variant={"outline"} onClick={() => setNewChatName(suggestion)}>Use this</Button>
+                                                        </motion.div>
+                                                    ))}
+
+                                                </>
+                                            )}
+                                        </div>
+
+
+
+                                        <div className="flex gap-2">
+                                            <Button disabled={newChatSuggestionGenerating} className="flex-1" onClick={generateScenarios}>
+                                                {newChatSuggestionGenerating ? 
+                                                (<>
+                                                    <p>Generating...</p>
+                                                    <Loader className="animate-spin" />
+                                                </>) : "Start generating"}
+                                            </Button>
+                                            <motion.div
+                                                layout
+                                                layoutId="openclose"
+                                                key="close" className="w-fit ml-auto">
+                                                <Button variant="outline" onClick={() => setNewChatSuggestionShow(false)}>Close</Button>
+                                            </motion.div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
+                    </AnimateChangeInHeight>
                     <Button onClick={() => {
                         setShowingNewChat(false)
                         if (newChatName.trim() === "") {

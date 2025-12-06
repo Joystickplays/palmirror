@@ -41,6 +41,7 @@ import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 import { MessagePreview } from "@/components/MessagePreview";
 import { LinearBlur } from "@/components/LinearBlur";
 import { ListCollapse } from "lucide-react";
+import { UserPersonality } from "@/types/UserPersonality";
 
 
 let openai: OpenAI;
@@ -52,12 +53,6 @@ interface ChatCompletionMessageParam {
   name?: string;
 }
 
-type UserPersonality = {
-  id: string;
-  name: string;
-  personality: string;
-  using: boolean;
-};
 
 
 
@@ -596,7 +591,10 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         {
           role: "user",
           name: "user",
-          content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: \`${rewriteBase}\`
+          content: `[SYSTEM NOTE]: Detach yourself from the character personality, and create a rewritten, enhanced version of this message: 
+"""
+\`${rewriteBase}\`
+"""
 Your enhanced message should be quick, realistic, markdown-styled and in the perspective of ${characterData.userName}.
 Do not lead with anything like "Sure. Here's an enhanced version..." or anything similar. Be invisible.
 [AVOID CREATING THE Status SECTION. AVOID CREATING ANY TAGS, LIKE TIMESTEPS.]`,
@@ -694,6 +692,7 @@ Your goal is to:
 • Avoid exposition; make it feel like the scene is already in motion
 • Be immersive, with vivid wording if the character's style allows
 • Write in THIRD PERSON.
+• Use italics (close with asterisks on Markdown) for monologue, as stated
 • If possible, end with a close-ended question
 ${characterData.plmex.dynamicStatuses.length > 0 ? "• Include the status tags in the format provided above. This is NOT optional and **MANDATORY**." : ""}
 
