@@ -16,7 +16,7 @@ export function useTypewriter(
   {
     speed = 50,
     inBatchesOf = 1,
-    punctuationDelays = { ".": 300, ",": 150, "!": 250, "?": 250 },
+    punctuationDelays = { ".": 500, ",": 250, "!": 400, "?": 400 },
     haptics = true,
   }: UseTypewriterOptions = {}
 ): string {
@@ -96,6 +96,22 @@ export function useTypewriter(
 
       if (punctuationDelays[firstAddedChar] != null) {
         punctuationDelay = punctuationDelays[firstAddedChar];
+      }
+      if (firstAddedChar === ".") {
+        const i = text.length;
+
+        const isEllipsis =
+          target[i] === "." &&
+          target[i + 1] === "." &&
+          target[i + 2] === ".";
+
+        if (isEllipsis) {
+          const dotsTyped = i - (target.lastIndexOf("...", i) || i);
+
+          if (dotsTyped === 2) {
+            punctuationDelay += 1500;
+          }
+        }
       }
 
       if (firstAddedChar === '"') {
