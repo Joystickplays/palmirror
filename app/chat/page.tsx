@@ -563,7 +563,15 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         {
           role: "user",
           name: "user",
-          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality. THIS REPLY should be about the {{user}} doing this: "${rewriteBase}". IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* BE THE CHARACTER!\n\nPlease note this is an exception to the "No talking as user" rule. I specifically request this.\nMake sure you generate no more than 3 paragraphs. Not too long, but also not short that it becomes ambiguous.\nAvoid leading with "Understood, here's a...", JUST GENERATE THE REPLY STRAIGHT UP. [AVOID CREATING THE Status SECTION. AVOID CREATING ANY TAGS, LIKE TIMESTEPS.] Now, generate.`,
+          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality.
+THIS REPLY should be about the {{user}} doing this: "${rewriteBase}".
+IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* BE THE CHARACTER!
+
+Please note this is an exception to the "No talking as user" rule. I specifically request this.
+Make sure you generate no more than 3 paragraphs. Not too long, but also not short that it becomes ambiguous.
+You must still enclose monologues with asterisks, making them italic in Markdown.
+Avoid leading with "Understood, here's a...", JUST GENERATE THE REPLY STRAIGHT UP.
+AVOID CREATING THE Status SECTION. AVOID CREATING ANY TAGS, LIKE TIMESTEPS.`,
         },
       ];
     } else if (mode === "suggest-bar") {
