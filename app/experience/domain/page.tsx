@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from "next/navigation";
 
@@ -43,6 +43,7 @@ import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 import { generateChatCompletion, independentInitOpenAI } from "@/utils/portableAi";
 import { generateChatEntriesSysInst } from "@/utils/generateChatEntriesSysInst";
 import { UserPersonality } from "@/types/UserPersonality";
+import CardStack from "@/components/CardStack";
 
 
 
@@ -93,6 +94,11 @@ const ExperienceDomainPage: React.FC = () => {
 
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
+
+
+    const newChatDialog = useRef<HTMLDivElement>(null);
+    const newChatInput = useRef<HTMLInputElement>(null);
+
 
     useEffect(() => {
         if (sessionStorage.getItem("chatSelect")) {
@@ -171,6 +177,7 @@ ${userPersonality.personality}`}
 
 Reference scenarios:
 ${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map((chat) => `- ${chat.entryTitle}`).join("\n")}
+
 `
         
         try {
@@ -473,12 +480,12 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map
             </Dialog>
 
             <Dialog open={showingNewChat} onOpenChange={setShowingNewChat}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
+                <DialogContent ref={newChatDialog} className="max-h-[90vh] overflow-y-auto font-sans">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold mb-4">Start a new chat</DialogTitle>
                     </DialogHeader>
                     <Label htmlFor="chat-name">Entry name</Label>
-                    <Input autoComplete="off" value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
+                    <Input ref={newChatInput} autoComplete="off" value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
                     <p className="text-xs opacity-50">{`A good entry name should the reflect the moment you're capturing in this new chat. For example, "First Encounter", "Moving Day", "Evening Complication", etc.`}<br /><br />{`PalMirror will look through your past chat entries and let your AI know how far you and this character has progressed together.`}</p>
                     <AnimateChangeInHeight className="border border-white/10 rounded-xl">
                         <motion.div
@@ -520,47 +527,58 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map
                                         </p>
                                         
 
-                                        <div className="flex flex-row gap-2 h-42 overflow-auto overflow-y-scroll pb-1">
+                                        <div className="flex flex-row justify-center items-center gap-2 h-42 pb-1 w-full">
                                             {newChatSuggestions === "" ? (
                                                 <>
-                                                    <div className="flex-none h-full w-72 border border-white/10 rounded-xl p-4">
-                                                        <div className="flex flex-col gap-1 animate-pulse">
-                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                            <div className="h-4 w-3/4 rounded-md bg-white/50"></div>
+                                                    <CardStack center tooltip>
+                                                        <div className="flex-none w-72 h-40 border border-white/10 rounded-xl p-4 bg-background">
+                                                            <div className="flex flex-col gap-1 animate-pulse ">
+                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                                <div className="h-4 w-3/4 rounded-md bg-white/50"></div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="flex-none h-full w-72 border border-white/10 rounded-xl p-4">
-                                                        <div className="flex flex-col gap-1 animate-pulse">
-                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                            <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                            <div className="h-4 w-3/4 rounded-md bg-white/50"></div>
+                                                        <div className="flex-none h-40 w-72 border border-white/10 rounded-xl p-4 bg-background">
+                                                            <div className="flex flex-col gap-1 animate-pulse">
+                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
+                                                                <div className="h-4 w-3/4 rounded-md bg-white/50"></div>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    </CardStack>
                                                 </>
                                             ) : (
                                                 <>
-                                                    {newChatSuggestions.split("|").map((suggestion, idx) => (
-                                                        <motion.div 
-                                                        initial={{ scale: 0.8, opacity: 0, y: 100 }}
-                                                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                                                        transition={{ 
-                                                            type: 'spring', mass: 1, stiffness: 339, damping: 36,
-                                                            delay: 0.05 * idx,
-                                                            scale: {
-                                                                type: 'spring',
-                                                                mass: 1,
-                                                                stiffness: 160,
-                                                                damping: 40,
-                                                            }
-                                                        }}
-                                                        key={idx} className="flex-none flex flex-col gap-2 h-full w-72 border border-white/10 rounded-xl p-4">
-                                                            <p className="text-xs max-h-24 overflow-y-scroll">{suggestion.replace(/^- /, "")}</p>
-                                                            <Button variant={"outline"} onClick={() => setNewChatName(suggestion)}>Use this</Button>
-                                                        </motion.div>
-                                                    ))}
+                                                    <CardStack center>
+                                                        {newChatSuggestions.split("|").map((suggestion, idx) => (
+                                                            <motion.div 
+                                                            initial={{ scale: 0.8, opacity: 0, y: 100 }}
+                                                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                                                            transition={{ 
+                                                                type: 'spring', mass: 1, stiffness: 339, damping: 36,
+                                                                delay: 0.05 * idx,
+                                                                scale: {
+                                                                    type: 'spring',
+                                                                    mass: 1,
+                                                                    stiffness: 160,
+                                                                    damping: 40,
+                                                                }
+                                                            }}
+                                                            key={idx} className="flex-none flex flex-col gap-2 bg-background w-72 h-40 border border-white/10 rounded-xl p-4 ">
+                                                                <p className="text-sm max-h-24 overflow-y-scroll font-sans">{suggestion.replace(/^- /, "")}</p>
+                                                                <Button className="mt-auto" variant={"outline"} onClick={() => {
+                                                                    setNewChatName(suggestion);
+                                                                    setNewChatSuggestionShow(false)
+                                                                    // if (newChatInput.current) {
+                                                                    //     newChatInput.current.focus();
+                                                                    // }
+                                                                    newChatDialog.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                                                }}>Use this</Button>
+                                                            </motion.div>
+                                                        ))}
+                                                    </CardStack>
 
                                                 </>
                                             )}

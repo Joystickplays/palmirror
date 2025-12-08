@@ -1,12 +1,11 @@
-// components/ChatSettings.tsx
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTheme } from '@/context/PalMirrorThemeProvider';
-import { Settings, Check } from 'lucide-react';
+import { Settings, Check, Plus, Trash2 } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -33,7 +32,17 @@ interface ChatSettingsProps {
   importMessages: () => void;
 }
 
+interface ApiProfile {
+  id: string;
+  name: string;
+  baseURL: string;
+  modelName: string;
+}
+
 const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, importMessages }) => {
+  const [profiles, setProfiles] = useState<ApiProfile[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState<string>('default');
+  
   const [baseURL, setBaseURL] = useState('https://cvai.mhi.im/v1');
   const [apiKey, setApiKey] = useState('');
   const [temperature, setTemperature] = useState(0.5);
@@ -61,6 +70,8 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
   const currentTheme = getTheme();
   const router = useRouter();
 
+  const isSwitchingProfile = useRef(false);
+
   const handleToggleRecommendations = () => {
     setShowRecommendations(!showRecommendations);
   };
@@ -73,52 +84,55 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
     importMessages();
   };
 
-  const loadSettingsFromLocalStorage = () => {
-    const settings = localStorage.getItem('Proxy_settings');
-    if (settings) {
-      const parsedSettings = JSON.parse(settings);
-      setBaseURL(parsedSettings.baseURL || '');
-      setModelName(parsedSettings.modelName || '');
-      setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
-      setReasoningEffort(parseInt(parsedSettings.reasoningEffort) || 0);
-      setModelInstructions(parsedSettings.modelInstructions || '')
-    } else {
-      setBaseURL("https://cvai.mhi.im/v1")
-    }
-  }
+  const generateId = () => Math.random().toString(36).substr(2, 9);
 
   useEffect(() => {
+    const loadInit = async () => {
+      const savedProfiles = localStorage.getItem('Proxy_profiles');
+      let loadedProfiles: ApiProfile[] = [];
+
+      const settings = localStorage.getItem('Proxy_settings');
+      let parsedSettings: any = {};
+
+      if (settings) {
+        parsedSettings = JSON.parse(settings);
+        setBaseURL(parsedSettings.baseURL || '');
+        setModelName(parsedSettings.modelName || '');
+        setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
+        setReasoningEffort(parseInt(parsedSettings.reasoningEffort) || 0);
+        setModelInstructions(parsedSettings.modelInstructions || '');
+      } else {
+        setBaseURL("https://cvai.mhi.im/v1");
+      }
+
+      if (savedProfiles) {
+        loadedProfiles = JSON.parse(savedProfiles);
+      } else {
+        loadedProfiles = [{
+          id: 'default',
+          name: 'Default',
+          baseURL: parsedSettings.baseURL || 'https://cvai.mhi.im/v1',
+          modelName: parsedSettings.modelName || '',
+        }];
+        localStorage.setItem('Proxy_profiles', JSON.stringify(loadedProfiles));
+      }
+
+      setProfiles(loadedProfiles);
+      
+      const lastActive = localStorage.getItem('Proxy_lastActiveId');
+      if (lastActive && loadedProfiles.find(p => p.id === lastActive)) {
+        setActiveProfileId(lastActive);
+      } else {
+        setActiveProfileId(loadedProfiles[0].id);
+      }
+    };
+
+    loadInit();
+
     if (localStorage.getItem("PMPSIDontShowAgain")) {
       setShowPMSysInstSuggestion(false)
     }
-  }, [])
 
-  useEffect(() => {
-    loadSettingsFromLocalStorage();
-  }, []);
-
-  useEffect(() => {
-    const loadSecureSettings = async () => {
-      if (PLMSecContext) {
-        const proxySettings = await PLMSecContext.getSecureData('generalSettings') as PLMSecureGeneralSettings;
-        setApiKey(proxySettings.proxy.api_key);
-      }
-    };
-    loadSecureSettings();
-  }, [])
-
-  const saveSettings = () => {
-    const settings = { baseURL, modelName, temperature, modelInstructions, reasoningEffort };
-    localStorage.setItem('Proxy_settings', JSON.stringify(settings));
-  }
-
-  useEffect(() => {
-    if (inputChangedYet) {
-      saveSettings()
-    }
-  }, [baseURL, modelName, temperature, modelInstructions, reasoningEffort]);
-
-  useEffect(() => {
     const checkEncryptionStatus = async () => {
       try {
         const activated = await isPalMirrorSecureActivated();
@@ -127,9 +141,150 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
         console.error('Failed to check encryption status:', error);
       }
     };
-
     checkEncryptionStatus();
   }, []);
+
+  useEffect(() => {
+    const loadSecureKey = async () => {
+      if (!PLMSecContext || !activeProfileId) return;
+
+      isSwitchingProfile.current = true;
+
+      try {
+        let profileKey = await PLMSecContext.getSecureData(`apiKey_${activeProfileId}`);
+        
+        if (!profileKey && activeProfileId === 'default') {
+           const proxySettings = await PLMSecContext.getSecureData('generalSettings') as PLMSecureGeneralSettings;
+           if (proxySettings) profileKey = proxySettings.proxy.api_key;
+        }
+
+        const keyString = (typeof profileKey === 'object' && profileKey !== null && 'value' in profileKey) 
+                          ? (profileKey as any).value 
+                          : (profileKey || '');
+                          
+        setApiKey(keyString as string);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        isSwitchingProfile.current = false;
+      }
+    };
+
+    loadSecureKey();
+  }, [activeProfileId, PLMSecContext]);
+
+
+  const saveAllSettings = async (
+    newBaseURL: string, 
+    newModelName: string, 
+    newApiKey: string,
+    newProfiles: ApiProfile[],
+    currentProfileId: string
+  ) => {
+    if (isSwitchingProfile.current) return;
+
+    const legacySettings = { 
+      baseURL: newBaseURL, 
+      modelName: newModelName, 
+      temperature, 
+      modelInstructions, 
+      reasoningEffort 
+    };
+    localStorage.setItem('Proxy_settings', JSON.stringify(legacySettings));
+
+    const updatedProfiles = newProfiles.map(p => {
+      if (p.id === currentProfileId) {
+        return { ...p, baseURL: newBaseURL, modelName: newModelName };
+      }
+      return p;
+    });
+    localStorage.setItem('Proxy_profiles', JSON.stringify(updatedProfiles));
+    setProfiles(updatedProfiles);
+
+    if (PLMSecContext && alreadyEncrypted) {
+      await PLMSecContext.setSecureData(`apiKey_${currentProfileId}`, { value: newApiKey });
+
+      const proxySettings = await PLMSecContext.getSecureData('generalSettings') as PLMSecureGeneralSettings || { proxy: { api_key: '' } };
+      proxySettings.proxy.api_key = newApiKey;
+      await PLMSecContext.setSecureData('generalSettings', proxySettings);
+    }
+  };
+
+  useEffect(() => {
+    if (inputChangedYet && !isSwitchingProfile.current) {
+      saveAllSettings(baseURL, modelName, apiKey, profiles, activeProfileId);
+    }
+  }, [baseURL, modelName, apiKey, temperature, modelInstructions, reasoningEffort, inputChangedYet]);
+
+  const handleProfileSwitch = async (newProfileId: string) => {
+    isSwitchingProfile.current = true;
+    setInputChangedYet(false);
+    
+    const newProfile = profiles.find(p => p.id === newProfileId);
+    if (!newProfile) {
+        isSwitchingProfile.current = false;
+        return;
+    }
+
+    setActiveProfileId(newProfileId);
+    setBaseURL(newProfile.baseURL);
+    setModelName(newProfile.modelName);
+    localStorage.setItem('Proxy_lastActiveId', newProfileId);
+
+    setApiKey('');
+
+    const legacySettings = { 
+        baseURL: newProfile.baseURL, 
+        modelName: newProfile.modelName, 
+        temperature, 
+        modelInstructions, 
+        reasoningEffort 
+    };
+    localStorage.setItem('Proxy_settings', JSON.stringify(legacySettings));
+
+    setShowReloadSuggestion(true); 
+  };
+
+  const handleAddProfile = () => {
+    const newId = generateId();
+    const newProfile: ApiProfile = {
+      id: newId,
+      name: `New Profile`,
+      baseURL: 'https://cvai.mhi.im/v1',
+      modelName: '',
+    };
+    const newProfilesList = [...profiles, newProfile];
+    setProfiles(newProfilesList);
+    localStorage.setItem('Proxy_profiles', JSON.stringify(newProfilesList));
+    
+    handleProfileSwitch(newId);
+  };
+
+  const handleDeleteProfile = async () => {
+    if (profiles.length <= 1) return;
+
+    const newProfiles = profiles.filter(p => p.id !== activeProfileId);
+    setProfiles(newProfiles);
+    localStorage.setItem('Proxy_profiles', JSON.stringify(newProfiles));
+    handleProfileSwitch(newProfiles[0].id);
+  };
+
+  const handleRenameProfile = (newName: string) => {
+    const updatedProfiles = profiles.map(p => 
+      p.id === activeProfileId ? { ...p, name: newName } : p
+    );
+    setProfiles(updatedProfiles);
+    localStorage.setItem('Proxy_profiles', JSON.stringify(updatedProfiles));
+  };
+
+  useEffect(() => {
+    const trySaveApiKeyNow = async () => {
+      if (!PLMSecContext || !alreadyEncrypted) return;
+      await saveAllSettings(baseURL, modelName, apiKey, profiles, activeProfileId);
+    };
+    trySaveApiKeyNow();
+  }, [alreadyEncrypted]);
+
 
   const handleBaseURLChange = (event: React.ChangeEvent<HTMLInputElement> | string) => {
     const value = typeof event === 'string' ? event : event.target.value;
@@ -138,37 +293,20 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
     setShowReloadSuggestion(true);
   };
 
-  const secureAPIKeySave = async () => {
-    if (PLMSecContext) {
-      const proxySettings = await PLMSecContext.getSecureData('generalSettings') as PLMSecureGeneralSettings;
-      proxySettings.proxy.api_key = apiKey;
-      await PLMSecContext.setSecureData('generalSettings', proxySettings);
-      console.log("saved")
-    }
-  }
-
   const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setApiKey(value);
     setInputChangedYet(true);
+    setShowReloadSuggestion(true);
   };
-
-  useEffect(() => {
-    if (alreadyEncrypted) {
-      const saveAsync = async () => {
-        await secureAPIKeySave();
-      }
-      saveAsync();
-    }
-  }, [apiKey])
 
   const handleModelNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setModelName(value);
     setInputChangedYet(true);
+    setShowReloadSuggestion(true);
   };
   
-
   const handleModelInstructionsChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = event.target.value;
     setModelInstructions(value);
@@ -194,8 +332,51 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
         style={{ '--initial-transform': 'calc(100% + 16px)' } as React.CSSProperties}>
         <div className="overflow-y-auto overflow-x-hidden">
           <DrawerHeader>
-            <DrawerTitle className="mb-8">Chat settings</DrawerTitle>
+            <DrawerTitle className="mb-4">Chat settings</DrawerTitle>
+
             <h2 className="my-4 font-bold">AI Provider settings</h2>
+            <div className="flex flex-col gap-2 mb-6 p-4 rounded-lg border border-white/10">
+              <Label className="text-xs uppercase opacity-70 font-bold">API Profile</Label>
+              <div className="flex gap-2 w-full">
+                 <Select value={activeProfileId} onValueChange={handleProfileSwitch}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Profile" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                 </Select>
+                 <Button variant="outline" size="icon" onClick={handleAddProfile}>
+                   <Plus className="h-4 w-4" />
+                 </Button>
+              </div>
+              
+              <div className="flex items-center gap-2 mt-2">
+                 <div className="flex flex-col gap-2">
+                  <Label className="text-xs whitespace-nowrap opacity-60">Profile Name:</Label>
+                  <Input 
+                    className="h-7 text-sm" 
+                    value={profiles.find(p => p.id === activeProfileId)?.name || ''}
+                    onChange={(e) => handleRenameProfile(e.target.value)}
+                  />
+                 </div>
+                 <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10" 
+                    onClick={handleDeleteProfile}
+                    disabled={profiles.length <= 1}
+                 >
+                    <Trash2 className="h-4 w-4" />
+                 </Button>
+              </div>
+
+              {showReloadSuggestion && (
+                <p className="opacity-50 text-xs">API changes require a <Button variant="outline" className="p-2!" onClick={() => window.location.reload()}>reload</Button> to work properly.</p>
+              )}
+            </div>
             <div className="py-4 flex flex-col gap-2">
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="Proxy_baseURL">Base URL</Label>
@@ -205,7 +386,7 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
                   value={baseURL}
                   onChange={handleBaseURLChange}
                 />
-                {showReloadSuggestion && (<p className="opacity-50 text-xs">Base URL changes require a <Button variant="outline" className="p-2!" onClick={() => window.location.reload()}>reload</Button> to work properly.</p>)}
+                
                 <Button variant="outline" size="sm" onClick={handleToggleRecommendations}>
                   {showRecommendations ? "Hide Recommendations" : "Show Recommendations"}
                 </Button>
@@ -258,6 +439,7 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
                   onChange={handleApiKeyChange}
                   disabled={!alreadyEncrypted}
                   type="password"
+                  placeholder={!alreadyEncrypted ? "Setup Secure first" : "Enter API Key"}
                 />
                 {!alreadyEncrypted && (
                   <div className="flex flex-col gap-2 mt-2 border rounded-xl p-4">
@@ -274,8 +456,11 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
                   onChange={handleModelNameChange}
                 />
               </div>
+              
+              
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="Proxy_modelInstructions">Custom instructions</Label>
+                <p className="text-xs opacity-50 mb-1">These settings are shared across all profiles.</p>
                 <Textarea
                   id="Proxy_modelInstructions"
                   placeholder="! If custom instructions seem to worsen the responses, consider not using this."
