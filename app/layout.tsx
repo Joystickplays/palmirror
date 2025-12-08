@@ -3,14 +3,15 @@ import { PMThemeProvider } from "@/context/PalMirrorThemeProvider";
 import { PLMSecureProvider } from "@/context/PLMSecureContext";
 import { WebAuthnProvider } from "@/context/PLMSecureWebAuthnContext";
 import { RecProvider } from "@/context/PLMRecSystemContext";
-import AttributeNotificationProvider from "@/components/AttributeNotificationProvider";
+import AttributeNotificationProvider from "@/components/notifications/AttributeNotificationProvider";
 // import { AnimatePresence, motion } from 'framer-motion';
 
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import MemoryNotificationProvider from "@/components/MemoryNotificationProvider";
+import MemoryNotificationProvider from "@/components/notifications/MemoryNotificationProvider";
 import { PLMGlobalConfigProvider } from "@/context/PLMGlobalConfig";
+import PMNotificationProvider from "@/components/notifications/PalMirrorNotification";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -54,21 +55,23 @@ export default function RootLayout({
               <WebAuthnProvider>
                 <PMThemeProvider>
                   <ThemeProvider attribute="class" defaultTheme="dark">
-                    <MemoryNotificationProvider>
-                      <AttributeNotificationProvider>
-                        {/* <AnimatePresence>
+                    <PMNotificationProvider>
+                      <MemoryNotificationProvider>
+                        <AttributeNotificationProvider>
+                          {/* <AnimatePresence>
                       <motion.div
                       key={"h"}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ duration: 0.3 }}> */}
-                        {children}
+                          {children}
 
-                        {/* </motion.div>
+                          {/* </motion.div>
                     </AnimatePresence> */}
-                      </AttributeNotificationProvider>
-                    </MemoryNotificationProvider>
+                        </AttributeNotificationProvider>
+                      </MemoryNotificationProvider>
+                    </PMNotificationProvider>
                   </ThemeProvider>
                 </PMThemeProvider>
               </WebAuthnProvider>

@@ -32,8 +32,8 @@ import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
 import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall } from "@/utils/domainData";
-import { useAttributeNotification } from "@/components/AttributeNotificationProvider";
-import { useMemoryNotification } from "@/components/MemoryNotificationProvider";
+import { useAttributeNotification } from "@/components/notifications/AttributeNotificationProvider";
+import { useMemoryNotification } from "@/components/notifications/MemoryNotificationProvider";
 import SuggestionBar from "@/components/SuggestionBar";
 import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
@@ -42,6 +42,7 @@ import { MessagePreview } from "@/components/MessagePreview";
 import { LinearBlur } from "@/components/LinearBlur";
 import { ListCollapse } from "lucide-react";
 import { UserPersonality } from "@/types/UserPersonality";
+import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 
 
 let openai: OpenAI;
@@ -84,6 +85,8 @@ const ChatPage = () => {
     setConfigAutoCloseFormatting(!!PLMGC.get("autoCloseFormatting"))
     setConfigLimitChatRenders(!!PLMGC.get("limitChatRenders"))
   }, [])
+
+  const PMNotify = usePMNotification();
 
   const [messages, setMessages] = useState<
     Array<Message>
@@ -305,7 +308,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         if (timestepsToSet.length > 0) {
           setChatTimesteps(timestepsToSet);
           if (notify) {
-            toast.info(`Found timesteps from messages, imported ${timestepsToSet.length} timesteps`);
+            PMNotify.info(`Found timesteps from messages, imported ${timestepsToSet.length} timesteps`);
           }
         }
       }
@@ -344,9 +347,9 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       // Use the formatted file name
       const fileName = getFormattedFileName();
       downloadFile(base64String, fileName, "application/octet-stream");
-      toast.success("Chat exported! File downloaded.");
+      PMNotify.success("Chat exported! File downloaded.");
     } catch (error) {
-      toast.error("Failed to encode messages: " + error);
+      PMNotify.error("Failed to encode messages: " + error);
     }
   };
 
@@ -361,7 +364,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         const json = decoder.decode(decodedArray);
         const parsedMessages = JSON.parse(json);
         setMessages(parsedMessages);
-        // toast.success("Chat imported successfully!");
+        // PMNotify.success("Chat imported successfully!");
         saveTimesteps(parsedMessages, false)
         return;
       }
@@ -375,11 +378,11 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       const parsedMessages = JSON.parse(json);
 
       setMessages(parsedMessages);
-      toast.success("Chat imported successfully!");
+      PMNotify.success("Chat imported successfully!");
 
       saveTimesteps(parsedMessages, true)
     } catch (error) {
-      toast.error("Failed to decode messages: " + error);
+      PMNotify.error("Failed to decode messages: " + error);
     }
   };
 
@@ -388,7 +391,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     if (file) {
       decodeMessages(file);
     } else {
-      toast.error("No file selected.");
+      PMNotify.error("No file selected.");
     }
   };
 
@@ -482,7 +485,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
     loadSettingsFromLocalStorage();
     if (!baseURL.includes("http")) {
-      toast.error("You need to configure your AI provider first in Settings.");
+      PMNotify.error("You need to configure your AI provider first in Settings.");
       return;
     }
 
@@ -856,7 +859,7 @@ ${entryTitle}
             destination
           );
         }
-        toast.error(
+        PMNotify.error(
           "Error: " + (err instanceof Error ? err.message : String(err))
         );
       }
@@ -1285,7 +1288,7 @@ ${entryTitle}
               entry: timestep,
             },
           ]);
-          // toast.info(timestep);
+          // PMNotify.info(timestep);
         }
       })();
     }
