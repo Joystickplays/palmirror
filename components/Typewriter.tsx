@@ -97,22 +97,22 @@ export function useTypewriter(
       if (punctuationDelays[firstAddedChar] != null) {
         punctuationDelay = punctuationDelays[firstAddedChar];
       }
-      if (firstAddedChar === ".") {
-        const i = text.length;
+      // if (firstAddedChar === ".") {
+      //   const i = text.length;
 
-        const isEllipsis =
-          target[i] === "." &&
-          target[i + 1] === "." &&
-          target[i + 2] === ".";
+      //   const isEllipsis =
+      //     target[i] === "." &&
+      //     target[i + 1] === "." &&
+      //     target[i + 2] === ".";
 
-        if (isEllipsis) {
-          const dotsTyped = i - (target.lastIndexOf("...", i) || i);
+      //   if (isEllipsis) {
+      //     const dotsTyped = i - (target.lastIndexOf("...", i) || i);
 
-          if (dotsTyped === 2) {
-            punctuationDelay += 1500;
-          }
-        }
-      }
+      //     if (dotsTyped === 2) {
+      //       punctuationDelay += 1500;
+      //     }
+      //   }
+      // }
 
       if (firstAddedChar === '"') {
         const quotePos = text.length;
