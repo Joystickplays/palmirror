@@ -29,7 +29,7 @@ export function useTypewriter(
   const CAPS_SPEED_MS = 5;
 
   useEffect(() => {
-    if (mountRef.current < 2) {
+    if (mountRef.current < 7) {
       mountRef.current += 1;
       setText(target);
       return;
