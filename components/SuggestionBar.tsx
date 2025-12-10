@@ -70,7 +70,7 @@ const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, 
                         transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 22 }}
                     >
                         <Button variant="outline" onClick={() => setArbitrarySuggestionDialogShow(true)} disabled={generating} className="p-4! h-8 text-xs">
-                            Create suggestion from self-prompt
+                            Create reply from prompt
                         </Button>
                     </motion.div>
                 </AnimatePresence>
@@ -78,14 +78,14 @@ const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, 
             <Dialog open={arbitrarySuggestionDialogShow} onOpenChange={setArbitrarySuggestionDialogShow}>
                 <DialogContent className="font-sans">
                     <DialogHeader>
-                        <DialogTitle className="text-center text-2xl mb-4">Suggestion from prompt</DialogTitle>
+                        <DialogTitle className="text-center text-2xl mb-4">Reply from prompt</DialogTitle>
                     </DialogHeader>
                     <Input value={arbitrarySuggestionInput} onChange={(e) => setArbitrarySuggestionInput(e.target.value)} placeholder="Prompt" />
                     <p className="opacity-50 text-xs">{`Just like the auto-generated prompt suggestions, yours should be written in the perspective of yourself.`}</p>
                     <Button onClick={() => {
                         suggestionPicked(arbitrarySuggestionInput);
                         setArbitrarySuggestionDialogShow(false);
-                    }}>Create suggestion</Button>
+                    }}>Create reply</Button>
                 </DialogContent>
             </Dialog>
         </>

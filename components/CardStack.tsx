@@ -115,7 +115,7 @@ const CardStack: React.FC<CardStackProps> = ({
                     <motion.div 
                     animate={{ opacity: fadeToolTip ? 0 : 1 }}
                     transition={{ duration: 1, delay: 2 }}
-                    className="absolute pt-1 w-full text-center text-xs text-muted-foreground select-none">
+                    className="absolute pt-2 w-full text-center text-xs text-muted-foreground select-none">
                         <p>Drag <MoveLeft className="inline-block w-4 h-4" /> or <MoveRight className="inline-block w-4 h-4" /> to navigate</p>
                     </motion.div>
                 )}

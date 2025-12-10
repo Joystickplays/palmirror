@@ -25,7 +25,7 @@ import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, Ellips
 
 import AttributeProgress from "@/components/AttributeProgress";
 
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 
 
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
@@ -44,6 +44,7 @@ import { generateChatCompletion, independentInitOpenAI } from "@/utils/portableA
 import { generateChatEntriesSysInst } from "@/utils/generateChatEntriesSysInst";
 import { UserPersonality } from "@/types/UserPersonality";
 import CardStack from "@/components/CardStack";
+import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 
 
 
@@ -57,6 +58,9 @@ interface Message {
 
 
 const ExperienceDomainPage: React.FC = () => {
+
+
+    const PMNotify = usePMNotification();
 
     const PLMGC = usePLMGlobalConfig();
     const [configHighend, setConfigHighend] = useState(false);
@@ -74,6 +78,7 @@ const ExperienceDomainPage: React.FC = () => {
     const [showingNewChat, setShowingNewChat] = useState(false);
     const [newChatName, setNewChatName] = useState("");
     const [newChatSuggestionShow, setNewChatSuggestionShow] = useState(false);
+    const [newChatSuggestionGenVisualShown, setNewChatSuggestionGenVisualShown] = useState(false);
     const [newChatSuggestionGenerating, setNewChatSuggestionGenerating] = useState(false);
     const [newChatSuggestions, setNewChatSuggestions] = useState("");
 
@@ -130,11 +135,11 @@ const ExperienceDomainPage: React.FC = () => {
 
                         localStorage.setItem("characterData", JSON.stringify(data));
                         if (!data.plmex.domain) {
-                            toast.error("Not a domain-enabled character. Returning to home.")
+                            PMNotify.error("Not a domain-enabled character. Returning to home.")
                             router.push('/')
                         }
                     } else {
-                        toast.error("Domain data not found. Returning to home.");
+                        PMNotify.error("Domain data not found. Returning to home.");
                         router.push('/');
                     }
                 });
@@ -143,6 +148,7 @@ const ExperienceDomainPage: React.FC = () => {
     }
 
     const generateScenarios = async () => {
+        setNewChatSuggestionGenVisualShown(true);
         setNewChatSuggestionGenerating(true);
         setNewChatSuggestions("");
         let modelName = "gpt-3.5-turbo"
@@ -198,8 +204,8 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map
             }
             setNewChatSuggestionGenerating(false);
         } catch (e) {
-            toast.error("Failed to generate scenarios. Please try again.");
-            toast.error(e instanceof Error ? e.message : String(e));
+            PMNotify.error("Failed to generate scenarios. Please try again.");
+            PMNotify.error(e instanceof Error ? e.message : String(e));
             setNewChatSuggestionGenerating(false);
         }
     }
@@ -468,7 +474,7 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map
                                 )
                             );
 
-                            toast.info(
+                            PMNotify.info(
                                 `Chat deleted. ${chatDeletePropagation ? "Attributes and memories preserved." : "Relevant attributes and memories rolled back."}`
                             );
                             setShowingChatDelete(false);
@@ -528,19 +534,19 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map
                                         
 
                                         <div className="flex flex-row justify-center items-center gap-2 h-42 pb-1 w-full">
-                                            {newChatSuggestions === "" ? (
+                                            {newChatSuggestionGenVisualShown && newChatSuggestions === "" ? (
                                                 <>
                                                     <CardStack center tooltip>
-                                                        <div className="flex-none w-72 h-40 border border-white/10 rounded-xl p-4 bg-background">
-                                                            <div className="flex flex-col gap-1 animate-pulse ">
+                                                        <div className="flex-none h-32 sm:h-42 aspect-6/3 border border-white/10 rounded-xl p-4 bg-background">
+                                                            <div className="flex flex-col gap-1 shimmer-content-wrapper ">
                                                                 <div className="h-4 w-full rounded-md bg-white/50"></div>
                                                                 <div className="h-4 w-full rounded-md bg-white/50"></div>
                                                                 <div className="h-4 w-full rounded-md bg-white/50"></div>
                                                                 <div className="h-4 w-3/4 rounded-md bg-white/50"></div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex-none h-40 w-72 border border-white/10 rounded-xl p-4 bg-background">
-                                                            <div className="flex flex-col gap-1 animate-pulse">
+                                                        <div className="flex-none aspect-6/3 h-32 sm:h-42 border border-white/10 rounded-xl p-4 bg-background">
+                                                            <div className="flex flex-col gap-1 shimmer-content-wrapper">
                                                                 <div className="h-4 w-full rounded-md bg-white/50"></div>
                                                                 <div className="h-4 w-full rounded-md bg-white/50"></div>
                                                                 <div className="h-4 w-full rounded-md bg-white/50"></div>
@@ -549,7 +555,7 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map
                                                         </div>
                                                     </CardStack>
                                                 </>
-                                            ) : (
+                                            ) : newChatSuggestionGenVisualShown ? (
                                                 <>
                                                     <CardStack center>
                                                         {newChatSuggestions.split("|").map((suggestion, idx) => (
@@ -566,7 +572,7 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map
                                                                     damping: 40,
                                                                 }
                                                             }}
-                                                            key={idx} className="flex-none flex flex-col gap-2 bg-background w-72 h-40 border border-white/10 rounded-xl p-4 ">
+                                                            key={idx} className="flex-none flex flex-col gap-2 bg-background aspect-6/3 h-32 sm:h-42 border border-white/10 rounded-xl p-4 ">
                                                                 <p className="text-sm max-h-24 overflow-y-scroll font-sans">{suggestion.replace(/^- /, "")}</p>
                                                                 <Button className="mt-auto" variant={"outline"} onClick={() => {
                                                                     setNewChatName(suggestion);
@@ -581,6 +587,8 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map
                                                     </CardStack>
 
                                                 </>
+                                            ) : (
+                                                <p className="text-sm opacity-50 italic">Suggestions will appear here!</p>
                                             )}
                                         </div>
 
@@ -598,7 +606,10 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map
                                                 layout
                                                 layoutId="openclose"
                                                 key="close" className="w-fit ml-auto">
-                                                <Button variant="outline" onClick={() => setNewChatSuggestionShow(false)}>Close</Button>
+                                                <Button variant="outline" onClick={() => {
+                                                    setNewChatSuggestionShow(false);
+                                                    newChatDialog.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                                }}>Close</Button>
                                             </motion.div>
                                         </div>
                                     </motion.div>

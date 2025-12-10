@@ -555,7 +555,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
             )}
 
             <MarkdownView
-              className={`${stillGenerating ? "animate-pulse" : ""} select-none opacity-95 markdown-content`}
+              className={`${stillGenerating ? "shimmer-content-wrapper" : ""} select-none opacity-95 markdown-content`}
               content={
                 configAutoCloseFormatting ? 
                 closeStars(closeQuotes(configTyping ? messageTyped : presentableText))

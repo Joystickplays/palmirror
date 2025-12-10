@@ -70,6 +70,7 @@ import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 
 import discord from "@/public/discord.svg"
 import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";
+import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
   function sortByLastUpdated(
@@ -637,6 +638,9 @@ function SetupCharacter({
 }
 
 export default function Home() {
+
+  const PMNotify = usePMNotification();
+
   const [isSecureActivated, setIsSecureActivated] = useState(false);
   const [isSecureReady, setIsSecureReady] = useState(false);
   const [PLMSecurePass, setPLMSecurePass] = useState("");
@@ -708,7 +712,7 @@ export default function Home() {
       !characterData.personality ||
       !characterData.initialMessage
     ) {
-      toast.error(
+      PMNotify.error(
         "Please fill in all required fields (name, personality, first message)."
       );
       return;
@@ -721,7 +725,7 @@ export default function Home() {
         plmex: defaultCharacterData.plmex,
       };
       localStorage.setItem("characterData", JSON.stringify(updatedData));
-      toast.success("Character data saved! Starting chat...");
+      PMNotify.success("Character data saved! Starting chat...");
       return updatedData;
     });
     sessionStorage.removeItem("chatSelect");
@@ -809,7 +813,7 @@ export default function Home() {
   const importCharacter = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files![0];
     if (!file) {
-      toast.error("No file selected.");
+      PMNotify.error("No file selected.");
       return;
     }
 
@@ -847,7 +851,7 @@ export default function Home() {
               : pako.ungzip(new Uint8Array(compressedData), { to: "string" });
             const characterData: CharacterData = JSON.parse(decompressedData);
             if (characterData.plmex.domain?.active && !isSecureReady) {
-              toast.info("Use PalMirror Secure for PalMirror Experience Domain characters!")
+              PMNotify.info("Use PalMirror Secure for PalMirror Experience Domain characters!")
               reject(
                 "Domain enabled character!"
               )
@@ -967,7 +971,7 @@ export default function Home() {
         setPasskeyOngoing(false);
       } catch (error) {
         console.error(error);
-        toast.error("Passkey dialog cancelled?");
+        PMNotify.error("Passkey dialog cancelled?");
         setPasskeyOngoing(false);
       }
     }

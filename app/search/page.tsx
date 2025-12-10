@@ -19,8 +19,13 @@ import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 import { usePalRec } from "@/context/PLMRecSystemContext"
 
 import AutoScrollContainer from '@/components/AutoScroll';
+import { usePMNotification } from '@/components/notifications/PalMirrorNotification';
 
 export default function Search() {
+
+
+  const PMNotify = usePMNotification();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -134,7 +139,7 @@ export default function Search() {
 
   const handleSearch = async (page = 1, initial?: boolean) => {
     if (!initial && !searchQuery) {
-      toast.error('Please enter a search query.');
+      PMNotify.error('Please enter a search query.');
       return;
     }
 
@@ -166,7 +171,7 @@ export default function Search() {
       // Handle search results
       console.log(aggregatedResults);
     } catch (error) {
-      toast.error(`Failed to search: ${(error as Error).message}`);
+      PMNotify.error(`Failed to search: ${(error as Error).message}`);
     } finally {
       setLoading(false);
     }

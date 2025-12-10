@@ -54,14 +54,17 @@
     from {
       height: 0;
     }
+
     to {
       height: var(--radix-accordion-content-height);
     }
   }
+
   @keyframes accordion-up {
     from {
       height: var(--radix-accordion-content-height);
     }
+
     to {
       height: 0;
     }
@@ -78,6 +81,7 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+
   *,
   ::after,
   ::before,
@@ -121,7 +125,7 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
 
-    --domain-image-mask: linear-gradient(to right, rgba(0,0,0,0.6), transparent);
+    --domain-image-mask: linear-gradient(to right, rgba(0, 0, 0, 0.6), transparent);
   }
 
   .dark {
@@ -250,7 +254,7 @@
   animation: gradient-sweep 10s ease-in-out infinite;
   z-index: -1;
 
-  box-shadow: 
+  box-shadow:
     0 0 10px 4px rgba(255, 170, 210, 0.1),
     0 0 20px 10px rgba(150, 190, 255, 0.1),
     inset 0 0 0 999px rgba(11, 10, 8);
@@ -263,22 +267,30 @@
   border-radius: inherit;
   padding: 1px;
   background: linear-gradient(120deg, rgba(255, 140, 161, 0.5), rgba(255, 179, 198, 0.5),
-                              rgba(140, 193, 230, 0.5), rgba(158, 140, 230, 0.5),
-                              rgba(255, 140, 161, 0.5));
+      rgba(140, 193, 230, 0.5), rgba(158, 140, 230, 0.5),
+      rgba(255, 140, 161, 0.5));
   background-size: 300% 300%;
   animation: gradient-sweep 10s ease-in-out infinite;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
-          mask-composite: exclude;
+  mask-composite: exclude;
   pointer-events: none;
 }
 
 @keyframes gradient-sweep {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 
@@ -384,15 +396,50 @@
     opacity: 1;
     transform: translateY(0);
   }
+
   50% {
     opacity: 0.75;
     transform: translateY(2px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
+/* 1. Keyframes (Define the animation movement) */
+@keyframes shimmer-sweep {
+  0% {
+    mask-position: 100% 0;
+  }
+
+  100% {
+    mask-position: -0% 0;
+  }
+}
+
+.shimmer-content-wrapper {
+  gap: 0.25rem;
+  width: 100%;
+  -webkit-mask-image: linear-gradient(110deg,
+      rgba(0, 0, 0, 0.5) 30%,
+      #000 50%,
+      rgba(0, 0, 0, 0.5) 70%);
+  mask-image: linear-gradient(110deg,
+      rgba(0, 0, 0, 0.5) 30%,
+      #000 50%,
+      rgba(0, 0, 0, 0.5) 70%);
+
+  -webkit-mask-size: 400% 100%;
+  mask-size: 400% 100%;
+
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+
+  animation: shimmer-sweep 2s infinite ease-in-out;
+}
+/* arefareshaa */
 
 
 
@@ -414,6 +461,6 @@
 
 @media (max-width: 767px) {
   :root {
-    --domain-image-mask: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+    --domain-image-mask: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
   }
 }

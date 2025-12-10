@@ -98,7 +98,7 @@ export default function PMNotificationProvider({ children }: { children: React.R
                         <motion.div
                             key={notif.id}
                             className="w-80"
-                            exit={{ opacity: 0, x: 30 }}
+                            exit={{ opacity: 0, y: 5 }}
                             transition={{ type: "spring", mass: 1, stiffness: 161, damping: 16 }}>
                             <PMNotificationInstance
                                 key={notif.id}
@@ -129,6 +129,8 @@ function PMNotificationInstance({
     const remainingRef = useRef<number>(data.duration - (Date.now() - data.createdAt));
     const endTimeRef = useRef<number>(Date.now() + remainingRef.current);
     const mountedRef = useRef(true);
+
+    const [hovering, setHovering] = useState(false);
 
     useEffect(() => {
         mountedRef.current = true;
@@ -164,6 +166,7 @@ function PMNotificationInstance({
         }
         const rem = endTimeRef.current - Date.now();
         remainingRef.current = Math.max(0, rem);
+        setHovering(true);
     };
 
     const handleMouseLeave = () => {
@@ -176,14 +179,33 @@ function PMNotificationInstance({
             timerRef.current = null;
             onDone();
         }, remainingRef.current);
+        setHovering(false);
     };
+
+    const forceClose = useCallback(() => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+        remainingRef.current = 0;
+        mountedRef.current = false;
+        onDone();
+    }, [onDone]);
 
 
     return (
         <motion.div
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ type: "spring", mass: 1, stiffness: 161, damping: 16, delay: index * 0.02 }}
+            whileHover={{
+                paddingRight: "28px",
+                scale: 1.02,
+                transition: {
+                    duration: 0.2,
+                    ease: "easeInOut"
+                }
+            }}
+            transition={{ type: "spring", mass: 1, stiffness: 161 - (index), damping: 16 + (index), delay: index * 0.02 }}
             className={`relative p-4 w-full max-w-80 flex flex-row gap-4 border bg-background rounded-2xl shadow-lg pointer-events-auto font-sans ${notificationVariants[data.type].accentColor}`}
             layout
             onMouseEnter={handleMouseEnter}
@@ -202,6 +224,12 @@ function PMNotificationInstance({
             </div>
 
             <p className={`text-sm text-white ml-auto my-auto`}>{data.message}</p>
+            <motion.button 
+            animate={hovering ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.1 }}
+            onClick={forceClose} className="absolute top-0 right-0 m-2">
+               <X className="w-4 h-4" />
+            </motion.button>
 
         </motion.div>
     );
