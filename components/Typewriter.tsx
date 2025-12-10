@@ -44,7 +44,7 @@ export function useTypewriter(
     const isBackspacing = !target.startsWith(text) || text.length > target.length;
 
     if (isBackspacing) {
-      delay = Math.max(10, speed / 2);
+      delay = 1;
       nextText = text.slice(0, -1);
       shouldVibrate = true;
     } else {
