@@ -24,10 +24,12 @@ export function useTypewriter(
 ): string {
   const [text, setText] = useState<string>(target);
   const mountRef = useRef(0);
-  const QUOTE_BOUNDARY_MS = 500;
+  
+  const QUOTE_BOUNDARY_MS = 1000;
+  const CAPS_SPEED_MS = 5;
 
   useEffect(() => {
-    if (mountRef.current < 7) {
+    if (mountRef.current < 2) {
       mountRef.current += 1;
       setText(target);
       return;
@@ -36,7 +38,7 @@ export function useTypewriter(
     if (text === target) return;
 
     let nextText = text;
-    let delay = 0;
+    let delay = 0; 
     let shouldVibrate = false;
 
     const isBackspacing = !target.startsWith(text) || text.length > target.length;
@@ -46,43 +48,73 @@ export function useTypewriter(
       nextText = text.slice(0, -1);
       shouldVibrate = true;
     } else {
+      
+      const currentIndex = text.length;
       const lastChar = text.slice(-1);
+      
+
       if (punctuationDelays[lastChar]) {
         delay += punctuationDelays[lastChar];
       }
-      const quotesInCurrentText = (text.match(/"/g) || []).length;
-      const currentlyInsideQuotes = quotesInCurrentText % 2 === 1;
-      if (lastChar === '"') {
-        if (currentlyInsideQuotes) {
 
-          delay += QUOTE_BOUNDARY_MS;
-        } else {
-          if (!text.endsWith('."')) {
-            delay += QUOTE_BOUNDARY_MS;
+      if (lastChar === '"') {
+        const quoteCount = (text.match(/"/g) || []).length;
+        const isClosingQuote = quoteCount % 2 === 0;
+
+        if (isClosingQuote) {
+          if (text.endsWith('."')) {
+             delay = Math.max(delay, QUOTE_BOUNDARY_MS);
+          } else {
+             delay += QUOTE_BOUNDARY_MS;
           }
         }
       }
-      const nextIndex = text.length;
-      const effectiveSpeed = currentlyInsideQuotes ? speed * 7 : speed;
-      const effectiveBatch = currentlyInsideQuotes
-        ? Math.max(1, Math.floor(inBatchesOf / 7))
-        : inBatchesOf;
-      delay += effectiveSpeed;
-      let charsToAdd = target.slice(nextIndex, nextIndex + effectiveBatch);
-      const quoteIndex = charsToAdd.indexOf('"');
-      if (
-        target[nextIndex] === "." &&
-        target[nextIndex + 1] === '"'
-      ) {
-        charsToAdd = '."';
-      } else if (quoteIndex !== -1) {
-        if (quoteIndex === 0) charsToAdd = '"';
-        else charsToAdd = charsToAdd.slice(0, quoteIndex);
+
+      const quotesUpToNow = (target.slice(0, currentIndex).match(/"/g) || []).length;
+      const insideQuotes = quotesUpToNow % 2 === 1;
+
+      const nextChar = target[currentIndex];
+      
+      const isNextCaps = /[A-Z]/.test(nextChar);
+
+      let currentSpeed = speed;
+      if (isNextCaps) {
+        currentSpeed = CAPS_SPEED_MS;
+      } else if (insideQuotes) {
+        currentSpeed = speed * 7;
       }
+
+      delay += currentSpeed;
+
+      if (nextChar === '"') {
+         if (!insideQuotes) {
+           delay += QUOTE_BOUNDARY_MS;
+         }
+      }
+
+      let effectiveBatch = inBatchesOf;
+      if (isNextCaps || insideQuotes || nextChar === '"') {
+        effectiveBatch = 1;
+      } else if (insideQuotes) {
+        effectiveBatch = Math.max(1, Math.floor(inBatchesOf / 7));
+      }
+
+      let charsToAdd = target.slice(currentIndex, currentIndex + effectiveBatch);
+
+      const batchQuoteIndex = charsToAdd.indexOf('"');
+      if (batchQuoteIndex !== -1 && batchQuoteIndex > 0) {
+        charsToAdd = charsToAdd.slice(0, batchQuoteIndex);
+      } else if (batchQuoteIndex === 0) {
+        charsToAdd = '"';
+      }
+
+      if (target[currentIndex] === '.' && target[currentIndex + 1] === '"') {
+        charsToAdd = '."';
+      }
+
       nextText = text + charsToAdd;
       shouldVibrate = haptics;
     }
-
 
     const timeout = setTimeout(() => {
       setText(nextText);
