@@ -8,7 +8,9 @@ interface UseTypewriterOptions {
 }
 
 const vibrate = (duration: number) => {
-  if ("vibrate" in navigator) navigator.vibrate(duration);
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate(duration);
+  }
 };
 
 export function useTypewriter(
@@ -20,140 +22,75 @@ export function useTypewriter(
     haptics = true,
   }: UseTypewriterOptions = {}
 ): string {
-  const [text, setText] = useState<string>("");
-  const [tick, setTick] = useState(0);
-  const runs = useRef(1);
-  const lockUntilRef = useRef<number>(0);
+  const [text, setText] = useState<string>(target);
+  const mountRef = useRef(0);
   const QUOTE_BOUNDARY_MS = 500;
 
   useEffect(() => {
-    if (runs.current) {
-      runs.current += 1;
-      console.log(runs.current)
-      if (runs.current < 10) {
-        setText(target);
-        return;
-      }
+    if (mountRef.current < 7) {
+      mountRef.current += 1;
+      setText(target);
+      return;
     }
 
     if (text === target) return;
 
-    const now = Date.now();
-    if (now < lockUntilRef.current) {
-      const remaining = lockUntilRef.current - now;
-      const resumeTimeout = setTimeout(() => setTick((t) => t + 1), remaining);
-      return () => clearTimeout(resumeTimeout);
-    }
+    let nextText = text;
+    let delay = 0;
+    let shouldVibrate = false;
 
-    const nextIndex = text.length;
-    const quoteCountBefore = target.slice(0, nextIndex).split('"').length - 1;
-    const insideQuotes = quoteCountBefore % 2 === 1;
+    const isBackspacing = !target.startsWith(text) || text.length > target.length;
 
-    const effectiveSpeed = insideQuotes ? speed * 7 : speed;
-    const effectiveBatch = insideQuotes ? Math.max(1, Math.floor(inBatchesOf / 7)) : inBatchesOf;
-
-    let tentativeNext = text;
-
-    if (text.length > target.length) {
-      tentativeNext = text.slice(0, Math.max(target.length, text.length - effectiveBatch));
-    } else if (text.length < target.length) {
-      tentativeNext = target.slice(0, Math.min(target.length, text.length + effectiveBatch));
+    if (isBackspacing) {
+      delay = Math.max(10, speed / 2);
+      nextText = text.slice(0, -1);
+      shouldVibrate = true;
     } else {
-      let i = 0;
-      while (i < text.length && text[i] === target[i]) i++;
-      tentativeNext =
-        text.slice(0, i) +
-        target.slice(i, i + effectiveBatch) +
-        text.slice(i + effectiveBatch);
-    }
+      const lastChar = text.slice(-1);
+      if (punctuationDelays[lastChar]) {
+        delay += punctuationDelays[lastChar];
+      }
+      const quotesInCurrentText = (text.match(/"/g) || []).length;
+      const currentlyInsideQuotes = quotesInCurrentText % 2 === 1;
+      if (lastChar === '"') {
+        if (currentlyInsideQuotes) {
 
-    let next = tentativeNext;
-
-    if (tentativeNext.length > text.length) {
-      const start = text.length;
-      const end = tentativeNext.length;
-      const addedSegment = target.slice(start, end);
-
-      if (target[start] === "." && target[start + 1] === '"') {
-        next = target.slice(0, start + 2);
-      } else {
-        const localQuoteIdx = addedSegment.indexOf('"');
-        if (localQuoteIdx !== -1) {
-          const globalQuotePos = start + localQuoteIdx;
-          if (globalQuotePos > text.length) {
-            next = target.slice(0, globalQuotePos);
+          delay += QUOTE_BOUNDARY_MS;
+        } else {
+          if (!text.endsWith('."')) {
+            delay += QUOTE_BOUNDARY_MS;
           }
         }
       }
+      const nextIndex = text.length;
+      const effectiveSpeed = currentlyInsideQuotes ? speed * 7 : speed;
+      const effectiveBatch = currentlyInsideQuotes
+        ? Math.max(1, Math.floor(inBatchesOf / 7))
+        : inBatchesOf;
+      delay += effectiveSpeed;
+      let charsToAdd = target.slice(nextIndex, nextIndex + effectiveBatch);
+      const quoteIndex = charsToAdd.indexOf('"');
+      if (
+        target[nextIndex] === "." &&
+        target[nextIndex + 1] === '"'
+      ) {
+        charsToAdd = '."';
+      } else if (quoteIndex !== -1) {
+        if (quoteIndex === 0) charsToAdd = '"';
+        else charsToAdd = charsToAdd.slice(0, quoteIndex);
+      }
+      nextText = text + charsToAdd;
+      shouldVibrate = haptics;
     }
 
-    let punctuationDelay = 0;
-    let openingQuoteBoundary = 0;
-    let closingQuoteBoundary = 0;
 
-    if (next.length > text.length) {
-      const firstAddedChar = next[text.length];
+    const timeout = setTimeout(() => {
+      setText(nextText);
+      if (shouldVibrate) vibrate(10);
+    }, delay);
 
-      if (punctuationDelays[firstAddedChar] != null) {
-        punctuationDelay = punctuationDelays[firstAddedChar];
-      }
-      // if (firstAddedChar === ".") {
-      //   const i = text.length;
-
-      //   const isEllipsis =
-      //     target[i] === "." &&
-      //     target[i + 1] === "." &&
-      //     target[i + 2] === ".";
-
-      //   if (isEllipsis) {
-      //     const dotsTyped = i - (target.lastIndexOf("...", i) || i);
-
-      //     if (dotsTyped === 2) {
-      //       punctuationDelay += 1500;
-      //     }
-      //   }
-      // }
-
-      if (firstAddedChar === '"') {
-        const quotePos = text.length;
-        const quotesBeforeThis = target.slice(0, quotePos).split('"').length - 1;
-        if (quotesBeforeThis % 2 === 0) {
-          openingQuoteBoundary = QUOTE_BOUNDARY_MS;
-        } else {
-          closingQuoteBoundary = QUOTE_BOUNDARY_MS;
-        }
-      }
-
-      if (firstAddedChar === "." && target[text.length + 1] === '"') {
-        punctuationDelay = punctuationDelays["."] ?? punctuationDelay;
-        closingQuoteBoundary = 0;
-      }
-    }
-
-    const initialDelay = effectiveSpeed + openingQuoteBoundary;
-
-    const showTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
-      setText(next);
-      if (haptics) {
-        vibrate(10);
-      }
-      const totalAfterDelay = (punctuationDelay || 0) + closingQuoteBoundary;
-      if (totalAfterDelay > 0) {
-        lockUntilRef.current = Date.now() + totalAfterDelay;
-        const resumeTimer: ReturnType<typeof setTimeout> = setTimeout(
-          () => setTick((t) => t + 1),
-          totalAfterDelay
-        );
-
-        return () => clearTimeout(resumeTimer);
-      }
-    }, initialDelay);
-
-    return () => {
-      clearTimeout(showTimer);
-    };
-
-  }, [target, text, speed, inBatchesOf, punctuationDelays, tick]);
+    return () => clearTimeout(timeout);
+  }, [text, target, speed, inBatchesOf, punctuationDelays, haptics]);
 
   return text;
 }
