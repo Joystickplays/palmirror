@@ -1374,8 +1374,8 @@ export default function Home() {
 
 
       <Dialog open={onboardingOpen} onOpenChange={setOnboardingOpen}>
-        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-w-[90vw]! h-[90vh] p-12 font-sans flex flex-col gap-2">
-          <h1 className="text-2xl font-extrabold">PalMirror <span className="opacity-50">Onboarding</span> </h1>
+        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-w-[90vw]! h-[90vh] p-6 md:p-12 font-sans flex flex-col gap-2">
+          <h1 className="text-xl md:text-2xl font-extrabold">PalMirror <span className="opacity-50">Onboarding</span> </h1>
           <p className="text-sm opacity-50">PalMirror is an AI chat client that has both privacy, functions and sleek interfaces.<br />It is made to be really easy to setup:</p>
           <div className="flex flex-col md:flex-row justify-center items-center w-full h-full flex-1">
             <div className="w-full md:h-full flex-1  flex flex-col gap-2 items-center p-4 md:p-12">

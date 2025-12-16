@@ -279,7 +279,7 @@ export default function Search() {
                 method: "POST",
                 headers: {
                     "accept": "*/*",
-                    "authorization": "Bearer 88a6463b66e04fb07ba87ee3db06af337f492ce511d93df6e2d2968cb2ff2b30",
+                    "authorization": "Bearer 88a6463b66e04fb07ba87ee3db06af337f492ce511d93df6e2d2968cb2ff2b30", // this is fine
                     "content-type": "application/json",
                     "x-meilisearch-client": "Meilisearch instant-meilisearch (v0.19.0) ; Meilisearch JavaScript (v0.41.0)",
                     "Referer": "https://jannyai.com/"
