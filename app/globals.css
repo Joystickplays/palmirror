@@ -463,3 +463,11 @@
     --domain-image-mask: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
   }
 }
+
+
+
+
+::selection {
+  background-color: #ffffff;
+  color: black;
+}

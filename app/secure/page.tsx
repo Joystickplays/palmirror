@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import { Check } from "lucide-react";
 import Keypad from "@/components/Keypad";
 import PinDisplay from "@/components/PINDisplay";
@@ -55,17 +55,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnimateChangeInHeight } from "@/components/AnimateHeight";
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
+import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 
 export default function Home() {
   const router = useRouter();
   const PLMsecureContext = useContext(PLMSecureContext);
+
+  const PMNotify = usePMNotification();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pin, setPin] = useState("");
   const [showPin, setShowPin] = useState(false);
 
-  const [selectedMethod, setSelectedMethod] = useState("password");
+  const [selectedMethod, setSelectedMethod] = useState("pin");
 
   const [alreadyEncrypted, setAlreadyEncrypted] = useState(false);
   const [showCompleteDrawer, setShowCompleteDrawer] = useState(false);
@@ -82,15 +85,15 @@ export default function Home() {
 
   const setupPLMSecure = async () => {
     if (selectedMethod === "password" && password.length < 5) {
-      toast.error("Password too short! Atleast 6 characters.");
+      PMNotify.error("Password too short! Atleast 6 characters.");
       return;
     }
     if (selectedMethod === "pin" && pin.length < 4) {
-      toast.error("PIN too short! Atleast 4 digits.");
+      PMNotify.error("PIN too short! Atleast 4 digits.");
       return;
     }
     if (selectedMethod === "password" && password !== confirmPassword) {
-      toast.error("Passwords do not match!");
+      PMNotify.error("Passwords do not match!");
      return;
     }
 
@@ -114,7 +117,7 @@ export default function Home() {
       setAlreadyEncrypted(true);
       setShowCompleteDrawer(true);
     } catch (error) {
-      toast.error("Failed to setup PalMirror Secure...");
+      PMNotify.error("Failed to setup PalMirror Secure...");
       console.log(error);
     }
     setPassword("");
@@ -127,23 +130,23 @@ export default function Home() {
     localStorage.removeItem("secureMetadata");
     await PLMsecureContext?.resetCredential();
     setAlreadyEncrypted(false);
-    toast.success("PalMirror Secure removed successfully!");
+    PMNotify.success("PalMirror Secure removed successfully!");
   };
 
   const verifyAndCreatePasskey = async () => {
     if (!(await PLMsecureContext?.verifyKey(passkeyVerification))) {
-      toast.error("Password is incorrect.");
+      PMNotify.error("Password is incorrect.");
       return;
     }
     try {
       await PLMsecureContext?.registerCredential(passkeyVerification);
       setShowPasskeySetupDrawer(false);
       setPasskeyVerification("");
-      toast.success(
+      PMNotify.success(
         "Passkey setup successful! Try by going to your chat list.",
       );
     } catch (error) {
-      toast.error("Failed to setup! Canceled the dialog?");
+      PMNotify.error("Failed to setup! Canceled the dialog?");
     }
   };
 
@@ -186,11 +189,11 @@ export default function Home() {
               onValueChange={setSelectedMethod}
             >
               <TabsList className="w-full mb-2">
-                <TabsTrigger className="w-full" value="password">
-                  Password
-                </TabsTrigger>
                 <TabsTrigger className="w-full" value="pin">
                   PIN
+                </TabsTrigger>
+                <TabsTrigger className="w-full" value="password">
+                  Password
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="password" asChild>
@@ -263,11 +266,10 @@ export default function Home() {
                     </Button>
                   </div>
 
-                  <p className="text-sm opacity-70 text-red-500 text-center">
+                  {/* <p className="text-sm opacity-70 text-red-500 text-center">
                     PINs are easier to crack than passwords. Use a long, secure
-                    PIN and avoid common patterns like &apos;0000&apos;,
-                    &apos;1234&apos;, or your birthday.
-                  </p>
+                    PIN.
+                  </p> */}
                   <p className="text-sm opacity-70 text-red-500 text-center">
                     PalMirror Secure is NOT recoverable! If you forget the
                     password, your chats will need to be wiped.
@@ -323,8 +325,7 @@ export default function Home() {
           <AccordionContent className="flex flex-col gap-2">
             <p>
               By using PalMirror Secure, your chats can be securely saved
-              locally on the device with encryption. You no longer have to
-              continuously export and import chats.
+              locally on the device with encryption without using any external services like cloud.
             </p>
             <ul className="list-disc pl-5">
               <li className="flex gap-2">
@@ -353,7 +354,7 @@ export default function Home() {
               If you have setup PalMirror Secure already, setup your passkey
               with the button below!
             </p>
-            <Button onClick={() => setShowPasskeySetupDrawer(true)}>
+            <Button disabled={!alreadyEncrypted} onClick={() => setShowPasskeySetupDrawer(true)}>
               Setup passkey
             </Button>
           </AccordionContent>

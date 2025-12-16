@@ -723,7 +723,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 </animated.div>
               </CardContent>
               {!configHighend && (
-                <animated.div className="absolute inset-0 bg-black flex items-end justify-end z-10 text-white bg-opacity-0 pointer-events-none select-none"
+                <animated.div className="absolute inset-0 flex items-end justify-end z-10 text-white bg-opacity-0 pointer-events-none select-none"
                   style={{
                     opacity: canRegenerate ? x.to(val => -val / 100) : x.to(() => 0)
                   }}>
