@@ -889,7 +889,7 @@ ${entryTitle}
         for await (const chunk of comp) {
           if (abortController.current?.signal.aborted) break;
 
-          const c = chunk.choices[0].delta.content || "";
+          const c = chunk.choices?.[0]?.delta?.content || "";
           assistantMessage += c;
           
           const suggestions: string[] = assistantMessage
@@ -903,8 +903,9 @@ ${entryTitle}
       } else {
         for await (const chunk of comp) {
           if (abortController.current?.signal.aborted) break;
-          const c = chunk.choices[0].delta.content || "";
+          const c = chunk.choices?.[0]?.delta?.content || "";
           assistantMessage += c;
+          
           setNewMessage(assistantMessage);
           vibrate(10);
         }
