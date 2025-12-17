@@ -79,12 +79,27 @@ export default function SettingsPage() {
                     default: true,
                     label: "Response token watching",
                 },
+                limitChatRenders: {
+                    type: 'boolean',
+                    key: 'limitChatRenders',
+                    default: false,
+                    label: "Limit rendered chat messages at once"
+                },
+                limitChatRendersCount: {
+                    type: 'number',
+                    key: 'limitChatRendersCount',
+                    default: 3,
+                    label: "Max rendered chat messages",
+                    min: 1,
+                    max: 20,
+                    step: 1,
+                }
             },
         },
         domains: {
             title: "Experience Engine Domains",
             items: {
-                volume: {
+                domainTimestepRecallDepth: {
                     type: "number",
                     key: "domains_timestep_recall",
                     default: 20,
@@ -93,10 +108,25 @@ export default function SettingsPage() {
                     max: 30,
                     step: 1,
                 },
+                domainChatCompressor: {
+                    type: 'boolean',
+                    key: 'domainChatCompressor',
+                    default: false,
+                    label: 'Compress further chats into less tokens'  
+                },
+                domainChatCompressorDepth: {
+                    type: "number",
+                    key: "domainChatCompressorDepth",
+                    default: 5,
+                    label: "Number of chats before compression",
+                    min: 1,
+                    max: 10,
+                    step: 1,
+                }
             },
         },
-        experiments: {
-            title: "Experiments",
+        effects: {
+            title: "Effects",
             items: {
                 typing: {
                     type: "boolean",
@@ -104,6 +134,12 @@ export default function SettingsPage() {
                     default: false,
                     label: "Message typing effects",
                 },
+            }
+        },
+        experiments: {
+            title: "Experiments",
+            items: {
+                
                 cardFlyIn: {
                     type: "boolean",
                     key: "cardFlyIn",
@@ -115,12 +151,6 @@ export default function SettingsPage() {
                     key: 'autoCloseFormatting',
                     default: false,
                     label: "Automatically close formatting (italics, quotes)"
-                },
-                limitChatRenders: {
-                    type: 'boolean',
-                    key: 'limitChatRenders',
-                    default: false,
-                    label: "Limit rendered chat messages at once"
                 },
                 novelImageGeneration: {
                     type: 'boolean',

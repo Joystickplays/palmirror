@@ -62,5 +62,6 @@ export const skipPromptBuilder = (scene: string) => {
   [Avoid saying things like: "**[What will you do next? Your turn.]**", "**[Now it's your move.]**", "**[Continue the scene with your action.]**"]
   [Avoid prematurely ending your message. Do not end with similar to "This fight? It's far from over.", "And so it begins", etc. Prioritize this.]
   [Instead, end at the VERY climax of the scene skip. AKA, Never complete the story from start to finish. Give {{user}} a chance to take action.]
-  [ALWAYS end with a dialog. NEVER END WITH A MONOLOGUE OR SCENE DESCRIPTION.]`
-};
+  [If you have certain appendices in the system prompt, like Status sections and tags, keep them in the message.]
+  [End with a dialog. NEVER END WITH A MONOLOGUE OR SCENE DESCRIPTION.]`;
+}

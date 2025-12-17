@@ -77,13 +77,18 @@ const ChatPage = () => {
   const [configAutoCloseFormatting, setConfigAutoCloseFormatting] = useState(false);
   const [configLimitChatRenders, setConfigLimitChatRenders] = useState(false);
   const [configLimitChatRendersCount, setConfigLimitChatRendersCount] = useState(3);
-  
+  const [configDomainChatCompressor, setConfigDomainChatCompressor] = useState(false);
+  const [configDomainChatCompressorOnlyUntil, setConfigDomainChatCompressorOnlyUntil] = useState(5);
+
   useEffect(() => {
     setConfigHighend(!!PLMGC.get("highend"))
     setConfigTokenWatch(PLMGC.get("tokenCounter") ?? true)
     setConfigTyping(!!PLMGC.get("typing"))
     setConfigAutoCloseFormatting(!!PLMGC.get("autoCloseFormatting"))
     setConfigLimitChatRenders(!!PLMGC.get("limitChatRenders"))
+    setConfigLimitChatRendersCount(PLMGC.get("limitChatRendersCount") ? Number(PLMGC.get("limitChatRendersCount")) : 3)
+    setConfigDomainChatCompressor(!!PLMGC.get("domainChatCompressor"))
+    setConfigDomainChatCompressorOnlyUntil(PLMGC.get("domainChatCompressorDepth") ? Number(PLMGC.get("domainChatCompressorDepth")) : 5) 
   }, [])
 
   const PMNotify = usePMNotification();
@@ -739,7 +744,66 @@ ${entryTitle}
             })
           }
         }
-      }
+        
+        // domain compressor (basically change the further chats into their timesteps)
+        if (configDomainChatCompressor) {
+          let messageDepth = 0;
+          const compressedMessages: ChatCompletionMessageParam[] = [];
+
+          for (let i = finalMessages.length - 1; i >= 0; i--) {
+            const msg = finalMessages[i];
+
+            // non user/assistant messages
+            if (msg.role !== "user" && msg.role !== "assistant") {
+              compressedMessages.unshift(msg);
+              continue;
+            }
+
+            messageDepth++;
+
+            // outside depth
+            if (messageDepth <= configDomainChatCompressorOnlyUntil) {
+              compressedMessages.unshift(msg);
+              continue;
+            }
+
+            const associatedMsg = messagesList.find(m => m.content === msg.content);
+
+            // no associated message
+            if (!associatedMsg) {
+              compressedMessages.unshift(msg);
+              continue;
+            }
+
+            const timesteps = chatTimesteps.filter(
+              ts => ts.associatedMessage === associatedMsg.id
+            );
+
+            // no timesteps
+            if (timesteps.length === 0) {
+              compressedMessages.unshift(msg);
+              continue;
+            }
+
+            const timestepContent = timesteps
+              .map(ts => `- ${ts.entry}`)
+              .join("\n");
+
+            compressedMessages.unshift({
+              role: msg.role,
+              name: msg.name,
+              content:
+                `[This message has been summarized for space. Below is a summary what happened.]\n` +
+                timestepContent,
+            });
+          }
+          finalMessages = compressedMessages;
+        }
+
+        }
+
+        
+
 
       recChattedAt(chatId, Date.now())
     }
