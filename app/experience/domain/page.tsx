@@ -182,7 +182,7 @@ The second lead character, ${userPersonality.name}'s personality:
 ${userPersonality.personality}`}
 
 Reference scenarios:
-${chatList.length === 0 ? "None, use example scenarios" : chatList.slice(-3).map((chat) => `- ${chat.entryTitle}`).join("\n")}
+${chatList.length === 0 ? "None, use example scenarios" : chatList.toReversed().slice(-3).map((chat) => `- ${chat.entryTitle}`).join("\n")}
 
 `
         
