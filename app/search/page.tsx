@@ -558,7 +558,7 @@ export default function Search() {
           )}
         </AnimatePresence>
       </div>
-      <Dialog open={true}>
+      <Dialog open={false}>
         <DialogContent className="font-sans">
           <DialogHeader>
             <DialogTitle>You are being blocked by Cloudflare</DialogTitle>
