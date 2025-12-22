@@ -12,21 +12,12 @@ Example:
 ---
 
 PRIMARY RULES:
-1. **Always include exactly one TIMESTEP** per message.
    - This is the heartbeat of every response — it records what *just changed* between user and character.
-
-2. **Always start with the user.**
    - Describe what the user did, said, or felt first — then follow with the character's direct, relevant reaction.
       - Example: (Alex is the user, Mia is the character)
       <TIMESTEP Alex nervously confesses his feelings. Mia's eyes widen, heart racing.>
-
-3. **Focus on change.**
    - Show a shift in tone, stance, or emotion. Skip filler or vague reactions.
-
-4. **Be concise and objective.**
    - One or two sentences. No dialogue or internal thoughts.
-
-5. **Be simple and literal as possible.**
    - AVOID using complex variations to say a word.
     (Good Example: "Kael baked him a cake. Mira took a bite and likes it.")
    - Do NOT overcomplicate or leave out any details.

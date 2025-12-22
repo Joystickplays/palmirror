@@ -14,6 +14,14 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
 import { usePalRec } from "@/context/PLMRecSystemContext"
@@ -550,6 +558,18 @@ export default function Search() {
           )}
         </AnimatePresence>
       </div>
+      <Dialog open={true}>
+        <DialogContent className="font-sans">
+          <DialogHeader>
+            <DialogTitle>You are being blocked by Cloudflare</DialogTitle>
+          </DialogHeader>
+          <div className="opacity-80 flex flex-col gap-2 text-sm">
+            <p>{`The request to the JannyAI character's data was unexpectedly blocked by Cloudflare.` +
+              ` This is observed to be an anti-bot measure as their site's traffic continue to rise, mistaking ours as a bot.` +
+              ` To get around this, you can visit the bot's page yourself and download the character card, and import it to PalMirror.`}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
       <ToastContainer
         autoClose={5000}
         closeOnClick

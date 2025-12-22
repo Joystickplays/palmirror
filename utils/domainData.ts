@@ -480,9 +480,11 @@ ${getTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)}
 
 ${ !!(await getDomainGuide(domainID)) ? getDomainGuideSysInst(await getDomainGuide(domainID) as string) : ""}
 
-${getTaggingSysInst()}
     `;
     // why
+
+    // ${getTaggingSysInst()}
+    // heavy for not much benefit
 }
 
 function sortByLastUpdated(
