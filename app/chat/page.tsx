@@ -737,11 +737,12 @@ ${entryTitle}
               name: "system"
             })
           } else {
-            finalMessages.splice(finalMessages.length - 7, 0, {
-              role: "system" as "user" | "assistant" | "system",
-              content: assistantRecall,
-              name: "system"
-            })
+            // finalMessages.splice(finalMessages.length - 7, 0, {
+            //   role: "system" as "user" | "assistant" | "system",
+            //   content: assistantRecall,
+            //   name: "system"
+            // })
+            // no more calibration
           }
         }
         
@@ -760,6 +761,11 @@ ${entryTitle}
             }
 
             messageDepth++;
+
+            // if it's a user message and it is inside the compression depth, drop it
+            if (messageDepth > configDomainChatCompressorOnlyUntil && msg.role === "user") {
+              continue;
+            }
 
             // outside depth
             if (messageDepth <= configDomainChatCompressorOnlyUntil) {
