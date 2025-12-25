@@ -351,11 +351,21 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       const json = JSON.stringify(messages);
       const encoder = new TextEncoder();
       const encodedArray = encoder.encode(json);
-      const base64String = btoa(String.fromCharCode(...encodedArray));
+
+      let binary = "";
+      const chunkSize = 0x8000;
+
+      for (let i = 0; i < encodedArray.length; i += chunkSize) {
+        const chunk = encodedArray.subarray(i, i + chunkSize);
+        binary += String.fromCharCode.apply(null, chunk as any);
+      }
+
+      const base64String = btoa(binary);
+
       if (textOnly) {
         return base64String;
       }
-      // Use the formatted file name
+
       const fileName = getFormattedFileName();
       downloadFile(base64String, fileName, "application/octet-stream");
       PMNotify.success("Chat exported! File downloaded.");
@@ -363,6 +373,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       PMNotify.error("Failed to encode messages: " + error);
     }
   };
+
+
 
   const decodeMessages = async (file: File | string) => {
     try {
@@ -379,7 +391,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         saveTimesteps(parsedMessages, false)
         return;
       }
-      const fileContent = await file.text(); // Read the file content
+      const fileContent = await file.text();
       const decodedString = atob(fileContent);
       const decodedArray = new Uint8Array(
         decodedString.split("").map((char) => char.charCodeAt(0))
