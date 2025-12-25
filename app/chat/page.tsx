@@ -524,6 +524,16 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         setBaseURL(profile.baseURL);
         setApiKey(apiKey);
         setLastApiProfileId(highestPriorityProfile.profile.id);
+
+        openai = new OpenAI({
+          apiKey: apiKey ?? "none",
+          baseURL: profile.baseURL ?? undefined,
+          dangerouslyAllowBrowser: true,
+          defaultHeaders: {
+            "HTTP-Referer": "https://palmirror.vercel.app",
+            "X-Title": "PalMirror",
+          },
+        });
       } else {
         PMNotify.error("Can't find a working API profile. Either due to there are none set up, or all profiles set are marked as dormant in Cascade Config.");
         return;
