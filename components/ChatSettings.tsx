@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTheme } from '@/context/PalMirrorThemeProvider';
-import { Settings, Check, Plus, Trash2 } from 'lucide-react';
+import { Settings, Check, Plus, Trash2, Power, AlertCircle } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -26,20 +26,34 @@ import { isPalMirrorSecureActivated, PLMSecureGeneralSettings } from '@/utils/pa
 import { PLMSecureContext } from '@/context/PLMSecureContext';
 import { pmPropSysInst } from '@/utils/palmirrorProprietarySysInst'
 import { useRouter } from 'next/navigation';
+import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
 
 interface ChatSettingsProps {
   getExportedMessages: () => void;
   importMessages: () => void;
 }
 
-interface ApiProfile {
+export interface ApiProfile {
   id: string;
   name: string;
   baseURL: string;
   modelName: string;
+  cascade?: {
+    working: boolean;
+    priority: number;
+  }
 }
 
+
 const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, importMessages }) => {
+  
+  const PLMGC = usePLMGlobalConfig();
+  const [configCascadingApiProviders, setConfigCascadingApiProviders] = useState(false);
+  
+  useEffect(() => {
+      setConfigCascadingApiProviders(!!PLMGC.get("cascadingApiProviders"))
+  }, [])
+  
   const [profiles, setProfiles] = useState<ApiProfile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string>('default');
   
@@ -86,48 +100,49 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
+  const loadSettings = () => {
+    const savedProfiles = localStorage.getItem('Proxy_profiles');
+    let loadedProfiles: ApiProfile[] = [];
+
+    const settings = localStorage.getItem('Proxy_settings');
+    let parsedSettings: any = {};
+
+    if (settings) {
+      parsedSettings = JSON.parse(settings);
+      setBaseURL(parsedSettings.baseURL || '');
+      setModelName(parsedSettings.modelName || '');
+      setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
+      setReasoningEffort(parseInt(parsedSettings.reasoningEffort) || 0);
+      setModelInstructions(parsedSettings.modelInstructions || '');
+    } else {
+      setBaseURL("https://cvai.mhi.im/v1");
+    }
+
+    if (savedProfiles) {
+      loadedProfiles = JSON.parse(savedProfiles);
+    } else {
+      loadedProfiles = [{
+        id: 'default',
+        name: 'Default',
+        baseURL: parsedSettings.baseURL || 'https://cvai.mhi.im/v1',
+        modelName: parsedSettings.modelName || '',
+        cascade: { working: true, priority: 1 }
+      }];
+      localStorage.setItem('Proxy_profiles', JSON.stringify(loadedProfiles));
+    }
+
+    setProfiles(loadedProfiles);
+    
+    const lastActive = localStorage.getItem('Proxy_lastActiveId');
+    if (lastActive && loadedProfiles.find(p => p.id === lastActive)) {
+      setActiveProfileId(lastActive);
+    } else {
+      setActiveProfileId(loadedProfiles[0].id);
+    }
+  };
+
   useEffect(() => {
-    const loadInit = async () => {
-      const savedProfiles = localStorage.getItem('Proxy_profiles');
-      let loadedProfiles: ApiProfile[] = [];
-
-      const settings = localStorage.getItem('Proxy_settings');
-      let parsedSettings: any = {};
-
-      if (settings) {
-        parsedSettings = JSON.parse(settings);
-        setBaseURL(parsedSettings.baseURL || '');
-        setModelName(parsedSettings.modelName || '');
-        setTemperature(parseFloat(parsedSettings.temperature) || 0.5);
-        setReasoningEffort(parseInt(parsedSettings.reasoningEffort) || 0);
-        setModelInstructions(parsedSettings.modelInstructions || '');
-      } else {
-        setBaseURL("https://cvai.mhi.im/v1");
-      }
-
-      if (savedProfiles) {
-        loadedProfiles = JSON.parse(savedProfiles);
-      } else {
-        loadedProfiles = [{
-          id: 'default',
-          name: 'Default',
-          baseURL: parsedSettings.baseURL || 'https://cvai.mhi.im/v1',
-          modelName: parsedSettings.modelName || '',
-        }];
-        localStorage.setItem('Proxy_profiles', JSON.stringify(loadedProfiles));
-      }
-
-      setProfiles(loadedProfiles);
-      
-      const lastActive = localStorage.getItem('Proxy_lastActiveId');
-      if (lastActive && loadedProfiles.find(p => p.id === lastActive)) {
-        setActiveProfileId(lastActive);
-      } else {
-        setActiveProfileId(loadedProfiles[0].id);
-      }
-    };
-
-    loadInit();
+    loadSettings();
 
     if (localStorage.getItem("PMPSIDontShowAgain")) {
       setShowPMSysInstSuggestion(false)
@@ -252,6 +267,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
       name: `New Profile`,
       baseURL: 'https://cvai.mhi.im/v1',
       modelName: '',
+      cascade: {
+        working: true,
+        priority: profiles.length + 1
+      }
     };
     const newProfilesList = [...profiles, newProfile];
     setProfiles(newProfilesList);
@@ -273,6 +292,42 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
     const updatedProfiles = profiles.map(p => 
       p.id === activeProfileId ? { ...p, name: newName } : p
     );
+    setProfiles(updatedProfiles);
+    localStorage.setItem('Proxy_profiles', JSON.stringify(updatedProfiles));
+  };
+
+  const handleCascadePriorityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value);
+    const updatedProfiles = profiles.map(p => {
+      if (p.id === activeProfileId) {
+        return { 
+          ...p, 
+          cascade: {
+            working: p.cascade?.working ?? true,
+            priority: isNaN(val) ? 0 : val
+          }
+        };
+      }
+      return p;
+    });
+    setProfiles(updatedProfiles);
+    localStorage.setItem('Proxy_profiles', JSON.stringify(updatedProfiles));
+  };
+
+  const handleCascadeStatusToggle = () => {
+    const updatedProfiles = profiles.map(p => {
+      if (p.id === activeProfileId) {
+        const currentWorking = p.cascade?.working ?? true;
+        return { 
+          ...p, 
+          cascade: {
+            working: !currentWorking,
+            priority: p.cascade?.priority ?? 1
+          }
+        };
+      }
+      return p;
+    });
     setProfiles(updatedProfiles);
     localStorage.setItem('Proxy_profiles', JSON.stringify(updatedProfiles));
   };
@@ -323,8 +378,11 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
     setInputChangedYet(true);
   }
 
+  const currentProfile = profiles.find(p => p.id === activeProfileId);
+  const isProfileWorking = currentProfile?.cascade?.working ?? true;
+
   return (
-    <Drawer repositionInputs={false} direction={"right"}>
+    <Drawer repositionInputs={false} direction={"right"} onOpenChange={(open) => { if (open) loadSettings() }}>
       <DrawerTrigger asChild>
         <Button variant="outline" className={`p-3 size-8 z-2 ${currentTheme.assistantBg}`}><Settings /></Button>
       </DrawerTrigger>
@@ -344,7 +402,12 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
                     </SelectTrigger>
                     <SelectContent>
                       {profiles.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        <SelectItem key={p.id} value={p.id}>
+                           <span className={configCascadingApiProviders ? (p.cascade?.working !== false ? "text-green-500" : "text-red-500 opacity-70") : ""}>
+                             {configCascadingApiProviders ? '● ' : ''}
+                           </span>
+                           {p.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                  </Select>
@@ -373,8 +436,48 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
                  </Button>
               </div>
 
+              {configCascadingApiProviders && currentProfile && (<>
+                <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                      <Label className="text-xs uppercase opacity-70 font-bold">Cascade Config</Label>
+                      <div className={`text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1 ${isProfileWorking ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                        {isProfileWorking ? "Working" : "Dormant"}
+                      </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[10px] opacity-60">Priority (Lower = Higher)</Label>
+                      <Input 
+                        type="number" 
+                        className="h-8"
+                        value={currentProfile.cascade?.priority ?? 1}
+                        onChange={handleCascadePriorityChange}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[10px] opacity-60">Status</Label>
+                      <Button 
+                        variant={isProfileWorking ? "destructive" : "secondary"} 
+                        className="h-8 text-xs w-full"
+                        onClick={handleCascadeStatusToggle}
+                      >
+                         {isProfileWorking ? "Disable" : "Activate"}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {!isProfileWorking && (
+                     <div className="flex gap-2 items-center p-2 rounded bg-red-500/10 border border-red-500/20 text-red-200">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <p className="text-[10px] leading-tight">This profile is marked as <b>Dormant</b>. It will be skipped in the cascade until manually reactivated.</p>
+                     </div>
+                  )}
+                </div>
+              </>)}
+
               {showReloadSuggestion && (
-                <p className="opacity-50 text-xs">API changes require a <Button variant="outline" className="p-2!" onClick={() => window.location.reload()}>reload</Button> to work properly.</p>
+                <p className="opacity-50 text-xs mt-2">API changes require a <Button variant="outline" className="p-2!" onClick={() => window.location.reload()}>reload</Button> to work properly.</p>
               )}
             </div>
             <div className="py-4 flex flex-col gap-2">

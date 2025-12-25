@@ -43,6 +43,9 @@ import { LinearBlur } from "@/components/LinearBlur";
 import { ListCollapse } from "lucide-react";
 import { UserPersonality } from "@/types/UserPersonality";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
+import { ApiProfile } from "@/components/ChatSettings";
+import { Label } from "@/components/ui/label";
+import CascadeAskToMove from "@/components/CascadeAskToMove";
 
 
 let openai: OpenAI;
@@ -73,22 +76,24 @@ const ChatPage = () => {
   const PLMGC = usePLMGlobalConfig();
   const [configHighend, setConfigHighend] = useState(false);
   const [configTokenWatch, setConfigTokenWatch] = useState(true);
-  const [configTyping, setConfigTyping] = useState(false);
+  const [configTyping, setConfigTyping] = useState(true);
   const [configAutoCloseFormatting, setConfigAutoCloseFormatting] = useState(false);
   const [configLimitChatRenders, setConfigLimitChatRenders] = useState(false);
   const [configLimitChatRendersCount, setConfigLimitChatRendersCount] = useState(3);
   const [configDomainChatCompressor, setConfigDomainChatCompressor] = useState(false);
   const [configDomainChatCompressorOnlyUntil, setConfigDomainChatCompressorOnlyUntil] = useState(5);
+  const [configCascadingApiProviders, setConfigCascadingApiProviders] = useState(false);
 
   useEffect(() => {
     setConfigHighend(!!PLMGC.get("highend"))
     setConfigTokenWatch(PLMGC.get("tokenCounter") ?? true)
-    setConfigTyping(!!PLMGC.get("typing"))
+    setConfigTyping(PLMGC.get("typing") ?? true)
     setConfigAutoCloseFormatting(!!PLMGC.get("autoCloseFormatting"))
     setConfigLimitChatRenders(!!PLMGC.get("limitChatRenders"))
     setConfigLimitChatRendersCount(PLMGC.get("limitChatRendersCount") ? Number(PLMGC.get("limitChatRendersCount")) : 3)
     setConfigDomainChatCompressor(!!PLMGC.get("domainChatCompressor"))
     setConfigDomainChatCompressorOnlyUntil(PLMGC.get("domainChatCompressorDepth") ? Number(PLMGC.get("domainChatCompressorDepth")) : 5) 
+    setConfigCascadingApiProviders(!!PLMGC.get("cascadingApiProviders"))
   }, [])
 
   const PMNotify = usePMNotification();
@@ -138,7 +143,8 @@ const ChatPage = () => {
   const [suggestionBarGenerating, setSuggestionBarGenerating] = useState(false);
   const [replySuggestions, setReplySuggestions] = useState<string[]>([]);
 
-  
+  const [lastApiProfileId, setLastApiProfileId] = useState<string>("");
+  const [showCascadeError, setShowCascadeError] = useState(false);
 
   const [userPersonality, setUserPersonality] = useState({ name: "", personality: "" })
 
@@ -468,6 +474,29 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     return messagesList;
   };
 
+  const getHighestPriorityProfile = async () => {
+    const profiles: ApiProfile[] = JSON.parse(localStorage.getItem('Proxy_profiles') || '[]');
+    
+    const activeProfile = profiles
+      .filter((p) => p.cascade?.working !== false)
+      .sort((a, b) => (a.cascade?.priority ?? 999) - (b.cascade?.priority ?? 999))[0];
+
+    if (!activeProfile) return null;
+
+    let apiKey = '';
+    if (PLMSecContext?.getSecureData) {
+      const keyData = await PLMSecContext.getSecureData(`apiKey_${activeProfile.id}`);
+      apiKey = keyData?.value || keyData || '';
+
+      if (!apiKey && activeProfile.id === 'default') {
+        const settings = await PLMSecContext.getSecureData('generalSettings');
+        apiKey = settings?.proxy?.api_key || '';
+      }
+    }
+
+    return { profile: activeProfile, apiKey };
+  };
+
   const handleSendMessage = async (
     e: React.KeyboardEvent<HTMLTextAreaElement> | null,
     force = false,
@@ -488,10 +517,23 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
     const messageId = crypto.randomUUID()
 
-    loadSettingsFromLocalStorage();
-    if (!baseURL.includes("http")) {
-      PMNotify.error("You need to configure your AI provider first in Settings.");
-      return;
+    if (configCascadingApiProviders) {
+      const highestPriorityProfile = await getHighestPriorityProfile();
+      if (highestPriorityProfile) {
+        const { profile, apiKey } = highestPriorityProfile;
+        setBaseURL(profile.baseURL);
+        setApiKey(apiKey);
+        setLastApiProfileId(highestPriorityProfile.profile.id);
+      } else {
+        PMNotify.error("Can't find a working API profile. Either due to there are none set up, or all profiles set are marked as dormant in Cascade Config.");
+        return;
+      }
+    } else {
+      loadSettingsFromLocalStorage();
+      if (!baseURL.includes("http")) {
+        PMNotify.error("You need to configure your AI provider first in Settings.");
+        return;
+      }
     }
 
     let messagesList: Message[] = [];
@@ -940,6 +982,13 @@ ${entryTitle}
         PMNotify.error(
           "Error: " + (err instanceof Error ? err.message : String(err))
         );
+        setIsThinking(false);
+        setUserPromptThinking(false);
+        if (configCascadingApiProviders) {
+          setTimeout(() => {
+            setShowCascadeError(true);
+          }, 200);
+        }
       }
     } finally {
       abortController.current = null;
@@ -1592,6 +1641,19 @@ ${entryTitle}
           setShowingNewcomerDrawer(false);
         }}
         open={showingNewcomerDrawer}
+      />
+      <CascadeAskToMove
+        apiProfileId={lastApiProfileId}
+        showCascadeError={showCascadeError}
+        setShowCascadeError={setShowCascadeError}
+        handleSendMessage={() => {
+          const updatedMessages = [...messages];
+          if (updatedMessages.length > 0 && updatedMessages[updatedMessages.length - 1].role === "assistant" && updatedMessages[updatedMessages.length - 1].content === "") {
+            updatedMessages.pop();
+            setMessages(updatedMessages);
+          }
+          handleSendMessage(null, true, false, "", false);
+        }}
       />
     </div>
   );

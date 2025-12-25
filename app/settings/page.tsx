@@ -131,7 +131,7 @@ export default function SettingsPage() {
                 typing: {
                     type: "boolean",
                     key: "typing",
-                    default: false,
+                    default: true,
                     label: "Message typing effects",
                 },
             }
@@ -139,7 +139,12 @@ export default function SettingsPage() {
         experiments: {
             title: "Experiments",
             items: {
-                
+                cascadingApiProviders: {
+                    type: "boolean",
+                    key: "cascadingApiProviders",
+                    default: false,
+                    label: "Cascading API providers (fallbacks)",
+                },
                 cardFlyIn: {
                     type: "boolean",
                     key: "cardFlyIn",
