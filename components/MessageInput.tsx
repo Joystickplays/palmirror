@@ -39,6 +39,7 @@ interface MessageInputProps {
   showSkipToSceneModal: () => void;
   showSteerModal: () => void;
   configTokenWatch: boolean;
+  configEnterSendsChat: boolean;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -54,6 +55,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   showSkipToSceneModal,
   showSteerModal,
   configTokenWatch,
+  configEnterSendsChat
 }) => {
   const [localMessage, setLocalMessage] = useState(newMessage);
   const localMessageRef = useRef<string>("");
@@ -81,7 +83,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const localHandleSendMessage = (
     e: React.KeyboardEvent<HTMLTextAreaElement> | null
   ) => {
-    if (e && e.key === "Enter") {
+    if (e && e.key === "Enter" && !e.shiftKey && configEnterSendsChat) {
       e.preventDefault();
       handleSendMessage(
         {

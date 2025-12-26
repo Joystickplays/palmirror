@@ -1642,6 +1642,7 @@ ${entryTitle}
           showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
           showSteerModal={() => setManageSteerModal(true)}
           configTokenWatch={configTokenWatch}
+          configEnterSendsChat={configEnterSendsChat}
         />
       </motion.div>
       <TokenCounter tokenCount={tokenCount} />
