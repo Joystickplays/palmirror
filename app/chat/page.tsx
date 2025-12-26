@@ -83,6 +83,7 @@ const ChatPage = () => {
   const [configDomainChatCompressor, setConfigDomainChatCompressor] = useState(false);
   const [configDomainChatCompressorOnlyUntil, setConfigDomainChatCompressorOnlyUntil] = useState(5);
   const [configCascadingApiProviders, setConfigCascadingApiProviders] = useState(false);
+  const [configEnterSendsChat, setConfigEnterSendsChat] = useState(true);
 
   useEffect(() => {
     setConfigHighend(!!PLMGC.get("highend"))
@@ -94,6 +95,7 @@ const ChatPage = () => {
     setConfigDomainChatCompressor(!!PLMGC.get("domainChatCompressor"))
     setConfigDomainChatCompressorOnlyUntil(PLMGC.get("domainChatCompressorDepth") ? Number(PLMGC.get("domainChatCompressorDepth")) : 5) 
     setConfigCascadingApiProviders(!!PLMGC.get("cascadingApiProviders"))
+    setConfigEnterSendsChat(PLMGC.get("enterSendsChat") ?? true)
   }, [])
 
   const PMNotify = usePMNotification();
@@ -520,7 +522,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     destination = "chat"
   ) => {
     if (mode === "send") {
-      if (e?.key === "Enter")
+      if (e?.key === "Enter" && !e.shiftKey && configEnterSendsChat)
         try {
           e.preventDefault();
         } catch {}

@@ -96,6 +96,17 @@ export default function SettingsPage() {
                 }
             },
         },
+        chat: {
+            title: "Chat",
+            items: {
+                enterSendsChat: {
+                    type: "boolean",
+                    key: "enterSendsChat",
+                    default: true,
+                    label: "Enter sends chat message",
+                }
+            }
+        },
         domains: {
             title: "Experience Engine Domains",
             items: {
