@@ -40,7 +40,7 @@ import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 import { MessagePreview } from "@/components/MessagePreview";
 import { LinearBlur } from "@/components/LinearBlur";
-import { ListCollapse } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListCollapse } from "lucide-react";
 import { UserPersonality } from "@/types/UserPersonality";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import { ApiProfile } from "@/components/ChatSettings";
@@ -67,6 +67,12 @@ interface Message {
     role: "user" | "assistant" | "system";
     reasoningContent?: string;
     content: string;
+    extraContent?: Array<{
+      id: string;
+      content: string;
+      reasoningContent?: string;
+    }>;
+    focusingOnIdx: number; // 0 for main content, 1+ for extra contents
     stillGenerating: boolean;
 }
 
@@ -513,13 +519,14 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
   const handleSendMessage = async (
     e: React.KeyboardEvent<HTMLTextAreaElement> | null,
-    force = false,
-    regenerate = false,
-    optionalMessage = "",
-    userMSGaddOnList = true,
-    mode = "send",
+    force: boolean = false,
+    regenerate: boolean = false,
+    optionalMessage: string = "",
+    userMSGaddOnList: boolean = true,
+    mode: "send" | "rewrite" | "suggest" | "call-steer" | "skip-scene" | "suggest-bar" = "send",
     rewriteBase: string = "",
-    destination = "chat"
+    destination: "chat" | "suggest-bar" | "input" = "chat",
+    existingMessage: Message | null = null,
   ) => {
     if (mode === "send") {
       if (e?.key === "Enter" && !e.shiftKey && configEnterSendsChat)
@@ -529,7 +536,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       if (!force && e?.key !== "Enter") return;
     }
 
-    const messageId = crypto.randomUUID()
+    const messageId = existingMessage?.id || crypto.randomUUID();
 
     if (configCascadingApiProviders) {
       const highestPriorityProfile = await getHighestPriorityProfile();
@@ -602,6 +609,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
           id: crypto.randomUUID(),
           role: "user",
           content: userMessageContent,
+          focusingOnIdx: 0,
           stillGenerating: false,
         });
         setMessages(messagesList);
@@ -611,6 +619,25 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       setIsThinking(true);
     } else {
       messagesList = checkAndTrimMessages([...messages]);
+    }
+
+    let assistantMessageObject: Message 
+
+    if (existingMessage) {
+      // PMNotify.success("using existing message object for regeneration");
+      assistantMessageObject = existingMessage;
+
+      if (regenerate) {
+        assistantMessageObject.focusingOnIdx += 1;
+      }
+    } else {
+      assistantMessageObject = { 
+        id: messageId, 
+        role: "assistant", 
+        content: "", 
+        focusingOnIdx: 0, 
+        stillGenerating: true 
+      };
     }
 
     const systemPrompt = await getSystemMessage(
@@ -885,7 +912,7 @@ ${entryTitle}
       if (destination === "chat") {
         setMessages((p) => [
           ...p,
-          { id: messageId, role: "assistant", content: "", stillGenerating: true },
+          assistantMessageObject,
         ]);
       }
 
@@ -916,6 +943,8 @@ ${entryTitle}
       let assistantMessage = "";
       let reasoning = "";
 
+      const extraContentId = crypto.randomUUID();
+
       if (destination === "chat") {
         
         for await (const chunk of comp) {
@@ -937,16 +966,41 @@ ${entryTitle}
             if (configTokenWatch) {
               setTokenHitStamps((p) => [...p, Date.now()]);
             }
-            setMessages((p) => [
-              ...p.slice(0, -1),
-              {
-                id: messageId,
-                role: "assistant",
-                reasoningContent: reasoning === "" ? undefined : reasoning,
-                content: assistantMessage,
-                stillGenerating: true,
+            if (assistantMessageObject.focusingOnIdx === 0) {
+              setMessages((p) => [
+                ...p.slice(0, -1),
+                {
+                  id: messageId,
+                  role: "assistant",
+                  reasoningContent: reasoning === "" ? undefined : reasoning,
+                  content: assistantMessage,
+                  focusingOnIdx: 0,
+                  stillGenerating: true,
+                },
+              ]);
+            } else {
+              setMessages((p) => [
+                ...p.slice(0, -1),
+                {
+                  id: messageId,
+                  role: "assistant",
+                  reasoningContent: assistantMessageObject.reasoningContent,
+                  extraContent: [
+                    ...((assistantMessageObject.extraContent && assistantMessageObject.extraContent.length > 0)
+                      ? assistantMessageObject.extraContent
+                      : []),
+                    {
+                      id: extraContentId,
+                      content: assistantMessage,
+                      reasoningContent: reasoning === "" ? undefined : reasoning,
+                    },
+                  ],
+                  content: assistantMessageObject.content,
+                  focusingOnIdx: assistantMessageObject.focusingOnIdx,
+                  stillGenerating: true,
               },
             ]);
+            }
             if (!configTyping) {
               vibrate(10);
             }
@@ -963,6 +1017,7 @@ ${entryTitle}
           id: messageId,
           role: "assistant",
           content: assistantMessage,
+          focusingOnIdx: 0,
           stillGenerating: false,
         });
       } else if (destination === "suggest-bar") {
@@ -1024,18 +1079,34 @@ ${entryTitle}
 
   const regenerateMessage = () => {
     const updatedMessages = [...messages];
-
-    updatedMessages.pop();
+    const lastMsg = updatedMessages.pop();
 
     setMessages(updatedMessages);
-    handleSendMessage(null, true, true, "", false);
+    handleSendMessage(null, true, true, "", false, "send", "", "chat", lastMsg);
     secondLastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const editMessage = (index: number, content: string) => {
-    const updatedMessages = [...messages];
-    updatedMessages[index] = { ...updatedMessages[index], content };
-    setMessages(updatedMessages);
+  const editMessage = (index: number, content: string, extContIdx?: number) => {
+    setMessages(messages => {
+      const updatedMessages = [...messages];
+      if (!extContIdx) {
+        updatedMessages[index] = { ...updatedMessages[index], content }
+      } else {
+        const targetMsg = updatedMessages[index];
+        if (targetMsg.extraContent) {
+          const updatedExtraContent = [...targetMsg.extraContent];
+          updatedExtraContent[extContIdx - 1] = {
+            ...updatedExtraContent[extContIdx - 1],
+            content
+          };
+          updatedMessages[index] = {
+            ...targetMsg,
+            extraContent: updatedExtraContent
+          }
+        }
+      };
+      return updatedMessages;
+    });
   };
 
   const rewindTo = async (index: number) => {
@@ -1127,6 +1198,33 @@ ${entryTitle}
     );
     setUserPromptThinking(false);
   };
+
+  const handlePrevExtra = (msgIndex: number) => {
+    setMessages((prevMessages) => {
+      const updated = [...prevMessages];
+      const msg = { ...updated[msgIndex] }; 
+      if (msg.focusingOnIdx && msg.focusingOnIdx > 0) {
+        msg.focusingOnIdx -= 1;
+      }
+      updated[msgIndex] = msg;
+      return updated;
+    });
+  };
+
+  const handleNextExtra = (msgIndex: number) => {
+    setMessages((prevMessages) => {
+      const updated = [...prevMessages];
+      const msg = { ...updated[msgIndex] };
+      if (typeof msg.focusingOnIdx === "number" && msg.extraContent) {
+        if (msg.focusingOnIdx < msg.extraContent.length) {
+          msg.focusingOnIdx += 1;
+        }
+      }
+      updated[msgIndex] = msg;
+      return updated;
+    });
+  };
+
 
   const callSteer = async () => {
     setIsThinking(true);
@@ -1269,6 +1367,7 @@ ${entryTitle}
           role: "assistant",
           content:
             characterData.initialMessage + buildStatusSection(statusData),
+          focusingOnIdx: 0,
           stillGenerating: false,
         },
       ]);
@@ -1576,25 +1675,63 @@ ${entryTitle}
                         damping: 25,
                       }}
                     >
-                      <MessageCard
-                        index={index}
-                        role={message.role}
-                        content={message.content}
-                        reasoningContent={message.reasoningContent}
-                        stillGenerating={message.stillGenerating}
-                        regenerateFunction={regenerateMessage}
-                        globalIsThinking={isThinking}
-                        isGreetingMessage={index === 0}
-                        isLastMessage={index === messages.length - 1}
-                        characterData={characterData}
-                        editMessage={editMessage}
-                        rewindTo={rewindTo}
-                        changeStatus={changeStatus}
-                        messageListRef={messageListRef}
-                        configHighend={configHighend}
-                        configTyping={configTyping}
-                        configAutoCloseFormatting={configAutoCloseFormatting}
-                      />
+                      <div key={message.focusingOnIdx}>
+                        <MessageCard
+                          index={index}
+                          extContIdx={message.focusingOnIdx}
+                          role={message.role}
+                          content={message.focusingOnIdx > 0 && message.extraContent && message.extraContent.length > 0 && message.extraContent[message.focusingOnIdx - 1]
+                            ? message.extraContent[message.focusingOnIdx - 1].content
+                            : message.content
+                          }
+                          reasoningContent={message.focusingOnIdx > 0 && message.extraContent && message.extraContent.length > 0 && message.extraContent[message.focusingOnIdx - 1]
+                            ? message.extraContent[message.focusingOnIdx - 1].reasoningContent
+                            : message.reasoningContent
+                          }
+                          stillGenerating={message.stillGenerating}
+                          regenerateFunction={regenerateMessage}
+                          globalIsThinking={isThinking}
+                          isGreetingMessage={index === 0}
+                          isLastMessage={index === messages.length - 1}
+                          characterData={characterData}
+                          editMessage={editMessage}
+                          rewindTo={rewindTo}
+                          changeStatus={changeStatus}
+                          messageListRef={messageListRef}
+                          configHighend={configHighend}
+                          configTyping={configTyping}
+                          configAutoCloseFormatting={configAutoCloseFormatting}
+                        />
+                      </div>
+
+
+                      {/* message pagination */}
+                      {message.extraContent && message.extraContent.length > 0 && (
+                        <div className="flex justify-start items-center px-1 mt-2 gap-2">
+                          <button
+                            disabled={message.focusingOnIdx === 0}
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                            onClick={() => handlePrevExtra(index)}
+                          >
+                            <ChevronLeft className="opacity-50" />
+                          </button>
+
+                          <p className="text-sm font-sans tracking-wider font-bold">
+                            {message.focusingOnIdx + 1}
+                            <span className="mx-1 opacity-25">/</span>
+                            {message.extraContent.length + 1}
+                          </p>
+
+                          <button
+                            disabled={message.focusingOnIdx === message.extraContent.length}
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                            onClick={() => handleNextExtra(index)}
+                          >
+                            <ChevronRight className="opacity-50" />
+                          </button>
+                        </div>
+                      )}
+
                     </motion.div>
                   );
                 })}

@@ -103,6 +103,7 @@ function fixEmphasisStyling(): void {
 }
 interface MessageCardProps {
   index: number;
+  extContIdx: number;
   content: string;
   reasoningContent?: string;
   role: string;
@@ -112,7 +113,7 @@ interface MessageCardProps {
   isGreetingMessage: boolean;
   isLastMessage: boolean;
   characterData: CharacterData;
-  editMessage: (index: number, content: string) => void;
+  editMessage: (index: number, content: string, extContIdx?: number) => void;
   rewindTo: (index: number) => void;
   changeStatus: (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => void;
   messageListRef: React.RefObject<HTMLDivElement>;
@@ -140,6 +141,7 @@ const MotionButton = motion(Button);
 
 const MessageCard: React.FC<MessageCardProps> = ({
   index,
+  extContIdx,
   content,
   reasoningContent,
   role,
@@ -489,7 +491,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
       return (
         <div className="flex flex-col gap-2 items-end">
           <Button onClick={() => {
-            editMessage(index, editingContent);
+            editMessage(index, editingContent, extContIdx);
             setInvocationHolder("");
             setIsEditing(false);
           }}>
