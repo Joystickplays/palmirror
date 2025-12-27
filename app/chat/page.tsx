@@ -132,7 +132,7 @@ const ChatPage = () => {
   const [generationTemperature, setTemperature] = useState(0.5);
   const [reasoningEffort, setReasoningEffort] = useState(0);
   const reasoningEffortOptions = [
-    'none',
+    undefined,
     "minimal",
     "low",
     "medium",
