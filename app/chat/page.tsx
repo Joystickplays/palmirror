@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef, useContext } from "react";
 import React from "react";
-import MessageCard from "@/components/MessageCard";
-import ChatHeader from "@/components/ChatHeader";
-import MessageInput from "@/components/MessageInput";
-import SteerBar from "@/components/SteerBar";
-import TokenCounter from "@/components/TokenCounter";
-import NewcomerDrawer from "@/components/NewcomerDrawer";
-import SkipToSceneModal, { skipPromptBuilder } from "@/components/SkipToSceneModal";
+import MessageCard from "@/components/messages/MessageCard";
+import ChatHeader from "@/components/chat/ChatHeader";
+import MessageInput from "@/components/chat/MessageInput";
+import SteerBar from "@/components/chat/bars/SteerBar";
+import TokenCounter from "@/components/utilities/TokenCounter";
+import NewcomerDrawer from "@/components/modals/NewcomerDrawer";
+import SkipToSceneModal, { skipPromptBuilder } from "@/components/modals/SkipToSceneModal";
 import { useThrottle } from "@/utils/useThrottle";
 import { useTheme } from "@/context/PalMirrorThemeProvider";
 import { ToastContainer, toast } from "react-toastify";
@@ -34,18 +34,18 @@ import { encodingForModel } from "js-tiktoken";
 import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/notifications/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/notifications/MemoryNotificationProvider";
-import SuggestionBar from "@/components/SuggestionBar";
-import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+import SuggestionBar from "@/components/chat/bars/SuggestionBar";
+import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHeight";
 import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 import { MessagePreview } from "@/components/MessagePreview";
-import { LinearBlur } from "@/components/LinearBlur";
+import { LinearBlur } from "@/components/utilities/LinearBlur";
 import { ChevronLeft, ChevronRight, ListCollapse } from "lucide-react";
 import { UserPersonality } from "@/types/UserPersonality";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
-import { ApiProfile } from "@/components/ChatSettings";
+import { ApiProfile } from "@/components/chat/ChatSettings";
 import { Label } from "@/components/ui/label";
-import CascadeAskToMove from "@/components/CascadeAskToMove";
+import CascadeAskToMove from "@/components/cascade/CascadeAskToMove";
 
 
 let openai: OpenAI;

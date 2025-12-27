@@ -4,7 +4,7 @@ import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import ReactMarkdown from 'react-markdown';
 import { Textarea } from "./ui/textarea";
-import { AnimateChangeInHeight } from "./AnimateHeight";
+import { AnimateChangeInHeight } from "./utilities/animate/AnimateHeight";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { DomainAttributeEntry } from "@/types/EEDomain";
 
 import NumberFlow, { continuous } from "@number-flow/react";
-import { Progress } from "./ui/progress";
+import { Progress } from "../ui/progress";
 
 
 type AttributeProgressProps = {

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/drawer"
 import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Loader } from 'lucide-react';
 
-import AttributeProgress from "@/components/AttributeProgress";
+import AttributeProgress from "@/components/domains/AttributeProgress";
 
 import { ToastContainer } from "react-toastify";
 
@@ -39,11 +39,11 @@ import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, rev
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHeight";
 import { generateChatCompletion, independentInitOpenAI } from "@/utils/portableAi";
 import { generateChatEntriesSysInst } from "@/utils/generateChatEntriesSysInst";
 import { UserPersonality } from "@/types/UserPersonality";
-import CardStack from "@/components/CardStack";
+import CardStack from "@/components/utilities/CardStack";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 
 

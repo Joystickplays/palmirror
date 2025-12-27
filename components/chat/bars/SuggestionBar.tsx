@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { Button } from "./ui/button";
-import { Dialog, DialogTitle, DialogContent, DialogHeader } from "./ui/dialog";
-import { Input } from "./ui/input";
+import { Button } from "../../ui/button";
+import { Dialog, DialogTitle, DialogContent, DialogHeader } from "../../ui/dialog";
+import { Input } from "../../ui/input";
 
 interface SuggestionBarProps {
     generating: boolean;

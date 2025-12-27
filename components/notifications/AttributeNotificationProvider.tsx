@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import AttributeProgress from "../AttributeProgress";
+import AttributeProgress from "../domains/AttributeProgress";
 
 type NotificationData = {
   id: number;

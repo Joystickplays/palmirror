@@ -9,8 +9,8 @@ import { ToastContainer, toast } from "react-toastify";
 import { CircleHelp, ArrowRight, Trash2, Earth, Settings, LayoutTemplate, Plus } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 
-import Keypad from "@/components/Keypad";
-import PinDisplay from "@/components/PINDisplay";
+import Keypad from "@/components/keypad/Keypad";
+import PinDisplay from "@/components/keypad/PINDisplay";
 
 import UserPersonalities from "@/components/UserPersonalities";
 
@@ -66,7 +66,7 @@ import { useRouter } from "next/navigation";
 
 import { useDebounce } from "@/utils/useDebounce";
 
-import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHeight";
 
 import discord from "@/public/discord.svg"
 import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";

@@ -1,5 +1,5 @@
 import React from "react";
-import KeypadButton from "@/components/KeypadButton";
+import KeypadButton from "@/components/keypad/KeypadButton";
 
 interface KeypadProps {
   onKeyPress: (key: string) => void;

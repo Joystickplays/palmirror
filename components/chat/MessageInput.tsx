@@ -19,7 +19,7 @@ import { useTheme } from "@/context/PalMirrorThemeProvider";
 import { AnimatePresence, motion } from "framer-motion";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
-import Stopwatch from "@/components/Stopwatch"
+import Stopwatch from "@/components/utilities/Stopwatch"
 
 interface MessageInputProps {
   newMessage: string;

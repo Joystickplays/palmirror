@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToastContainer } from "react-toastify";
 import { Check } from "lucide-react";
-import Keypad from "@/components/Keypad";
-import PinDisplay from "@/components/PINDisplay";
+import Keypad from "@/components/keypad/Keypad";
+import PinDisplay from "@/components/keypad/PINDisplay";
 import "react-toastify/dist/ReactToastify.css";
 
 import {
@@ -52,7 +52,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHeight";
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";

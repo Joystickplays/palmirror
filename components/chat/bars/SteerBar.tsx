@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ShipWheel, Trash } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { AnimatePresence, motion } from "framer-motion";
-import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHeight";
 
 import {
   Select,

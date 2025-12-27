@@ -36,10 +36,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CharacterData } from "@/types/CharacterData";
 
 import TypingIndication from "@/components/Typing"
-import { useTypewriter } from './Typewriter';
+import { useTypewriter } from '../utilities/Typewriter';
 import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
-import { AnimateChangeInHeight } from './AnimateHeight';
-import { AnimateChangeInSize } from './AnimateSize';
+import { AnimateChangeInHeight } from '../utilities/animate/AnimateHeight';
+import { AnimateChangeInSize } from '../utilities/animate/AnimateSize';
 import { Label } from "@/components/ui/label"
 
 const MarkdownView = React.memo(

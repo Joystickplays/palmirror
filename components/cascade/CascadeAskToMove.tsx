@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ApiProfile } from "./ChatSettings";
-import { Button } from "./ui/button";
-import { Label } from "./ui/label";
+import { ApiProfile } from "../chat/ChatSettings";
+import { Button } from "../ui/button";
+import { Label } from "../ui/label";
 
 interface CascadeAskToMoveProps {
     apiProfileId?: string;

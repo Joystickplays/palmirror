@@ -31,7 +31,7 @@ import NumberFlow from '@number-flow/react'
 
 import pako from 'pako';
 
-import { AnimateChangeInHeight } from "@/components/AnimateHeight";
+import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHeight";
 
 import { generatePersonalitySysInst } from "@/utils/generatePersonalitySysInst";
 

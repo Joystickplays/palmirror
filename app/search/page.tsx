@@ -26,7 +26,7 @@ import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
 import { usePalRec } from "@/context/PLMRecSystemContext"
 
-import AutoScrollContainer from '@/components/AutoScroll';
+import AutoScrollContainer from '@/components/utilities/AutoScroll';
 import { usePMNotification } from '@/components/notifications/PalMirrorNotification';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
