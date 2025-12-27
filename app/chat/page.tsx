@@ -671,15 +671,14 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     );
 
     // hopefully doesnt break anything further
-    const mesApply = [...messagesList];
-    for (let i = 0; i < mesApply.length; i++) {
-      const msg = mesApply[i];
+    const messagesApply = [...messagesList];
+    for (let i = 0; i < messagesApply.length; i++) {
+      const msg = messagesApply[i];
       if (msg.role === "assistant" && msg.focusingOnIdx > 0) {
         msg.content = msg.extraContent?.[msg.focusingOnIdx - 1]?.content || msg.content;
       }
     }
 
-    messagesList = mesApply;
 
     let finalMessages: ChatCompletionMessageParam[] = [];
 
@@ -690,7 +689,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
           content: systemPrompt,
           name: "system",
         },
-        ...messagesList.map((m) => ({ ...m, name: "-" })),
+        ...messagesApply.map((m) => ({ ...m, name: "-" })),
         {
           role: "user",
           name: "user",
@@ -712,7 +711,7 @@ AVOID CREATING THE Status SECTION. AVOID CREATING ANY TAGS, LIKE TIMESTEPS.`,
           content: systemPrompt,
           name: "system",
         },
-        ...messagesList.map((m) => ({ ...m, name: "-" })),
+        ...messagesApply.map((m) => ({ ...m, name: "-" })),
         {
           role: "user",
           name: "user",
@@ -726,7 +725,7 @@ AVOID CREATING THE Status SECTION. AVOID CREATING ANY TAGS, LIKE TIMESTEPS.`,
           content: systemPrompt,
           name: "system",
         },
-        ...messagesList.map((m) => ({ ...m, name: "-" })),
+        ...messagesApply.map((m) => ({ ...m, name: "-" })),
         {
           role: "user",
           name: "user",
@@ -746,7 +745,7 @@ Do not lead with anything like "Sure. Here's an enhanced version..." or anything
           content: systemPrompt,
           name: "system",
         },
-        ...messagesList.map((m) => ({ ...m, name: "-" })),
+        ...messagesApply.map((m) => ({ ...m, name: "-" })),
         {
           role: "user" as "user" | "assistant" | "system",
           name: "user",
@@ -760,7 +759,7 @@ Do not lead with anything like "Sure. Here's an enhanced version..." or anything
           content: systemPrompt,
           name: "system",
         },
-        ...messagesList.map((m) => ({ ...m, name: "-" })),
+        ...messagesApply.map((m) => ({ ...m, name: "-" })),
         {
           role: "user" as "user" | "assistant" | "system",
           name: "user",
