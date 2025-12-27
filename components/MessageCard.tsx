@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
 import { useSpring, animated } from '@react-spring/web';
 import { useDrag } from '@use-gesture/react';
-import { Pencil, Rewind, Check, MessagesSquare, RotateCw, ChevronDown } from 'lucide-react';
+import { Pencil, Rewind, Check, MessagesSquare, RotateCw, ChevronDown, MailQuestion } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox"
@@ -564,6 +564,14 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 : configTyping ? messageTyped : presentableText
               }
             />
+
+            {content === "" && !stillGenerating && (
+              <div className="border border-white/10 rounded-xl p-2 px-4 text-white/50 text-sm">
+                <MailQuestion className="mx-auto my-2" />
+                <p>{`Hmm, this message doesn't contain any text.`}</p>
+                <Button onClick={regenerateFunction} className="my-2 mt-4 ml-auto block" variant="outline">Regenerate</Button>
+              </div>
+            )}
 
           </>
         )}

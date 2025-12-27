@@ -1094,6 +1094,10 @@ ${entryTitle}
         );
         setIsThinking(false);
         setUserPromptThinking(false);
+        setMessages((p) => [
+          ...p.slice(0, -1),
+          { ...p[p.length - 1], stillGenerating: false },
+        ]);
         if (configCascadingApiProviders) {
           setTimeout(() => {
             setShowCascadeError(true);
@@ -1350,6 +1354,10 @@ ${entryTitle}
     if (abortController.current) abortController.current.abort();
     setUserPromptThinking(false);
     setIsThinking(false);
+    setMessages((p) => [
+      ...p.slice(0, -1),
+      { ...p[p.length - 1], stillGenerating: false },
+    ]);
   };
 
   const extractStatusData = (input: string): StatusData => {
