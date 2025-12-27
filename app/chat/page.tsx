@@ -590,7 +590,9 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       
       if (regenerate) {
         if (messagesList.length > 0) {
-          const lastMessageId = messagesList[messagesList.length - 1].id;
+          const lastMessageId = messagesList[messagesList.length - 1].focusingOnIdx === 0
+            ? messagesList[messagesList.length - 1].id
+            : messagesList[messagesList.length - 1].extraContent?.[messagesList[messagesList.length - 1].focusingOnIdx - 1]?.id || messagesList[messagesList.length - 1].id;
 
           if (associatedDomain) {
             try {
@@ -1029,7 +1031,7 @@ ${entryTitle}
         }
         if (mode === "send") setIsThinking(false);
         setSuccessfulNewMessage({
-          id: messageId,
+          id: assistantMessageObject.focusingOnIdx === 0 ? assistantMessageObject.id : extraContentId,
           role: "assistant",
           content: assistantMessage,
           focusingOnIdx: 0,
@@ -1217,7 +1219,7 @@ ${entryTitle}
   const handlePrevExtra = (msgIndex: number) => {
     setMessages((prevMessages) => {
       const updated = [...prevMessages];
-      const msg = { ...updated[msgIndex] }; 
+      const msg = { ...updated[msgIndex] };
       if (msg.focusingOnIdx && msg.focusingOnIdx > 0) {
         msg.focusingOnIdx -= 1;
       }
@@ -1227,32 +1229,32 @@ ${entryTitle}
         const prevMsg = updated[msgIndex + 1];
         if (prevMsg) {
           reverseDomainMessage(prevMsg.id).catch((e) =>
-        console.warn("Failed to reverse domain changes:", e)
+            console.warn("Failed to reverse domain changes:", e)
           );
         }
 
         const selectedContent =
           msg.focusingOnIdx === 0
-        ? msg.content
-        : msg.extraContent && msg.extraContent[msg.focusingOnIdx - 1]
-        ? msg.extraContent[msg.focusingOnIdx - 1].content
-        : "";
+            ? msg.content
+            : msg.extraContent && msg.extraContent[msg.focusingOnIdx - 1]
+              ? msg.extraContent[msg.focusingOnIdx - 1].content
+              : "";
 
         const selectedReasoning =
           msg.focusingOnIdx === 0
-        ? msg.reasoningContent
-        : msg.extraContent && msg.extraContent[msg.focusingOnIdx - 1]
-        ? msg.extraContent[msg.focusingOnIdx - 1].reasoningContent
-        : undefined;
+            ? msg.reasoningContent
+            : msg.extraContent && msg.extraContent[msg.focusingOnIdx - 1]
+              ? msg.extraContent[msg.focusingOnIdx - 1].reasoningContent
+              : undefined;
 
         setTimeout(() => {
           setSuccessfulNewMessage({
-        id: msg.id,
-        role: msg.role,
-        content: selectedContent,
-        reasoningContent: selectedReasoning,
-        focusingOnIdx: msg.focusingOnIdx,
-        stillGenerating: false,
+            id: msg.focusingOnIdx === 0 ? msg.id : msg.extraContent ? msg.extraContent[msg.focusingOnIdx - 1].id : msg.id,
+            role: msg.role,
+            content: selectedContent,
+            reasoningContent: selectedReasoning,
+            focusingOnIdx: msg.focusingOnIdx,
+            stillGenerating: false,
           });
         }, 0);
       }
@@ -1285,19 +1287,19 @@ ${entryTitle}
           msg.focusingOnIdx === 0
             ? msg.content
             : msg.extraContent && msg.extraContent[msg.focusingOnIdx - 1]
-            ? msg.extraContent[msg.focusingOnIdx - 1].content
-            : "";
+              ? msg.extraContent[msg.focusingOnIdx - 1].content
+              : "";
 
         const selectedReasoning =
           msg.focusingOnIdx === 0
             ? msg.reasoningContent
             : msg.extraContent && msg.extraContent[msg.focusingOnIdx - 1]
-            ? msg.extraContent[msg.focusingOnIdx - 1].reasoningContent
-            : undefined;
+              ? msg.extraContent[msg.focusingOnIdx - 1].reasoningContent
+              : undefined;
 
         setTimeout(() => {
           setSuccessfulNewMessage({
-            id: msg.id,
+            id: msg.focusingOnIdx === 0 ? msg.id : msg.extraContent ? msg.extraContent[msg.focusingOnIdx - 1].id : msg.id,
             role: msg.role,
             content: selectedContent,
             reasoningContent: selectedReasoning,
