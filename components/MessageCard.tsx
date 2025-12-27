@@ -542,9 +542,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
                         transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
                       >
                         <div className="mt-auto">
-                          <ReactMarkdown className="italic font-light opacity-50">
+                          <div className="italic font-light opacity-50">
                             {reasoningContent}
-                          </ReactMarkdown>
+                          </div>
                         </div>
                       </motion.div>
 
