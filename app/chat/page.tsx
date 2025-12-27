@@ -316,8 +316,18 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     if (associatedDomain) {
         const timestepsToSet: Array<DomainTimestepEntry> = [];
         for (const msg of chats) {
-          if (!msg?.content) continue;
-          const extracted = extractTimesteps(msg.content);
+          // const content = 
+          //   msg.focusingOnIdx === 0 || msg.focusingOnIdx === undefined
+          //     ? msg.content
+          //     : msg.extraContent?.[msg.focusingOnIdx - 1].content || ""
+
+          const content =
+            msg.focusingOnIdx > 0
+              ? msg.extraContent?.[msg.focusingOnIdx - 1]?.content ?? ""
+              : msg.content;
+
+          if (content === "") continue;
+          const extracted = extractTimesteps(content);
           for (const ts of extracted) {
             timestepsToSet.push({
               key: Math.floor(Math.random() * 69420),
