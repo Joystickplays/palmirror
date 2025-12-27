@@ -641,7 +641,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       assistantMessageObject = existingMessage;
 
       if (regenerate) {
-        assistantMessageObject.extraContent?.push({
+        if (!assistantMessageObject.extraContent) assistantMessageObject.extraContent = [];
+        assistantMessageObject.extraContent.push({
           id: extraContentId,
           content: "",
         })
@@ -668,6 +669,17 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
           ? generateSteerPrompt({ steers: activeSteers })
           : "")
     );
+
+    // hopefully doesnt break anything further
+    const mesApply = [...messagesList];
+    for (let i = 0; i < mesApply.length; i++) {
+      const msg = mesApply[i];
+      if (msg.role === "assistant" && msg.focusingOnIdx > 0) {
+        msg.content = msg.extraContent?.[msg.focusingOnIdx - 1]?.content || msg.content;
+      }
+    }
+
+    messagesList = mesApply;
 
     let finalMessages: ChatCompletionMessageParam[] = [];
 
