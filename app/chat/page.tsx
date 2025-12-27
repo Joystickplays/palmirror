@@ -628,7 +628,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       assistantMessageObject = existingMessage;
 
       if (regenerate) {
-        assistantMessageObject.focusingOnIdx += 1;
+        assistantMessageObject.focusingOnIdx = assistantMessageObject.focusingOnIdx || 0 + 1;
       }
     } else {
       assistantMessageObject = { 
