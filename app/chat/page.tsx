@@ -1390,20 +1390,50 @@ ${entryTitle}
           .slice()
           .reverse()
           .findIndex((msg) => msg.role === "assistant");
+
         if (lastAssistantMessageIndex !== -1) {
           const actualIndex =
             updatedMessages.length - 1 - lastAssistantMessageIndex;
-          const lastMessage = updatedMessages[actualIndex].content;
-          const statusData = extractStatusData(lastMessage);
-          const updatedStatusData = statusData.map((status) =>
-            status.key === changingStatus
-              ? { ...status, value: changingStatusValue }
-              : status
-          );
-          updatedMessages[actualIndex].content =
-            removeStatusSection(lastMessage) +
-            buildStatusSection(updatedStatusData);
+          const targetMsg = { ...updatedMessages[actualIndex] };
+
+          const focusIdx = typeof targetMsg.focusingOnIdx === "number" ? targetMsg.focusingOnIdx : 0;
+
+          if (focusIdx === 0) {
+            const lastMessage = targetMsg.content ?? "";
+            const statusData = extractStatusData(lastMessage);
+            const updatedStatusData = statusData.map((status) =>
+              status.key === changingStatus
+                ? { ...status, value: changingStatusValue }
+                : status
+            );
+            targetMsg.content = removeStatusSection(lastMessage) + buildStatusSection(updatedStatusData);
+          } else {
+            if (!targetMsg.extraContent) targetMsg.extraContent = [];
+            const extIndex = focusIdx - 1;
+
+            if (!targetMsg.extraContent[extIndex]) {
+              targetMsg.extraContent[extIndex] = {
+                id: crypto.randomUUID(),
+                content: "",
+              };
+            }
+
+            const lastExtra = targetMsg.extraContent[extIndex].content ?? "";
+            const statusData = extractStatusData(lastExtra);
+            const updatedStatusData = statusData.map((status) =>
+              status.key === changingStatus
+                ? { ...status, value: changingStatusValue }
+                : status
+            );
+            targetMsg.extraContent[extIndex] = {
+              ...targetMsg.extraContent[extIndex],
+              content: removeStatusSection(lastExtra) + buildStatusSection(updatedStatusData),
+            };
+          }
+
+          updatedMessages[actualIndex] = targetMsg;
         }
+
         return updatedMessages;
       });
     } else {
