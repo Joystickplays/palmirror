@@ -127,6 +127,8 @@ const ChatPage = () => {
   const [successfulNewMessage, setSuccessfulNewMessage] = useState<boolean | Message>(false);
   const [userPromptThinking, setUserPromptThinking] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
+
+  const [animateSwitchMessage, setAnimateSwitchMessage] = useState(0);
   
   const [textMessagePreview, setTextMessagePreview] = useState("");
   const [openMessagePreview, setOpenMessagePreview] = useState(false);
@@ -517,6 +519,12 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     return { profile: activeProfile, apiKey };
   };
 
+  const reverseDomainMessage = async (lastMessageId: string) => {
+    await deleteMemoryFromMessageIfAny(associatedDomain, lastMessageId);
+    await reverseDomainAttribute(associatedDomain, lastMessageId);
+    setChatTimesteps(prev => prev.filter(ts => ts.associatedMessage !== lastMessageId));
+  }
+
   const handleSendMessage = async (
     e: React.KeyboardEvent<HTMLTextAreaElement> | null,
     force: boolean = false,
@@ -586,9 +594,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
           if (associatedDomain) {
             try {
-              await deleteMemoryFromMessageIfAny(associatedDomain, lastMessageId);
-              await reverseDomainAttribute(associatedDomain, lastMessageId);
-              setChatTimesteps(prev => prev.filter(ts => ts.associatedMessage !== lastMessageId));
+              reverseDomainMessage(lastMessageId);
             } catch (e) {
               console.warn(e);
             }
@@ -596,6 +602,10 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
 
           messagesList = messagesList.slice(0, -1);
           setMessages(messagesList);
+
+
+          // wait for 250ms because race conditions idk
+          await new Promise((resolve) => setTimeout(resolve, 250));
         }
       }
 
@@ -621,14 +631,23 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       messagesList = checkAndTrimMessages([...messages]);
     }
 
-    let assistantMessageObject: Message 
+    let assistantMessageObject: Message;
+    const extraContentId = crypto.randomUUID();
 
     if (existingMessage) {
       // PMNotify.success("using existing message object for regeneration");
       assistantMessageObject = existingMessage;
 
       if (regenerate) {
-        assistantMessageObject.focusingOnIdx = assistantMessageObject.focusingOnIdx || 0 + 1;
+        assistantMessageObject.extraContent?.push({
+          id: extraContentId,
+          content: "",
+        })
+        if (assistantMessageObject.focusingOnIdx === undefined) {
+          assistantMessageObject.focusingOnIdx = 0; // ???
+        }
+        assistantMessageObject.focusingOnIdx += 1; 
+        assistantMessageObject.stillGenerating = true;
       }
     } else {
       assistantMessageObject = { 
@@ -943,7 +962,6 @@ ${entryTitle}
       let assistantMessage = "";
       let reasoning = "";
 
-      const extraContentId = crypto.randomUUID();
 
       if (destination === "chat") {
         
@@ -987,7 +1005,7 @@ ${entryTitle}
                   reasoningContent: assistantMessageObject.reasoningContent,
                   extraContent: [
                     ...((assistantMessageObject.extraContent && assistantMessageObject.extraContent.length > 0)
-                      ? assistantMessageObject.extraContent
+                      ? assistantMessageObject.extraContent.slice(0, -1)
                       : []),
                     {
                       id: extraContentId,
@@ -1207,8 +1225,44 @@ ${entryTitle}
         msg.focusingOnIdx -= 1;
       }
       updated[msgIndex] = msg;
+
+      if (associatedDomain) {
+        const prevMsg = updated[msgIndex + 1];
+        if (prevMsg) {
+          reverseDomainMessage(prevMsg.id).catch((e) =>
+        console.warn("Failed to reverse domain changes:", e)
+          );
+        }
+
+        const selectedContent =
+          msg.focusingOnIdx === 0
+        ? msg.content
+        : msg.extraContent && msg.extraContent[msg.focusingOnIdx - 1]
+        ? msg.extraContent[msg.focusingOnIdx - 1].content
+        : "";
+
+        const selectedReasoning =
+          msg.focusingOnIdx === 0
+        ? msg.reasoningContent
+        : msg.extraContent && msg.extraContent[msg.focusingOnIdx - 1]
+        ? msg.extraContent[msg.focusingOnIdx - 1].reasoningContent
+        : undefined;
+
+        setTimeout(() => {
+          setSuccessfulNewMessage({
+        id: msg.id,
+        role: msg.role,
+        content: selectedContent,
+        reasoningContent: selectedReasoning,
+        focusingOnIdx: msg.focusingOnIdx,
+        stillGenerating: false,
+          });
+        }, 0);
+      }
+
       return updated;
     });
+    setAnimateSwitchMessage(-1);
   };
 
   const handleNextExtra = (msgIndex: number) => {
@@ -1221,8 +1275,44 @@ ${entryTitle}
         }
       }
       updated[msgIndex] = msg;
+
+      if (associatedDomain) {
+        const prevMsg = updated[msgIndex - 1];
+        if (prevMsg) {
+          reverseDomainMessage(prevMsg.id).catch((e) =>
+            console.warn("Failed to reverse domain changes:", e)
+          );
+        }
+
+        const selectedContent =
+          msg.focusingOnIdx === 0
+            ? msg.content
+            : msg.extraContent && msg.extraContent[msg.focusingOnIdx - 1]
+            ? msg.extraContent[msg.focusingOnIdx - 1].content
+            : "";
+
+        const selectedReasoning =
+          msg.focusingOnIdx === 0
+            ? msg.reasoningContent
+            : msg.extraContent && msg.extraContent[msg.focusingOnIdx - 1]
+            ? msg.extraContent[msg.focusingOnIdx - 1].reasoningContent
+            : undefined;
+
+        setTimeout(() => {
+          setSuccessfulNewMessage({
+            id: msg.id,
+            role: msg.role,
+            content: selectedContent,
+            reasoningContent: selectedReasoning,
+            focusingOnIdx: msg.focusingOnIdx,
+            stillGenerating: false,
+          });
+        }, 0);
+      }
+
       return updated;
     });
+    setAnimateSwitchMessage(1);
   };
 
 
@@ -1675,7 +1765,11 @@ ${entryTitle}
                         damping: 25,
                       }}
                     >
-                      <div key={message.focusingOnIdx}>
+                      <motion.div 
+                      initial={animateSwitchMessage !== 0 ? { x: animateSwitchMessage * 50 } : false}
+                      animate={animateSwitchMessage !== 0 ? { x: 0 } : false}
+                      transition={{ type: "spring", stiffness: 630, damping: 45 }}
+                      key={message.focusingOnIdx}>
                         <MessageCard
                           index={index}
                           extContIdx={message.focusingOnIdx}
@@ -1702,14 +1796,14 @@ ${entryTitle}
                           configTyping={configTyping}
                           configAutoCloseFormatting={configAutoCloseFormatting}
                         />
-                      </div>
+                      </motion.div>
 
 
                       {/* message pagination */}
-                      {message.extraContent && message.extraContent.length > 0 && (
+                      {message.extraContent && message.extraContent.length > 0 && index === messages.length - 1 && (
                         <div className="flex justify-start items-center px-1 mt-2 gap-2">
                           <button
-                            disabled={message.focusingOnIdx === 0}
+                            disabled={message.focusingOnIdx === 0 || isThinking}
                             className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                             onClick={() => handlePrevExtra(index)}
                           >
@@ -1723,7 +1817,7 @@ ${entryTitle}
                           </p>
 
                           <button
-                            disabled={message.focusingOnIdx === message.extraContent.length}
+                            disabled={message.focusingOnIdx === message.extraContent.length || isThinking}
                             className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                             onClick={() => handleNextExtra(index)}
                           >
