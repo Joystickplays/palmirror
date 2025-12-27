@@ -132,7 +132,7 @@ const ChatPage = () => {
   const [generationTemperature, setTemperature] = useState(0.5);
   const [reasoningEffort, setReasoningEffort] = useState(0);
   const reasoningEffortOptions = [
-    undefined,
+    'none',
     "minimal",
     "low",
     "medium",
@@ -902,6 +902,9 @@ ${entryTitle}
           stream: true,
           // @ts-expect-error lowk idk
           reasoning_effort: reasoningEffortOptions[reasoningEffort],
+          thinking: {
+            type: reasoningEffort === 0 ? 'disabled' : 'enabled' //deepseek
+          },
           stream_options: {
             include_usage: true,
           },
