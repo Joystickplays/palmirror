@@ -643,10 +643,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
           id: extraContentId,
           content: "",
         })
-        if (assistantMessageObject.focusingOnIdx === undefined) {
-          assistantMessageObject.focusingOnIdx = 0; // ???
-        }
-        assistantMessageObject.focusingOnIdx += 1; 
+        assistantMessageObject.focusingOnIdx = assistantMessageObject.extraContent?.length || 2 - 1;
         assistantMessageObject.stillGenerating = true;
       }
     } else {
