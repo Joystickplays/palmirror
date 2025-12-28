@@ -40,17 +40,18 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  scaleOnPress?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, scaleOnPress = true, ...props }, ref) => {
     // const Comp = asChild ? Slot : "button"
     return (
       // f u in particular
       // the drag looks nice idc
       // @ts-expect-error   bc idgaf ab typing this??? who r u
       <motion.button
-        whileTap={{ scale: 0.95 }}
+        whileTap={{ scale: scaleOnPress ? 0.95 : 1 }}
         transition={{ duration: 0.1 }}
         // drag
         // dragElastic={0.01}

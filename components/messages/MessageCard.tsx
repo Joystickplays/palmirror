@@ -595,7 +595,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                       setChangingStatusValue(status.value);
                       setChangingStatusCharReacts(false);
                       setChangingStatusReason("");
-                    }}>
+                    }} scaleOnPress={false}>
                       {status.key}: <span className="opacity-50">{status.value}</span>
                     </Button>
                   </DialogTrigger>
