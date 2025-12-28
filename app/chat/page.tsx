@@ -1964,12 +1964,13 @@ ${entryTitle}
         showCascadeError={showCascadeError}
         setShowCascadeError={setShowCascadeError}
         handleSendMessage={() => {
-          const updatedMessages = [...messages];
-          if (updatedMessages.length > 0 && updatedMessages[updatedMessages.length - 1].role === "assistant" && updatedMessages[updatedMessages.length - 1].content === "") {
-            updatedMessages.pop();
-            setMessages(updatedMessages);
-          }
-          handleSendMessage(null, true, false, "", false);
+          regenerateMessage();
+          // const updatedMessages = [...messages];
+          // if (updatedMessages.length > 0 && updatedMessages[updatedMessages.length - 1].role === "assistant" && updatedMessages[updatedMessages.length - 1].content === "") {
+          //   updatedMessages.pop();
+          //   setMessages(updatedMessages);
+          // }
+          // handleSendMessage(null, true, false, "", false);
         }}
       />
     </div>
