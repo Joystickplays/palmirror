@@ -32,7 +32,6 @@ interface ChatMetadata extends CharacterData {
 import { usePalRec } from "@/context/PLMRecSystemContext" 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
-import { charPalExpScript } from "@/utils/gPECMini";
 
 import {
   Dialog,
@@ -42,12 +41,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 
 import {
   Popover,
@@ -324,152 +317,6 @@ function GetFromPlatform({
         <div className="flex justify-items-center items-center gap-4">
           <Button onClick={getChubaiInfo}>Get from chub.ai</Button>
         </div>
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="item-1">
-            <AccordionTrigger>Get from other platforms</AccordionTrigger>
-            <AccordionContent>
-              <div className="py-2 flex flex-col gap-2">
-                <p>
-                  PalMirror cannot automatically get characters from other
-                  platforms for you.
-                </p>
-                <p>
-                  However, you can get them yourself and get the PalMirror
-                  Experience variant for the character you want.
-                </p>
-                <div className="p-4 rounded-xl border flex flex-col gap-4">
-                  <div>
-                    <h2 className="text-lg font-bold">Step 1</h2>
-                    <p>Copy this script below.</p>
-                    <div className="flex gap-2 mt-2">
-                      <code className="p-2 border rounded-md w-full overflow-hidden whitespace-nowrap text-ellipsis">
-                        const
-                        charUrl=window.location.href,platform=window.location.hostname,sc...
-                      </code>
-                      <Button
-                        onClick={() => {
-                          navigator.clipboard.writeText(charPalExpScript);
-                          toast.success("Script copied.");
-                        }}
-                      >
-                        Copy
-                      </Button>
-                    </div>
-                    <div className="flex gap-2 mt-2 p-4 border rounded-xl flex-col">
-                      <h1 className="text-lg text-center font-bold">
-                        Script disclaimer and terms
-                      </h1>
-                      <p className="mb-4">
-                        PalMirror does not automatically fetch characters from
-                        third-party platforms. However, users may manually
-                        obtain character data using external scripts.
-                      </p>
-
-                      <p className="mb-4">
-                        By using any provided script or method to obtain
-                        characters, you agree to the following:
-                      </p>
-
-                      <ul className="list-disc list-inside space-y-2">
-                        <li>
-                          <span className="font-semibold">
-                            Personal Use Only
-                          </span>{" "}
-                          – The script is provided solely for{" "}
-                          <span className="font-semibold">personal</span> use.
-                          You may not use it for redistribution, commercial
-                          purposes, or any activity that violates third-party
-                          Terms of Service.
-                        </li>
-                        <li>
-                          <span className="font-semibold">No Affiliation</span>{" "}
-                          – PalMirror is{" "}
-                          <span className="font-semibold">
-                            not affiliated with
-                          </span>
-                          , endorsed by, or associated with any third-party
-                          platform from which characters may be imported.
-                        </li>
-                        <li>
-                          <span className="font-semibold">
-                            User Responsibility
-                          </span>{" "}
-                          – PalMirror{" "}
-                          <span className="font-semibold">
-                            does not run or execute
-                          </span>{" "}
-                          any script on your behalf. The decision to use such
-                          tools is entirely{" "}
-                          <span className="font-semibold">yours</span>, and you
-                          assume{" "}
-                          <span className="font-semibold">
-                            full responsibility
-                          </span>{" "}
-                          for any consequences.
-                        </li>
-                        <li>
-                          <span className="font-semibold">No Liability</span> –
-                          PalMirror and GoTeam Studios{" "}
-                          <span className="font-semibold">
-                            are not responsible
-                          </span>{" "}
-                          for any damages, loss of access, or penalties
-                          resulting from the use of this script.
-                        </li>
-                        <li>
-                          <span className="font-semibold">
-                            Compliance with Laws
-                          </span>{" "}
-                          – You agree to comply with all applicable laws and
-                          regulations regarding data usage and website
-                          interactions.
-                        </li>
-                      </ul>
-
-                      <p className="mt-4">
-                        By proceeding, you acknowledge that you understand and
-                        accept these terms. If you do not agree,{" "}
-                        <span className="font-semibold">
-                          do not use the script.
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold">Step 2</h2>
-                    <p>
-                      Go to the character page you want to convert to a
-                      PLExperience character.
-                    </p>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold">Step 3</h2>
-                    In the address bar, clear out the input and type in{" "}
-                    <b className="font-bold p-2 rounded-sm border">
-                      javascript:
-                    </b>
-                    , then paste the script.
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold">Step 4</h2>
-                    Do <span className="font-bold text-red-500">not</span> press
-                    Enter yet. Press the suggestion item that has a
-                    world/internet icon, something like: <Earth />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold">Step 5</h2>
-                    After a bit, the script should automatically create and
-                    download a .plmc file.
-                    <br />
-                    <p className="text-sm opacity-50">
-                      The script only supports only a few select platforms.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
       </DialogContent>
     </Dialog>
   );
