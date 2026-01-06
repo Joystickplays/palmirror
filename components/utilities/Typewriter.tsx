@@ -74,7 +74,7 @@ export function useTypewriter(
       const end = tentativeNext.length;
       const addedSegment = target.slice(start, end);
 
-      if (target[start] === "." && target[start + 1] === '"') {
+      if (punctuationDelays[target[start]] != null && target[start + 1] === '"') {
         next = target.slice(0, start + 2);
       } else {
         const localQuoteIdx = addedSegment.indexOf('"');

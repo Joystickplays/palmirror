@@ -64,7 +64,7 @@ export default function Search() {
   const router = useRouter();
   const { getRecommendedTags } = usePalRec();
 
-  const [currentProvider, setCurrentProvider] = useState<'chub.ai' | 'janny.ai'>('chub.ai');
+  const [currentProvider, setCurrentProvider] = useState<'chub.ai' | 'janny.ai'>('janny.ai');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -418,7 +418,7 @@ export default function Search() {
                     }}
                     >
                   <SelectTrigger className="w-fit">
-                    <SelectValue placeholder={'chub.ai'} />
+                    <SelectValue placeholder={'JannyAI'} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="chub.ai">chub.ai</SelectItem>
