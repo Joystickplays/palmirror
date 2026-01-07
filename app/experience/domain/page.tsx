@@ -45,6 +45,7 @@ import { generateChatEntriesSysInst } from "@/utils/generateChatEntriesSysInst";
 import { UserPersonality } from "@/types/UserPersonality";
 import CardStack from "@/components/utilities/CardStack";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
+import AskForUnlockSecure from "@/components/secure/AskForUnlockSecure";
 
 
 
@@ -85,6 +86,7 @@ const ExperienceDomainPage: React.FC = () => {
     const [showingMemoryManager, setShowingMemoryManager] = useState(false);
 
     const [showingDelete, setShowingDelete] = useState(false);
+    const [showingDeleteVerification, setShowingDeleteVerification] = useState(false);
 
     const [showingChatDelete, setShowingChatDelete] = useState(false);
     const [chatAboutToDelete, setChatAboutToDelete] = useState("");
@@ -721,17 +723,22 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.toReversed().
                     <p>Are you sure you want to delete this domain? All associated chats, attributes and memory will also be deleted!</p>
                     <Button variant="destructive" onClick={() => {
                         setShowingDelete(false);
-                        chatList.forEach((chat) => {
-                            if (chat.associatedDomain == domainId) {
-                                PLMsecureContext?.removeKey(chat.id)
-                                PLMsecureContext?.removeKey("METADATA" + chat.id)
-                            }
-                        })
-                        PLMsecureContext?.removeKey("METADATA" + domainId)
-                        router.push("/")
+                        setShowingDeleteVerification(true);
                     }}>Confirm deletion</Button>
                 </DialogContent>
             </Dialog>
+
+            <AskForUnlockSecure open={showingDeleteVerification} onUnlock={() => {
+                setShowingDeleteVerification(false);
+                chatList.forEach((chat) => {
+                    if (chat.associatedDomain == domainId) {
+                        PLMsecureContext?.removeKey(chat.id)
+                        PLMsecureContext?.removeKey("METADATA" + chat.id)
+                    }
+                })
+                PLMsecureContext?.removeKey("METADATA" + domainId)
+                router.push("/")
+            }} onCancel={() => setShowingDeleteVerification(false)} />
 
             <Dialog open={showDomainGuideEditor} onOpenChange={setShowDomainGuideEditor}>
                 <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">

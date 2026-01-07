@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToastContainer } from "react-toastify";
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import Keypad from "@/components/keypad/Keypad";
 import PinDisplay from "@/components/keypad/PINDisplay";
 import "react-toastify/dist/ReactToastify.css";
@@ -56,13 +56,13 @@ import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHei
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
+import AskForUnlockSecure from "@/components/secure/AskForUnlockSecure";
+import { saveCheckpoint } from "@/types/dbExporter";
 
 export default function Home() {
   const router = useRouter();
   const PLMsecureContext = useContext(PLMSecureContext);
-
   const PMNotify = usePMNotification();
-
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pin, setPin] = useState("");
@@ -74,6 +74,13 @@ export default function Home() {
   const [showCompleteDrawer, setShowCompleteDrawer] = useState(false);
   const [showPasskeySetupDrawer, setShowPasskeySetupDrawer] = useState(false);
   const [passkeyVerification, setPasskeyVerification] = useState("");
+
+  const [showingConfirmSaveCheckpoint, setShowingConfirmSaveCheckpoint] = useState(false);
+  const [showingSVCPVerify, setShowingSVCPVerify] = useState(false);
+
+  const [showingConfirmLoadCheckpoint, setShowingConfirmLoadCheckpoint] = useState(false);
+
+  const [checkpointName, setCheckpointName] = useState("");
 
   const handleKeyPressPin = (key: string) => {
     if (key === "⌫") {
@@ -282,7 +289,7 @@ export default function Home() {
         </Dialog>
       )}
       {alreadyEncrypted && (
-        <div className="flex flex-col gap-2">
+        <><div className="flex flex-col gap-2">
           <p className="text-sm">
             Woo! You&apos;re already using PalMirror Secure.
           </p>
@@ -312,7 +319,42 @@ export default function Home() {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
+
+        </div><div className="mt-12 rounded-xl border border-white/10 p-4 w-full max-w-120 font-sans">
+          <h1 className="font-bold text-2xl mb-1">Checkpoints</h1>
+          <p className="text-sm opacity-50 mb-8">A full backup of all your PalMirror data, packaged into one portable file. Import it anytime to restore your app exactly as it was, with nothing missing and nothing merged. Chats are still encrypted.</p>
+
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={() => setShowingSVCPVerify(true)}>Create checkpoint</Button>
+            <Button variant={"outline"}>Load checkpoint</Button>
+          </div>
+
+
+          <AskForUnlockSecure open={showingSVCPVerify} onUnlock={() => {
+            setShowingSVCPVerify(false);
+            setTimeout(() => {
+              setShowingConfirmSaveCheckpoint(true);
+            }, 100)
+          }} onCancel={() => setShowingSVCPVerify(false)} />
+          <Dialog open={showingConfirmSaveCheckpoint} onOpenChange={setShowingConfirmSaveCheckpoint}>
+            <DialogContent className="font-sans">
+              <DialogHeader className="text-2xl font-bold">Save checkpoint</DialogHeader>
+              <div className="h-72 flex justify-center items-center">
+                <Sparkles size={100} />
+              </div>
+              <p className="text-sm opacity-75">Enter a name for your checkpoint. You will then download the file that holds everything in this app. <span className="text-orange-800">Be careful who you share it with, even if it's encrypted.</span></p>
+              <Input value={checkpointName} onChange={(e) => setCheckpointName(e.target.value)} />
+              <Button disabled={checkpointName === ""} onClick={() => {
+                saveCheckpoint({
+                  checkpointName
+                });
+                PMNotify.success("Saved checkpoint! Check your downloads.")
+                setShowingConfirmSaveCheckpoint(false);
+                setCheckpointName("");
+              }}>Save checkpoint</Button>
+            </DialogContent>
+          </Dialog>
+        </div></>
       )}
 
       <Accordion

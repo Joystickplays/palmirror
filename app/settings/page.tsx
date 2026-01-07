@@ -294,6 +294,13 @@ export default function SettingsPage() {
                 </DialogContent>
             </Dialog>
 
+
+
+
+            <div className="fixed bg-background bottom-0 w-full left-1/2 -translate-x-1/2 max-w-280 rounded-2xl rounded-b-none border border-white/10 p-3">
+                <Button onClick={() => router.push("/secure")}>PalMirror Secure management</Button>
+            </div>
+
             <ToastContainer theme="dark" position="top-right" />
         </div>
     );

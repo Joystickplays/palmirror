@@ -14,7 +14,7 @@ interface SuggestionBarProps {
 }
 const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, startGeneration, suggestionPicked, requestHide }) => {
     const [arbitrarySuggestionDialogShow, setArbitrarySuggestionDialogShow] = useState(false);
-    const [arbitrarySuggestionInput, setArbitrarySuggestionInput] = useState("");
+    const [arbitrarySuggestionInput, setArbitrarySuggestionInput] = useState(sessionStorage.getItem("arbitrarySuggestionInput") || ""); // lazy so thisll do
 
     return (
         <>
@@ -83,6 +83,7 @@ const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, 
                     <Input value={arbitrarySuggestionInput} onChange={(e) => setArbitrarySuggestionInput(e.target.value)} placeholder="Prompt" />
                     <p className="opacity-50 text-xs">{`Just like the auto-generated prompt suggestions, yours should be written in the perspective of yourself.`}</p>
                     <Button onClick={() => {
+                        sessionStorage.setItem("arbitrarySuggestionInput", arbitrarySuggestionInput)
                         suggestionPicked(arbitrarySuggestionInput);
                         setArbitrarySuggestionDialogShow(false);
                     }}>Create reply</Button>
