@@ -57,7 +57,7 @@ import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHei
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import AskForUnlockSecure from "@/components/secure/AskForUnlockSecure";
-import { saveCheckpoint } from "@/types/dbExporter";
+import { saveCheckpoint } from "@/utils/dbExporter";
 
 export default function Home() {
   const router = useRouter();

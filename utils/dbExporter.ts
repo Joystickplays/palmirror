@@ -1,3 +1,5 @@
+"use client";
+
 import Dexie from 'dexie';
 import 'dexie-export-import'; 
 import JSZip from 'jszip';
