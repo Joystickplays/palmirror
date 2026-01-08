@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useState, useEffect, useRef, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,8 +57,28 @@ import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHei
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
-import AskForUnlockSecure from "@/components/secure/AskForUnlockSecure";
-import { saveCheckpoint } from "@/utils/dbExporter";
+import dynamic from "next/dynamic";
+import SlideToConfirm from "@/components/utilities/SlideToConfirm";
+
+const AskForUnlockSecure = dynamic(
+  () => import("@/components/secure/AskForUnlockSecure"),
+  { ssr: false }
+);
+
+const saveCheckpoint = async (payload: any) => {
+  const mod = await import("@/utils/dbExporter");
+  return mod.saveCheckpoint(payload);
+};
+
+const extractMetadata = async (payload: any) => {
+  const mod = await import("@/utils/dbExporter");
+  return mod.extractMetadata(payload);
+};
+
+const loadCheckpoint = async (payload: any) => {
+  const mod = await import("@/utils/dbExporter");
+  return mod.loadCheckpoint(payload);
+};
 
 export default function Home() {
   const router = useRouter();
@@ -79,6 +100,13 @@ export default function Home() {
   const [showingSVCPVerify, setShowingSVCPVerify] = useState(false);
 
   const [showingConfirmLoadCheckpoint, setShowingConfirmLoadCheckpoint] = useState(false);
+  const [showingLDCPVerify, setShowingLDCPVerify] = useState(false);
+
+  const [checkpointFile, setCheckpointFile] = useState<File | null>(null);
+  const [checkpointMetadata, setCheckpointMetadata] = useState<Record<string, any>>();
+
+  const [checkpointApplying, setCheckpointApplying] = useState(false);
+  const [checkpointApplied, setCheckpointApplied] = useState(false);
 
   const [checkpointName, setCheckpointName] = useState("");
 
@@ -157,6 +185,47 @@ export default function Home() {
     }
   };
 
+  const pickFile = async (): Promise<File | null> => {
+    try {
+      if (typeof window !== "undefined" && "showOpenFilePicker" in window) {
+        // use native file picker if available
+        const handles = await (window as any).showOpenFilePicker({ multiple: false });
+        if (handles && handles.length) {
+          return await handles[0].getFile();
+        }
+        return null;
+      }
+
+      // fallback for older browsers
+      return await new Promise((resolve) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.style.display = "none";
+        input.onchange = () => {
+          resolve(input.files && input.files[0] ? input.files[0] : null);
+          input.remove();
+        };
+        document.body.appendChild(input);
+        input.click();
+      });
+    } catch (e) {
+      console.error("File picker error or cancelled", e);
+      return null;
+    }
+  };
+
+  const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    const day = d.getUTCDate();
+    const suffix =
+      day % 100 >= 11 && day % 100 <= 13
+        ? "TH"
+        : ["TH", "ST", "ND", "RD"][day % 10] || "TH";
+
+    return `${d.toLocaleString("en-US", { month: "long", timeZone: "UTC" }).toUpperCase()} ${day}${suffix} ${d.getUTCFullYear()}`;
+  }
+
+
   useEffect(() => {
     const checkEncryptionStatus = async () => {
       try {
@@ -172,7 +241,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="grid items-center justify-items-center content-center min-h-screen p-8 pb-20 gap-4 sm:p-20 font-(family-name:--font-geist-sans)">
+    <div className="grid items-center justify-items-center content-center min-h-screen p-2 py-8 pb-20 gap-4 sm:p-20 font-(family-name:--font-geist-sans)">
       <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight pb-2">
         PalMirror Secure
       </h1>
@@ -289,7 +358,7 @@ export default function Home() {
         </Dialog>
       )}
       {alreadyEncrypted && (
-        <><div className="flex flex-col gap-2">
+        <div className="px-4"><div className="flex flex-col gap-2">
           <p className="text-sm">
             Woo! You&apos;re already using PalMirror Secure.
           </p>
@@ -320,13 +389,13 @@ export default function Home() {
             </DialogContent>
           </Dialog>
 
-        </div><div className="mt-12 rounded-xl border border-white/10 p-4 w-full max-w-120 font-sans">
+        </div><div className="mt-12 rounded-xl border border-white/10 p-4 max-w-100 md:max-w-120 font-sans">
           <h1 className="font-bold text-2xl mb-1">Checkpoints</h1>
           <p className="text-sm opacity-50 mb-8">A full backup of all your PalMirror data, packaged into one portable file. Import it anytime to restore your app exactly as it was, with nothing missing and nothing merged. Chats are still encrypted.</p>
 
           <div className="flex gap-2">
             <Button className="flex-1" onClick={() => setShowingSVCPVerify(true)}>Create checkpoint</Button>
-            <Button variant={"outline"}>Load checkpoint</Button>
+            <Button variant={"outline"} onClick={() => setShowingLDCPVerify(true)}>Load checkpoint</Button>
           </div>
 
 
@@ -336,6 +405,7 @@ export default function Home() {
               setShowingConfirmSaveCheckpoint(true);
             }, 100)
           }} onCancel={() => setShowingSVCPVerify(false)} />
+          
           <Dialog open={showingConfirmSaveCheckpoint} onOpenChange={setShowingConfirmSaveCheckpoint}>
             <DialogContent className="font-sans">
               <DialogHeader className="text-2xl font-bold">Save checkpoint</DialogHeader>
@@ -354,7 +424,66 @@ export default function Home() {
               }}>Save checkpoint</Button>
             </DialogContent>
           </Dialog>
-        </div></>
+
+          <AskForUnlockSecure open={showingLDCPVerify} onUnlock={async () => {
+            setShowingLDCPVerify(false);
+            const file = await pickFile();
+            const metadata = await extractMetadata(file);
+            if (!metadata) {
+              PMNotify.error("Not a valid checkpoint file, couldn't find the metadata.")
+              return;
+            }
+            
+            setCheckpointMetadata(metadata)
+            setCheckpointFile(file);
+            setShowingConfirmLoadCheckpoint(true);
+          }} onCancel={() => setShowingLDCPVerify(false)} />
+
+          <Dialog open={showingConfirmLoadCheckpoint} onOpenChange={setShowingConfirmLoadCheckpoint}>
+            <DialogContent className="font-sans">
+              <DialogHeader className="text-2xl font-bold">Load checkpoint</DialogHeader>
+              <div className="h-72 flex justify-center items-center flex-col gap-2">
+                <Sparkles size={100} />
+                <h1 className="text-2xl font-bold text-shadow-lg text-shadow-white/30">{checkpointMetadata?.checkpointName}</h1>
+                <p className="font-mono text-xs tracking-widest opacity-25">{formatDate(checkpointMetadata?.exportedAt)}</p>
+              </div>
+              <p className="text-sm opacity-75 ">Load this checkpoint. This action is irreversible — it will overwrite local chats, app settings, and any stored credentials with the contents of the selected checkpoint.</p>
+              {!checkpointApplying && (
+                <SlideToConfirm onSlid={async () => {
+                  setCheckpointApplying(true);
+                  await loadCheckpoint(checkpointFile);
+                  setShowingConfirmLoadCheckpoint(false);
+                  setCheckpointApplying(false);
+                  setCheckpointApplied(true);
+                }} />
+              )}
+              {checkpointApplying && (
+                <motion.div
+                  className="ellipsis-loader mx-auto"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  key="loading"
+                >
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                </motion.div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={checkpointApplied}>
+            <DialogContent className="font-sans">
+              <DialogHeader className="text-2xl font-bold">Checkpoint applied</DialogHeader>
+              <p className="text-sm opacity-50">Checkpoint has been applied.</p>
+              <p className="text-sm opacity-50">Refresh page to see changes.</p>
+              <Button onClick={() => {
+                window.location.href = "/"
+              }}>Refresh page</Button>
+            </DialogContent>
+          </Dialog>
+        </div></div>
       )}
 
       <Accordion

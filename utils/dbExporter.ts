@@ -6,6 +6,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
 export async function saveCheckpoint(extraMetadata: Record<string, any> = {}) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
     try {
         const zip = new JSZip();
         const now = new Date().toISOString();
@@ -55,50 +56,36 @@ export async function extractMetadata(zipFile: File | Blob) {
     }
 }
 
-export async function loadCheckpoint() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.zip';
-    input.style.display = 'none';
-    document.body.appendChild(input);
+export async function loadCheckpoint(zipFile?: File | Blob) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (!zipFile) return;
 
-    input.onchange = async (e: Event) => {
-        
-        const target = e.target as HTMLInputElement;
-        const file = target?.files?.[0];
-        if (input.parentNode) document.body.removeChild(input);
-        if (!file) return;
+    try {
+        const zip = await JSZip.loadAsync(zipFile);
 
-        try {
-            const zip = await JSZip.loadAsync(file);
-
-            const lsFile = zip.file("localStorage.json");
-            if (lsFile) {
-                const lsData = JSON.parse(await lsFile.async("string"));
-                localStorage.clear();
-                Object.entries(lsData).forEach(([k, v]) => localStorage.setItem(k, v as string));
-            }
-
-            const dbFiles = Object.keys(zip.files).filter(f => f.startsWith("indexedDB/") && f.endsWith(".json"));
-            for (const filename of dbFiles) {
-                const dbName = filename.split('/').pop()?.replace('.json', '');
-                if (!dbName) continue;
-
-                const fileData = zip.file(filename);
-                if (!fileData) continue; 
-
-                const jsonStr = await fileData.async("string");
-                const blob = new Blob([jsonStr], { type: "application/json" });
-                
-                await Dexie.delete(dbName);
-                await Dexie.import(blob);
-            }
-
-            location.reload();
-        } catch (err) {
-            console.error("Import Error:", err);
+        const lsFile = zip.file("localStorage.json");
+        if (lsFile) {
+            const lsData = JSON.parse(await lsFile.async("string"));
+            localStorage.clear();
+            Object.entries(lsData).forEach(([k, v]) => localStorage.setItem(k, v as string));
         }
-    };
 
-    input.click();
+        const dbFiles = Object.keys(zip.files).filter(f => f.startsWith("indexedDB/") && f.endsWith(".json"));
+        for (const filename of dbFiles) {
+            const dbName = filename.split('/').pop()?.replace('.json', '');
+            if (!dbName) continue;
+
+            const fileData = zip.file(filename);
+            if (!fileData) continue;
+
+            const jsonStr = await fileData.async("string");
+            const blob = new Blob([jsonStr], { type: "application/json" });
+
+            await Dexie.delete(dbName);
+            await Dexie.import(blob);
+        }
+
+    } catch (err) {
+        console.error("Import Error:", err);
+    }
 }

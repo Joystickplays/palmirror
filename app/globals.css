@@ -304,18 +304,19 @@
   display: inline-block;
   position: relative;
   width: 80px;
-  height: 80px;
+  height: 40px;
 }
 
 .ellipsis-loader div {
   position: absolute;
-  top: 33px;
+  top: 16px;
   width: 13px;
   height: 13px;
   border-radius: 50%;
   background: #ffffff;
   animation-timing-function: cubic-bezier(0, 1, 1, 0);
 }
+
 
 .ellipsis-loader div:nth-child(1) {
   left: 8px;
