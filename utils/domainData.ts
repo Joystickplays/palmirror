@@ -392,6 +392,7 @@ export async function totalChatsFromDomain(domainID: string) {
             chatKeys.map(async (key) => {
                 const data: ChatMetadata = await getSecureData(key, sessionKey, true);
                 if (!data) return;
+                if (data.associatedDomain !== domainID) return;
                 if (!data.entryTitle) return;
                 if (!data.id) return;
 
