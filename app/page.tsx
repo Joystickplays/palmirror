@@ -65,6 +65,7 @@ import discord from "@/public/discord.svg"
 import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import Sidebar from "@/components/homescreen/Sidebar";
+import { useSidebarStore } from "@/context/zustandStore/Sidebar";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
   function sortByLastUpdated(
@@ -488,6 +489,8 @@ function SetupCharacter({
 export default function Home() {
 
   const PMNotify = usePMNotification();
+
+  const { isOpen } = useSidebarStore();
 
   const [isSecureActivated, setIsSecureActivated] = useState(false);
   const [hasVisited, setHasVisited] = useState(false);
@@ -940,24 +943,11 @@ export default function Home() {
 
 
   return isSecureActivated ? (
-    <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-(family-name:--font-geist-sans)">
-      <div className="z-100 fixed flex justify-center lg:justify-start w-screen mix-blend-color-dodge">
-        <motion.h1
-          initial={{ scale: 1, y: -100 }}
-          animate={{ scale: 1, y: 0 }}
-          transition={{
-            type: "spring",
-            mass: 1,
-            damping: 23,
-            stiffness: 161,
-            scale: { type: "spring", mass: 1, damping: 18, stiffness: 100 },
-          }}
-          className="text-1xl lg:text-2xl mx-6 lg:mx-10 font-extrabold tracking-tight pb-2 w-fit opacity-100 text-[#aaaaaa]"
-        >
-          PalMirror
-        </motion.h1>
-      </div>
-
+    <motion.div 
+    animate={{
+      marginLeft: isOpen ? 100 : 0,
+    }}
+    className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-(family-name:--font-geist-sans)">
       <div className="flex grow w-full">
         <AnimatePresence mode="popLayout">
           {!isSecureReady && (
@@ -1108,62 +1098,7 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      {isSecureReady && (
-        <motion.div
-          initial={{ opacity: 0, y: 200 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            type: "spring",
-            mass: 1,
-            damping: 19,
-            stiffness: 161,
-            delay: 0.1,
-          }}
-          className="fixed bottom-0 pb-7"
-        >
-          <div className="flex items-center content-center justify-center gap-2 max-w-fit border border-white/10 p-2 rounded-full">
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger>
-                  <GetFromPlatform
-                    router={router}
-                    linkChar={linkChar}
-                    setLinkChar={setLinkChar}
-                    getChubaiInfo={getChubaiInfo}
-                    iconForm
-                  />
-              </TooltipTrigger>
-              <TooltipContent className="font-sans">
-                Get from a platform
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger>
-                <SetupCharacter
-                  router={router}
-                  fileInputRef={fileInputRef}
-                  characterData={characterData}
-                  handleInputChange={handleInputChange}
-                  startChat={startChat}
-                  iconForm
-                />
-              </TooltipTrigger>
-              <TooltipContent className="font-sans">
-                Setup character
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger>
-                <Button onClick={() => router.push("/settings")} className="rounded-full" size="icon" variant="ghost">
-                  <Settings className="w-6! h-6!" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="font-sans">
-                Settings
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </motion.div>
-      )}
+      
 
       <ToastContainer
         position="top-right"
@@ -1182,7 +1117,7 @@ export default function Home() {
         style={{ display: "none" }}
         onChange={importCharacter}
       />
-    </div>
+    </motion.div>
   ) : hasVisited ? (
     <div className="grid items-center justify-items-center content-center min-h-screen p-8 pb-10 gap-4 sm:p-20 font-(family-name:--font-geist-sans)">
       <h1 className="text-2xl font-extrabold tracking-tight pb-2 text-center">

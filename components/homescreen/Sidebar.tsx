@@ -2,7 +2,7 @@
 
 import { useSidebarStore } from "@/context/zustandStore/Sidebar";
 import { motion } from "framer-motion";
-import { Compass, MessageCircle, Plus, Settings } from "lucide-react";
+import { ChevronsLeft, Compass, Menu, MessageCircle, Plus, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import SidebarButton from "./SidebarButton";
@@ -20,16 +20,21 @@ export default function Sidebar() {
 
     return (
         <>
-            <button onClick={() => setOpen(!isOpen)} className="fixed top-4 right-4 z-51">
-                toggle sidebar
-            </button>
-            
             <motion.div
                 initial={{ x: '-100%' }}
                 animate={{ x: isOpen ? 0 : '-100%' }}
                 transition={{ type: "spring", stiffness: 160, damping: 20 }}
                 className="flex flex-col items-center gap-2 fixed top-0 left-0 h-full bg-white/2 border border-white/5 text-white z-50 p-6 backdrop-blur-xl"
             >
+
+                <button onClick={() => setOpen(!isOpen)} className="absolute top-4 right-0 translate-x-[140%] p-2 rounded-md hover:bg-white/5 opacity-20 hover:opacity-90 transition-all">
+                    {isOpen ? <ChevronsLeft size={32} /> : <Menu size={32} />}
+                </button>
+
+                <div 
+                onMouseEnter={() => setOpen(true)}
+                className="absolute top-0 right-0 translate-x-full h-full w-4"></div>
+
                 <img src="./palmirror.png" width={64} alt="logo" />
                 <div className="w-full h-0.5 bg-white/5 mb-6"></div>
 
