@@ -64,6 +64,7 @@ import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHei
 import discord from "@/public/discord.svg"
 import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
+import Sidebar from "@/components/homescreen/Sidebar";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
   function sortByLastUpdated(
