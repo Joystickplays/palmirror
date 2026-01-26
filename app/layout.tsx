@@ -13,6 +13,7 @@ import MemoryNotificationProvider from "@/components/notifications/MemoryNotific
 import { PLMGlobalConfigProvider } from "@/context/PLMGlobalConfig";
 import PMNotificationProvider from "@/components/notifications/PalMirrorNotification";
 import Sidebar from "@/components/homescreen/Sidebar";
+import PageTransition from "@/components/internal/ViewTransition";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -67,7 +68,9 @@ export default function RootLayout({
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ duration: 0.3 }}> */}
                           <Sidebar />
-                          {children}
+                          <PageTransition>
+                            {children}
+                          </PageTransition>
 
                           {/* </motion.div>
                     </AnimatePresence> */}
