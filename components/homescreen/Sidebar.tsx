@@ -24,7 +24,7 @@ export default function Sidebar() {
                 initial={{ x: '-100%' }}
                 animate={{ x: isOpen ? 0 : '-100%' }}
                 transition={{ type: "spring", stiffness: 160, damping: 20 }}
-                className="flex flex-col items-center gap-2 fixed top-0 left-0 h-full bg-white/2 border border-white/5 text-white z-50 p-6 backdrop-blur-xl"
+                className="flex flex-col items-center gap-2 fixed top-0 left-0 h-full bg-white/2 border border-white/5 text-white z-50 p-6 backdrop-blur-xl backdrop-brightness-50 backdrop-saturate-200"
             >
 
                 <button onClick={() => setOpen(!isOpen)} className="absolute top-4 right-0 translate-x-[140%] p-2 rounded-md hover:bg-white/5 opacity-20 hover:opacity-90 transition-all">

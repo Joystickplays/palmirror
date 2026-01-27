@@ -1,21 +1,140 @@
 "use client";
 
 import { Input } from "@/components/ui/input"
+import { HorizontalScroll } from "@/components/utilities/HScroll";
 import { useSidebarStore } from "@/context/zustandStore/Sidebar"
+import { searchCharacters, SearchResultItem } from "@/utils/searchUtils";
 import { motion } from "framer-motion"
 import { Search } from "lucide-react"
-import React from "react"
+import React, { useEffect, useState } from "react"
+
+
+function CharacterCatalog({ characters, layout = 'l' }: { characters: SearchResultItem[], layout?: 'l' | 't' }) {
+    return (<HorizontalScroll
+        className="flex gap-2 overflow-x-auto w-full pb-2 hide-scrollbar px-6">
+        {characters.length < 1 ? Array.from({ length: 20 }).map((_, idx) => {
+            return (
+                <div
+                    key={idx}
+                    style={{
+                        animationDelay: `${idx * 100}ms`
+                    }}
+                    className={`${layout === "l" ? "w-64 h-32" : "w-45 h-64"} bg-white/5 rounded-xl animate-pulse shrink-0`}></div>
+            )
+        }) : characters.map((char, idx) => {
+            return (
+                <motion.button
+                    initial={{
+                        y: 20,
+                        opacity: 0
+                    }}
+                    animate={{
+                        y: 0,
+                        opacity: 1,
+                    }}
+                    transition={{
+                        type: 'spring',
+                        mass: 1,
+                        stiffness: 160,
+                        damping: 20,
+                        delay: idx * 0.05
+                    }}
+                    key={idx} className={`${layout === "l" ? "w-64 h-32" : "w-45 h-64"} bg-white/2 border border-white/5 rounded-xl overflow-hidden shrink-0 cursor-pointer relative`}>
+                    {layout === "l" ? (
+                        <>
+                            <img className="absolute top-0 left-0 h-full w-32 object-cover object-[50%_30%]"
+                                style={{
+                                    maskImage: "linear-gradient(to right, black, rgba(0,0,0,0))"
+                                }}
+                                src={char.image} />
+                        </>
+                    ) : (
+                        <>
+                            <img className="absolute top-0 left-0 h-52 w-full object-cover object-[50%_30%]"
+                                style={{
+                                    maskImage: "linear-gradient(to bottom, black, rgba(0,0,0,0))"
+                                }}
+                                src={char.image} />
+                        </>
+                    )}
+                </motion.button>
+            )
+        })}
+    </HorizontalScroll>)
+}
+
 
 
 export default function DiscoverPage() {
 
     const isOpen = useSidebarStore(s => s.isOpen)
 
+
+
+    const [mustTryCharacters, setMustTryCharacters] = useState<SearchResultItem[]>([])
+    const [popularCharacters, setPopularCharacters] = useState<SearchResultItem[]>([])
+    const [TACCharacters, setTACCharacters] = useState<SearchResultItem[]>([])
+    const [TACtags, setTACtags] = useState<string[]>([])
+
+    useEffect(() => {
+        (async () => {
+            const result = await searchCharacters({
+                provider: "janny.ai",
+                query: "+Fluff +Game +AnyPOV +Fictional",
+                excludeNsfw: false
+            })
+
+            setMustTryCharacters(result)
+        })();
+
+        (async () => {
+            const result = await searchCharacters({
+                provider: "janny.ai",
+                query: "",
+                excludeNsfw: false
+            })
+
+            setPopularCharacters(result)
+        })();
+
+        (async () => {
+
+            const applicableTags = [
+                "+Female",
+                "+Male",
+                "+Celebrity",
+                "+Fictional",
+                "+Game",
+                "+Anime",
+                "+Dominant",
+                "+Submissive",
+                "+Scenario",
+                "+Books",
+                "+AnyPOV",
+                "+Angst",
+                "+Fluff",
+                "+Horror"
+            ]
+
+            const TACtags = applicableTags.toSorted(() => 0.5 - Math.random()).slice(0, 3)
+            setTACtags(TACtags)
+
+            const result = await searchCharacters({
+                provider: "janny.ai",
+                query: TACtags.join(' '),
+                excludeNsfw: false
+            })
+
+            setTACCharacters(result)
+        })();
+    }, [])
+
+
     return (
         <motion.div
             animate={{
                 marginLeft: isOpen ? 100 : 0,
-            }} className="flex min-h-screen p-6 gap-4 font-sans!">
+            }} className="flex min-h-screen p-6 px-0 gap-4 font-sans!">
 
             <div className="top-0 left-0 flex fixed justify-end mr-4 p-8 w-full">
                 <div className="flex items-center gap-2 p-1 px-4 bg-white/5 border border-white/5 rounded-full">
@@ -24,50 +143,31 @@ export default function DiscoverPage() {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-8 mt-22">
+            <div className="flex flex-col gap-8 mt-22 min-w-0">
 
-                <div className="flex flex-col gap-2">
-                    <p className="text-lg font-bold">Must-trys</p>
-                    <div className="flex gap-2">
-                        {Array.from({ length: 20 }).map((_, idx) => {
-                            return (
-                                <div
-                                style={{
-                                    animationDelay: `${idx * 100}ms`
-                                }}
-                                className="w-64 h-32 bg-white/5 rounded-xl animate-pulse"></div>
-                            )
-                        })}
-                    </div>
+                <div className="flex flex-col gap-2 w-full">
+                    <p className="text-lg font-bold ml-6">Must-trys</p>
+
+                    <CharacterCatalog characters={mustTryCharacters} />
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <p className="text-lg font-bold">Popular</p>
-                    <div className="flex gap-2">
-                        {Array.from({ length: 20 }).map((_, idx) => {
-                            return (
-                                <div
-                                style={{
-                                    animationDelay: `${idx * 100}ms`
-                                }}
-                                className="w-64 h-32 bg-white/5 rounded-xl animate-pulse"></div>
-                            )
-                        })}
-                    </div>
+                    <p className="text-lg font-bold ml-6">Popular</p>
+                    <CharacterCatalog characters={popularCharacters} />
+
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <p className="text-lg font-bold">These are cool</p>
-                    <div className="flex gap-2">
-                        {Array.from({ length: 20 }).map((_, idx) => {
+                    <p className="text-lg font-bold ml-6">These are cool</p>
+                    <div className="flex gap-2 ml-6">
+                        {TACtags.map((tag) => {
                             return (
-                                <div
-                                style={{
-                                    animationDelay: `${idx * 100}ms`
-                                }}
-                                className="w-45 h-64 bg-white/5 rounded-xl animate-pulse"></div>
+                                <div className="p-2 px-3 bg-white/2 rounded-full text-xs text-white/50">{tag.replace("+", "")}</div>
                             )
                         })}
+                    </div>
+                    <div className="flex gap-2">
+                        <CharacterCatalog characters={TACCharacters} layout="t" />
                     </div>
                 </div>
 

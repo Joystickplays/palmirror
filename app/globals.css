@@ -184,6 +184,10 @@
   background-color: rgba(255, 255, 255, 0.4);
 }
 
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .markdown-content em {
   opacity: 0.5;
   font-weight: 200;

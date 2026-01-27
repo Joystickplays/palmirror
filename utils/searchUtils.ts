@@ -197,7 +197,7 @@ const PROVIDERS = {
                             highlightPostTag: "__/ais-highlight__",
                             hitsPerPage: 20, 
                             page: page,
-                            sort: ["createdAtStamp:desc"]
+                            // sort: ["createdAtStamp:desc"]
                         }]
                     })
                 }
