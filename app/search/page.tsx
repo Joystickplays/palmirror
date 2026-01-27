@@ -19,8 +19,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
@@ -29,34 +27,15 @@ import { usePalRec } from "@/context/PLMRecSystemContext"
 import AutoScrollContainer from '@/components/utilities/AutoScroll';
 import { usePMNotification } from '@/components/notifications/PalMirrorNotification';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface SearchResultItem {
-  provider: 'chub.ai' | 'janny.ai';
-  id: string;
-  image: string;
-  name: string;
-  description: string;
-  tags: string[];
-  charLink: string;
-}
-
-interface JannyHit {
-    id: string;
-    name: string;
-    description: string;
-    avatar: string;
-    tags?: { name: string }[] | string[];
-    tagIds?: string[];
-    isNsfw: boolean;
-    totalToken: number;
-}
-
-interface JannyResponse {
-    results: {
-        hits: JannyHit[];
-        estimatedTotalHits: number;
-    }[];
-}
+import {
+  searchCharacters,
+  getChubCharacterAuthor,
+  getChubCharacterId,
+  getImageBase64,
+  SearchResultItem,
+  ProviderType
+} from '../../utils/searchUtils';
+import { SearchX } from 'lucide-react';
 
 export default function Search() {
 
@@ -64,12 +43,11 @@ export default function Search() {
   const router = useRouter();
   const { getRecommendedTags } = usePalRec();
 
-  const [currentProvider, setCurrentProvider] = useState<'chub.ai' | 'janny.ai'>('janny.ai');
+  const [currentProvider, setCurrentProvider] = useState<ProviderType>('janny.ai');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [exclusionTopic, setExclusionTopic] = useState("NSFW"); 
   const [excludeNSFW, setExcludeNSFW] = useState(true);  
   
   const [characterData, setCharacterData] = useState<CharacterData>(defaultCharacterData);
@@ -80,69 +58,6 @@ export default function Search() {
       setCharacterData(JSON.parse(storedData));
     }
   }, []);
-
-  const stripHtml = (html: string) => {
-    if (!html) return "";
-    const tmp = document.createElement("DIV");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
-  };
-
-  const slugify = (text: string) => {
-    return text
-      .toString()
-      .toLowerCase()
-      .replace(/\s+/g, '-')     // Replace spaces with -
-      .replace(/[^\w-]+/g, '')  // Remove all non-word chars
-      .replace(/--+/g, '-')     // Replace multiple - with single -
-      .replace(/^-+/, '')       // Trim - from start of text
-      .replace(/-+$/, '');      // Trim - from end of text
-  }
-
-  const extractTags = (input: string): { exclusion: string; inclusion: string; clean: string } => {
-    const exclusion: string[] = [];
-    const inclusion: string[] = [];
-    
-    const words = input.split(/\s+/);
-    const cleanWords = words.filter(word => {
-        if (word.startsWith('-')) {
-            exclusion.push(word.slice(1));
-            return false;
-        } else if (word.startsWith('+')) {
-            inclusion.push(word.slice(1));
-            return false;
-        }
-        return true;
-    });
-
-    return {
-        exclusion: exclusion.join(','),
-        inclusion: inclusion.join(','),
-        clean: cleanWords.join(' ')
-    };
-  }
-
-
-  const getChubCharacterAuthor = (url: string): string | null => {
-    const match = url.match(/\/characters\/([^\/?]+)/);
-    return match ? match[1] : null;
-  };
-  
-  const getChubCharacterId = (url: string, author: string): string | null => {
-    const match = url.match(new RegExp(`/${author}/([^/?)]+)`));
-    return match ? match[1] : null;
-  };
-  
-  const getImageBase64 = async (url: string): Promise<string> => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
 
   const startChubChat = (url: string) => {
     toast.promise(
@@ -240,8 +155,6 @@ export default function Search() {
     );
   };
 
-
-
   const handleResultClick = (result: SearchResultItem) => {
     if (result.provider === 'chub.ai') {
         startChubChat(result.charLink);
@@ -250,137 +163,40 @@ export default function Search() {
     }
   };
 
-
-  const apiProviders = {
-    'chub.ai': {
-      query: (extractedTags: any, page: number, exclusion: string, inclusion?: string) => {
-         const cleanQuery = extractedTags.clean || "";
-         return {
-            url: `https://api.chub.ai/search?excludetopics=${exclusion}&first=20&page=${page}&namespace=*&search=${encodeURIComponent(cleanQuery)}&include_forks=true&nsfw=true&nsfw_only=false&require_custom_prompt=false&require_example_dialogues=false&require_images=false&require_expressions=false&nsfl=true&asc=false&min_ai_rating=0&min_tokens=50&max_tokens=100000&chub=true&require_lore=false&exclude_mine=true&require_lore_embedded=false&require_lore_linked=false&sort=default&topics=${inclusion || ''}&inclusive_or=false&recommended_verified=false&require_alternate_greetings=false&venus=true&count=false`,
-            options: { method: 'GET' }
-         }
-      },
-      processor: (data: any): SearchResultItem[] => {
-        return data.data.nodes.map((item: any) => ({ 
-            provider: 'chub.ai', 
-            id: item.id || item.fullPath,
-            image: item.avatar_url, 
-            name: item.name, 
-            description: item.tagline, 
-            tags: item.topics, 
-            charLink: `https://chub.ai/characters/${item.fullPath}` 
-        }));
-      }
-    },
-    'janny.ai': {
-      query: (extractedTags: any, page: number, _exclusion: string, _inclusion?: string) => {
-        const filters = ["totalToken <= 4101 AND totalToken >= 29"];
-        if (excludeNSFW) {
-            filters.push("isNsfw = false");
-        }
-        
-        const q = extractedTags.clean || "";
-
-        return {
-            url: "https://search.jannyai.com/multi-search",
-            options: {
-                method: "POST",
-                headers: {
-                    "accept": "*/*",
-                    "authorization": "Bearer 88a6463b66e04fb07ba87ee3db06af337f492ce511d93df6e2d2968cb2ff2b30", // this is fine
-                    "content-type": "application/json",
-                    "x-meilisearch-client": "Meilisearch instant-meilisearch (v0.19.0) ; Meilisearch JavaScript (v0.41.0)",
-                    "Referer": "https://jannyai.com/"
-                },
-                body: JSON.stringify({
-                    queries: [{
-                        indexUid: "janny-characters",
-                        q: q,
-                        facets: ["isLowQuality", "tagIds", "totalToken"],
-                        attributesToCrop: ["description:50"],
-                        cropMarker: "...",
-                        filter: filters,
-                        attributesToHighlight: ["name", "description"],
-                        highlightPreTag: "__ais-highlight__",
-                        highlightPostTag: "__/ais-highlight__",
-                        hitsPerPage: 20, 
-                        page: page,
-                        sort: ["createdAtStamp:desc"]
-                    }]
-                })
-            }
-        };
-      },
-      processor: (data: JannyResponse): SearchResultItem[] => {
-        const hits = data.results[0]?.hits || [];
-        return hits.map((item: JannyHit) => {
-            let imageUrl = "";
-            if (item.avatar) {
-                imageUrl = item.avatar.startsWith('http') 
-                    ? item.avatar 
-                    : `https://image.jannyai.com/bot-avatars/${item.avatar}`;
-            }
-
-            const link = `https://jannyai.com/characters/${item.id}_character-${slugify(item.name)}`;
-
-            return { 
-                provider: 'janny.ai', 
-                id: item.id,
-                image: imageUrl, 
-                name: item.name, 
-                description: stripHtml(item.description), 
-                tags: Array.isArray(item.tags) 
-                    ? item.tags.map((t: any) => t.name || t) 
-                    : [],
-                charLink: link
-            };
-        });
-      }
-    }
-  };
-
-
   const handleSearch = async (page = 1, initial?: boolean) => {
     if (!initial && !searchQuery && currentProvider === 'chub.ai') {
       PMNotify.error('Please enter a search query.');
       return;
     }
 
-    const extractedTags = extractTags(searchQuery);
-
-    let recommendedTags: string[] = [];
-    if (initial && currentProvider === 'chub.ai') {
-        try {
-            recommendedTags = getRecommendedTags();
-        } catch (e) { 
-            console.log(e); 
-            recommendedTags = ["NSFW", "RPG", "Robot"]; 
-        }
-    }
-
     setLoading(true);
     try {
       window.scrollTo(0, 0); 
       
-      const providerConfig = apiProviders[currentProvider];
-      console.log(currentProvider)
-      
-      const inclusionTags = initial ? recommendedTags.join(',') : extractedTags.inclusion;
-      const exclusionTags = initial 
-        ? "NSFW,RPG,Robot,Helpers,Milf" 
-        : [exclusionTopic, extractedTags.exclusion].filter(Boolean).join(",");
+      let finalQuery = searchQuery;
 
-      const { url, options } = providerConfig.query(extractedTags, page, exclusionTags, inclusionTags);
+      if (initial && currentProvider === 'chub.ai') {
+        let recommendedTags: string[] = [];
+        try {
+            recommendedTags = getRecommendedTags() || [];
+        } catch (e) { 
+            console.log(e); 
+            recommendedTags = ["NSFW", "RPG", "Robot"]; 
+        }
 
-      const response = await fetch(url, options);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const inclusion = recommendedTags.map(t => `+${t}`).join(' ');
+        const exclusion = "-NSFW -RPG -Robot -Helpers -Milf";
+        finalQuery = `${inclusion} ${exclusion}`;
       }
-      
-      const data = await response.json();
-      const processedResults = providerConfig.processor(data);
 
-      setSearchResults(processedResults);
+      const results = await searchCharacters({
+          provider: currentProvider,
+          query: finalQuery,
+          page: page,
+          excludeNsfw: excludeNSFW
+      });
+
+      setSearchResults(results);
       setCurrentPage(page);
     } catch (error) {
       PMNotify.error(`Failed to search: ${(error as Error).message}`);
@@ -389,6 +205,7 @@ export default function Search() {
       setLoading(false);
     }
   };
+  
   useEffect(() => {
      handleSearch(1, true);
   }, [currentProvider]);
@@ -398,6 +215,14 @@ export default function Search() {
       <div className="flex justify-center sm:justify-between w-full">
         <h1 className="text-xl font-extrabold tracking-tight">Search Characters</h1>
         <Button variant="outline" onClick={() => router.back()} className="hidden sm:block"> Back </Button>
+      </div>
+
+      <div className="p-4 bg-red-800/20 rounded-lg text-red-400 border border-red-900">
+        <div className="flex gap-2 items-center font-bold mb-2">
+          <SearchX />
+          Page deprecated
+        </div>
+        <p className="text-sm">This page is deprecated and may be removed in future versions of PalMirror. Please use the new Discover page to find characters.</p>
       </div>
       
       <div className="flex flex-col gap-1">
@@ -411,10 +236,9 @@ export default function Search() {
                     className="w-full"
                 />
                 
-
                 <Select onValueChange={(e) => {
                         setSearchResults([]); 
-                        setCurrentProvider(e as 'chub.ai' | 'janny.ai');
+                        setCurrentProvider(e as ProviderType);
                     }}
                     >
                   <SelectTrigger className="w-fit">
@@ -425,27 +249,13 @@ export default function Search() {
                     <SelectItem value="janny.ai">JannyAI</SelectItem>
                   </SelectContent>
                 </Select>
-                {/* <select 
-                    className="h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={currentProvider}
-                    onChange={(e) => {
-                        setSearchResults([]); 
-                        setCurrentProvider(e.target.value as 'chub.ai' | 'janny.ai');
-                    }}
-                >
-                    <option value="chub.ai">Chub.ai</option>
-                    <option value="janny.ai">JannyAI</option>
-                </select>
-                 */}
                 <Button onClick={() => handleSearch(1, false)}>Search</Button>
             </div>
         </div>
 
         <div className="flex gap-2 items-center">
           <Checkbox checked={excludeNSFW} onCheckedChange={(ch) => {
-              const isChecked = ch === true;
-              setExcludeNSFW(isChecked); 
-              if (isChecked) { setExclusionTopic("NSFW") } else { setExclusionTopic("") }
+              setExcludeNSFW(ch === true); 
           }}/>
           <p>Exclude NSFW</p>
         </div>
@@ -469,10 +279,10 @@ export default function Search() {
             </PopoverTrigger>
           <PopoverContent asChild>
             <div className="font-sans flex flex-col gap-2">
-              <p>{currentProvider === 'chub.ai' ? "Use + to require tags and - to exclude tags." : "Search works best with direct keywords."}</p>
+              <p>{"Use + to require tags and - to exclude tags."}</p>
               <hr />
               <div className="border rounded-xl p-2 w-full text-sm">
-                 {currentProvider === 'chub.ai' ? "Knight +Male -Female" : "Bakugo Hero"}
+                 {"Knight +Male -Female"}
               </div>
             </div>
           </PopoverContent>          

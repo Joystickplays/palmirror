@@ -1087,7 +1087,7 @@ export default function Home() {
                     <p className="opacity-50 text-sm">
                       {chatsLoading
                         ? "Loading your chats..."
-                        : "No chats found."}
+                        : "No chats found. Try the Discover page!"}
                     </p>
                   )}
                 
@@ -1119,18 +1119,24 @@ export default function Home() {
       />
     </motion.div>
   ) : hasVisited ? (
-    <div className="grid items-center justify-items-center content-center min-h-screen p-8 pb-10 gap-4 sm:p-20 font-(family-name:--font-geist-sans)">
-      <h1 className="text-2xl font-extrabold tracking-tight pb-2 text-center">
-        Save your chats and more with PalMirror Secure
-      </h1>
-      <p className="text-sm opacity-60 text-center max-w-md">
-        Enable encrypted chat saving, persistent memories, and unlock the full PalMirror Experience.
-      </p>
-      <div className="pb-7">
-        <Button onClick={() => router.push("/secure")} size="lg">
-          Setup PalMirror Secure
-        </Button>
-      </div>
+    <div
+    className="grid items-center justify-items-center content-center min-h-screen p-8 pb-10 gap-4 sm:p-20 font-(family-name:--font-geist-sans)">
+        <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col gap-4 items-center">
+          <h1 className="text-2xl font-extrabold tracking-tight pb-2 text-center">
+            Save your chats and more with PalMirror Secure
+          </h1>
+          <p className="text-sm opacity-60 text-center max-w-md">
+            Enable encrypted chat saving, persistent memories, and unlock the full PalMirror Experience.
+          </p>
+          <div className="pb-7">
+            <Button onClick={() => router.push("/secure")} size="lg">
+              Setup PalMirror Secure
+            </Button>
+          </div>
+        </motion.div>
       
       <ToastContainer
         position="top-right"
