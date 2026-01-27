@@ -15,6 +15,10 @@ export default function Sidebar() {
 
     useEffect(() => {
         setActiveTab(pathname);
+
+        if (pathname === "/chat") {
+            setOpen(false);
+        }
     }, [pathname]);
 
 
@@ -35,7 +39,7 @@ export default function Sidebar() {
                 onMouseEnter={() => setOpen(true)}
                 className="absolute top-0 right-0 translate-x-full h-full w-4"></div>
 
-                <img src="./palmirror.png" width={64} alt="logo" />
+                <img src="/palmirror.png" width={64} alt="logo" />
                 <div className="w-full h-0.5 bg-white/5 mb-6"></div>
 
                 <motion.button className="rounded-full bg-white/5 border border-white/5 p-3">

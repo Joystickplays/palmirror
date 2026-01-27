@@ -559,32 +559,7 @@ export default function Home() {
     });
   };
 
-  const startChat = () => {
-    if (
-      !characterData.name ||
-      !characterData.personality ||
-      !characterData.initialMessage
-    ) {
-      PMNotify.error(
-        "Please fill in all required fields (name, personality, first message)."
-      );
-      return;
-    }
-
-    setCharacterData((prevData) => {
-      const updatedData = {
-        ...prevData,
-        image: "",
-        plmex: defaultCharacterData.plmex,
-      };
-      localStorage.setItem("characterData", JSON.stringify(updatedData));
-      PMNotify.success("Character data saved! Starting chat...");
-      return updatedData;
-    });
-    sessionStorage.removeItem("chatSelect");
-    router.push("/chat");
-  };
-
+  
   const getCharacterId: (url: string) => string | null = (
     url: string
   ): string | null => {
