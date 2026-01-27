@@ -1,73 +1,15 @@
 "use client";
 
+import React, { useCallback, useEffect, useState } from "react"
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input"
-import { HorizontalScroll } from "@/components/utilities/HScroll";
 import { useSidebarStore } from "@/context/zustandStore/Sidebar"
 import { searchCharacters, SearchResultItem } from "@/utils/searchUtils";
 import { motion } from "framer-motion"
 import { Search } from "lucide-react"
-import React, { useEffect, useState } from "react"
+import CharacterCatalog from "@/components/homescreen/CharacterCatalog";
+import CharacterCardDrawer from "@/components/homescreen/CharacterCardDrawer";
 
-
-function CharacterCatalog({ characters, layout = 'l' }: { characters: SearchResultItem[], layout?: 'l' | 't' }) {
-    return (<HorizontalScroll
-        className="flex gap-2 overflow-x-auto w-full pb-2 hide-scrollbar px-6">
-        {characters.length < 1 ? Array.from({ length: 20 }).map((_, idx) => {
-            return (
-                <div
-                    key={idx}
-                    style={{
-                        animationDelay: `${idx * 100}ms`
-                    }}
-                    className={`${layout === "l" ? "w-64 h-32" : "w-45 h-64"} bg-white/5 rounded-xl animate-pulse shrink-0`}></div>
-            )
-        }) : characters.map((char, idx) => {
-            return (
-                <motion.button
-                    initial={{
-                        y: 20,
-                        opacity: 0
-                    }}
-                    animate={{
-                        y: 0,
-                        opacity: 1,
-                    }}
-                    transition={{
-                        type: 'spring',
-                        mass: 1,
-                        stiffness: 160,
-                        damping: 20,
-                        delay: idx * 0.05
-                    }}
-                    key={idx} className={`${layout === "l" ? "w-64 h-32 flex justify-end" : "w-45 h-64 flex flex-col justify-end"} text-start  p-2 py-3 bg-white/2 border border-white/5 rounded-xl overflow-hidden shrink-0 cursor-pointer relative`}>
-                    {layout === "l" ? (
-                        <>
-                            <img className="absolute top-0 left-0 h-full w-32 object-cover object-[50%_30%] -z-1"
-                                style={{
-                                    maskImage: "linear-gradient(to right, black, rgba(0,0,0,0))"
-                                }}
-                                src={char.image} />
-                            <div className="max-w-42">
-                                <h1 className="whitespace-nowrap font-extrabold">{char.name}</h1>
-                                <p className="text-xs opacity-50">{char.description && char.description.length > 50 ? char.description.slice(0, 50) + "..." : char.description}</p>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <img className="absolute top-0 left-0 h-52 w-full object-cover object-[50%_30%] -z-1"
-                                style={{
-                                    maskImage: "linear-gradient(to bottom, black, rgba(0,0,0,0))"
-                                }}
-                                src={char.image} />
-                            <h1 className="whitespace-nowrap font-extrabold">{char.name}</h1>
-                            <p className="text-xs opacity-50 h-18">{char.description && char.description.length > 100 ? char.description.slice(0, 100) + "..." : char.description}</p>
-                        </>
-                    )}
-                </motion.button>
-            )
-        })}
-    </HorizontalScroll>)
-}
 
 
 
@@ -81,6 +23,12 @@ export default function DiscoverPage() {
     const [popularCharacters, setPopularCharacters] = useState<SearchResultItem[]>([])
     const [TACCharacters, setTACCharacters] = useState<SearchResultItem[]>([])
     const [TACtags, setTACtags] = useState<string[]>([])
+
+
+
+
+    const [charCardOpen, setCharCardOpen] = useState(false);
+    const [charCardData, setCharCardData] = useState<SearchResultItem | undefined>(undefined)
 
     useEffect(() => {
         (async () => {
@@ -135,6 +83,11 @@ export default function DiscoverPage() {
         })();
     }, [])
 
+    const handleCharacterClick = useCallback((char: SearchResultItem) => {
+        setCharCardData(char);
+        setCharCardOpen(true);
+    }, []);
+
 
     return (
         <motion.div
@@ -154,12 +107,12 @@ export default function DiscoverPage() {
                 <div className="flex flex-col gap-2 w-full">
                     <p className="text-lg font-bold ml-6">Must-trys</p>
 
-                    <CharacterCatalog characters={mustTryCharacters} />
+                    <CharacterCatalog characters={mustTryCharacters} onClick={handleCharacterClick} />
                 </div>
 
                 <div className="flex flex-col gap-2">
                     <p className="text-lg font-bold ml-6">Popular</p>
-                    <CharacterCatalog characters={popularCharacters} />
+                    <CharacterCatalog characters={popularCharacters} onClick={handleCharacterClick} />
 
                 </div>
 
@@ -173,11 +126,14 @@ export default function DiscoverPage() {
                         })}
                     </div>
                     <div className="flex gap-2">
-                        <CharacterCatalog characters={TACCharacters} layout="t" />
+                        <CharacterCatalog characters={TACCharacters} layout="t" onClick={handleCharacterClick} />
                     </div>
                 </div>
 
             </div>
+
+
+        <CharacterCardDrawer charCardOpen={charCardOpen} setCharCardOpen={setCharCardOpen} charCardData={charCardData} />
 
         </motion.div>
     )
