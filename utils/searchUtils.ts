@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { JannyTags } from '@/store/JannyTags';
+import { CharacterData, defaultCharacterData } from '@/types/CharacterData';
 
 export type ProviderType = 'chub.ai' | 'janny.ai';
 
@@ -19,6 +20,7 @@ export interface SearchOptions {
   page?: number;
   excludeNsfw?: boolean;
 }
+
 
 const stripHtml = (html: string) => {
     if (!html) return "";
@@ -75,6 +77,18 @@ const getJannyTagIdFromId = (tagId: number) => {
     return tag;
 };
 
+export const getImageBase64 = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+};
+
+
 const PROVIDERS = {
     'chub.ai': {
         buildRequest: (cleanQuery: string, page: number, exclusion: string[], inclusion: string[], excludeNsfw: boolean) => {
@@ -106,13 +120,41 @@ const PROVIDERS = {
         processResponse: (data: any): SearchResultItem[] => {
             return data.data.nodes.map((item: any) => ({ 
                 provider: 'chub.ai' as const, 
-                id: item.id || item.fullPath,
+                id: item.fullPath || item.id,
                 image: item.avatar_url, 
                 name: item.name, 
                 description: item.tagline, 
                 tags: item.topics, 
                 charLink: `https://chub.ai/characters/${item.fullPath}` 
             }));
+        },
+        getCharacter: async (id: string): Promise<CharacterData> => {
+            let cleanId = id;
+            if (id.includes('chub.ai/characters/')) {
+                const match = id.match(/chub\.ai\/characters\/([^\/?]+)\/([^\/?]+)/);
+                if (match) cleanId = `${match[1]}/${match[2]}`;
+            }
+
+            const response = await fetch(`https://api.chub.ai/api/characters/${cleanId}?full=true`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            const node = data.node;
+        
+            const imageUrl = node.avatar_url;
+            const imageBase64 = await getImageBase64(imageUrl);
+        
+            return {
+                ...defaultCharacterData,
+                name: node.definition.name,
+                personality: node.definition.personality || node.definition.description,
+                initialMessage: node.definition.first_message,
+                alternateInitialMessages: (node.definition.alternate_greetings && [node.definition.first_message, ...node.definition.alternate_greetings]) || [],
+                scenario: node.definition.scenario,
+                tags: node.topics,
+                image: imageBase64
+            };
         }
     },
     'janny.ai': {
@@ -178,6 +220,29 @@ const PROVIDERS = {
                     charLink: `https://jannyai.com/characters/${item.id}_character-${slugify(item.name)}`
                 };
             });
+        },
+        getCharacter: async (id: string): Promise<CharacterData> => {
+            const proxyUrl = `/api/fetch/jannyCharacter?id=${id}`;
+            const response = await fetch(proxyUrl);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+        
+            const imageUrl = "https://image.jannyai.com/bot-avatars/" + data.avatar;
+            const imageBase64 = await getImageBase64(imageUrl);
+        
+            return {
+                ...defaultCharacterData,
+                name: data.name,
+                personality: `${data.personality || data.description}\n\nExample dialogs (chats resembling how {{char}} will speak):\n${data.exampleDialogs}`,
+                initialMessage: data.firstMessage,
+                alternateInitialMessages: [],
+                scenario: data.scenario,
+                tags: [], 
+                image: imageBase64
+            };
         }
     }
 };
@@ -206,23 +271,9 @@ export const searchCharacters = async ({
     }
 };
 
-export const getChubCharacterAuthor = (url: string): string | null => {
-    const match = url.match(/\/characters\/([^\/?]+)/);
-    return match ? match[1] : null;
-};
-
-export const getChubCharacterId = (url: string, author: string): string | null => {
-    const match = url.match(new RegExp(`/${author}/([^/?)]+)`));
-    return match ? match[1] : null;
-};
-
-export const getImageBase64 = async (url: string): Promise<string> => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+export const fetchCharacter = async (provider: ProviderType, id: string): Promise<CharacterData> => {
+    const handler = PROVIDERS[provider];
+    if (!handler) throw new Error(`Provider ${provider} not supported`);
+    
+    return handler.getCharacter(id);
 };

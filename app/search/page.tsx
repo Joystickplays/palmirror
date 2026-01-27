@@ -29,9 +29,7 @@ import { usePMNotification } from '@/components/notifications/PalMirrorNotificat
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   searchCharacters,
-  getChubCharacterAuthor,
-  getChubCharacterId,
-  getImageBase64,
+  fetchCharacter,
   SearchResultItem,
   ProviderType
 } from '../../utils/searchUtils';
@@ -59,82 +57,18 @@ export default function Search() {
     }
   }, []);
 
-  const startChubChat = (url: string) => {
+  const startChat = (provider: ProviderType, idOrUrl: string) => {
     toast.promise(
       new Promise<void>(async (resolve, reject) => {
         try {
-          const authorName = getChubCharacterAuthor(url);
-          const response = await fetch(`https://api.chub.ai/api/characters/${authorName}/${getChubCharacterId(url, authorName || "")}?full=true`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
+          const data = await fetchCharacter(provider, idOrUrl);
   
-          const { name, personality, initialMessage, plmex, ...rest } = characterData;
-  
-          const imageUrl = data.node.avatar_url;
-          const imageBase64 = await getImageBase64(imageUrl);
-  
-          setCharacterData(() => {
+          setCharacterData((prev) => {
+            const { plmex } = prev;
             const updatedData = {
-              ...rest,
-              name: data.node.definition.name,
-              personality: data.node.definition.personality || data.node.definition.description,
-              initialMessage: data.node.definition.first_message,
-              alternateInitialMessages: data.node.definition.alternate_greetings && [data.node.definition.first_message, ...data.node.definition.alternate_greetings] || [],
-              scenario: data.node.definition.scenario,
-              image: imageBase64,
-              tags: data.node.topics,
-              plmex: defaultCharacterData.plmex,
+              ...data,
+              plmex: plmex || defaultCharacterData.plmex,
             };
-            localStorage.setItem('characterData', JSON.stringify(updatedData));
-            return updatedData;
-          });
-          
-          sessionStorage.removeItem("chatSelect");
-          router.push("/chat");
-          resolve();
-        } catch (error) {
-          console.error(error)
-          reject(new Error(`Failed to fetch character data: ${error}`));
-        }
-      }),
-      {
-        pending: "Downloading character...",
-        success: "Character loaded!",
-        error: "Failed to download character.",
-      }
-    );
-  };
-
-  const startJannyAIChat = (id: string) => {
-    toast.promise(
-      new Promise<void>(async (resolve, reject) => {
-        try {
-          const response = await fetch(`https://whateverorigin.org/get?url=${encodeURIComponent(`https://jannyai.com/api/v1/characters/${id}`)}`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const raw = await response.json();
-          const data = JSON.parse(raw.contents)
-  
-          const { name, personality, initialMessage, plmex, ...rest } = characterData;
-  
-          const imageUrl = "https://image.jannyai.com/bot-avatars/" + data.avatar;
-          const imageBase64 = await getImageBase64(imageUrl);
-  
-          setCharacterData(() => {
-            const updatedData = {
-              ...rest,
-              name: data.name,
-              personality: `${data.personality || data.description}\n\nExample dialogs (chats resembling how {{char}} will speak):\n${data.exampleDialogs}`,
-              alternateInitialMessages: [],
-              initialMessage: data.firstMessage,
-              scenario: data.scenario,
-              image: imageBase64,
-              tags: [],
-              plmex: defaultCharacterData.plmex,
-            } as CharacterData;
             localStorage.setItem('characterData', JSON.stringify(updatedData));
             return updatedData;
           });
@@ -157,9 +91,9 @@ export default function Search() {
 
   const handleResultClick = (result: SearchResultItem) => {
     if (result.provider === 'chub.ai') {
-        startChubChat(result.charLink);
+        startChat('chub.ai', result.charLink);
     } else if (result.provider === 'janny.ai') {
-        startJannyAIChat(result.id);
+        startChat('janny.ai', result.id);
     }
   };
 
