@@ -39,22 +39,28 @@ function CharacterCatalog({ characters, layout = 'l' }: { characters: SearchResu
                         damping: 20,
                         delay: idx * 0.05
                     }}
-                    key={idx} className={`${layout === "l" ? "w-64 h-32" : "w-45 h-64"} bg-white/2 border border-white/5 rounded-xl overflow-hidden shrink-0 cursor-pointer relative`}>
+                    key={idx} className={`${layout === "l" ? "w-64 h-32 flex justify-end" : "w-45 h-64 flex flex-col justify-end"} text-start  p-2 py-3 bg-white/2 border border-white/5 rounded-xl overflow-hidden shrink-0 cursor-pointer relative`}>
                     {layout === "l" ? (
                         <>
-                            <img className="absolute top-0 left-0 h-full w-32 object-cover object-[50%_30%]"
+                            <img className="absolute top-0 left-0 h-full w-32 object-cover object-[50%_30%] -z-1"
                                 style={{
                                     maskImage: "linear-gradient(to right, black, rgba(0,0,0,0))"
                                 }}
                                 src={char.image} />
+                            <div className="max-w-42">
+                                <h1 className="whitespace-nowrap font-extrabold">{char.name}</h1>
+                                <p className="text-xs opacity-50">{char.description && char.description.length > 50 ? char.description.slice(0, 50) + "..." : char.description}</p>
+                            </div>
                         </>
                     ) : (
                         <>
-                            <img className="absolute top-0 left-0 h-52 w-full object-cover object-[50%_30%]"
+                            <img className="absolute top-0 left-0 h-52 w-full object-cover object-[50%_30%] -z-1"
                                 style={{
                                     maskImage: "linear-gradient(to bottom, black, rgba(0,0,0,0))"
                                 }}
                                 src={char.image} />
+                            <h1 className="whitespace-nowrap font-extrabold">{char.name}</h1>
+                            <p className="text-xs opacity-50 h-18">{char.description && char.description.length > 100 ? char.description.slice(0, 100) + "..." : char.description}</p>
                         </>
                     )}
                 </motion.button>
@@ -136,8 +142,8 @@ export default function DiscoverPage() {
                 marginLeft: isOpen ? 100 : 0,
             }} className="flex min-h-screen p-6 px-0 gap-4 font-sans!">
 
-            <div className="top-0 left-0 flex fixed justify-end mr-4 p-8 w-full">
-                <div className="flex items-center gap-2 p-1 px-4 bg-white/5 border border-white/5 rounded-full">
+            <div className="top-0 left-0 flex fixed justify-end mr-4 p-8 w-full z-10 pointer-events-none">
+                <div className="flex items-center gap-2 p-1 px-4 bg-white/5 border border-white/5 rounded-full backdrop-blur-xl pointer-events-auto">
                     <Search />
                     <Input placeholder="Search" className="focus:ring-0! focus:ring-offset-0! bg-transparent border-0" />
                 </div>
