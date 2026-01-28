@@ -70,7 +70,7 @@ export default function CharacterCardDrawer({ charCardOpen, setCharCardOpen, cha
 
 
                 <div className="fixed flex gap-2 bottom-0 w-full bg-background border border-white/5 rounded-t-xl p-3">
-                    <Button onClick={startChat} disabled={resolving || !resolvedCharacter} className="flex-1">{(resolving || !resolvedCharacter) ? <Loader className="animate-spin" /> : <MessageCircle />}Start chat</Button>
+                    <Button onClick={startChat} disabled={resolving || resolvedCharacter === undefined} className="flex-1">{(resolving || resolvedCharacter === undefined) ? <Loader className="animate-spin" /> : <MessageCircle />}Start chat</Button>
                     <Popover>
                         <PopoverTrigger>
                             <Button variant={"outline"}><MoreHorizontal /></Button>

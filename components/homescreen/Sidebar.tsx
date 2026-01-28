@@ -13,6 +13,9 @@ export default function Sidebar() {
 
     const [activeTab, setActiveTab] = useState(pathname);
 
+
+    const [showingCreate, setShowingCreate] = useState(false);
+
     useEffect(() => {
         setActiveTab(pathname);
 
@@ -35,35 +38,140 @@ export default function Sidebar() {
                     {isOpen ? <ChevronsLeft size={32} /> : <Menu size={32} />}
                 </button>
 
-                <div 
-                onMouseEnter={() => setOpen(true)}
-                className="absolute top-0 right-0 translate-x-full h-full w-4"></div>
+                <div
+                    onMouseEnter={() => setOpen(true)}
+                    className="absolute top-0 right-0 translate-x-full h-full w-4"></div>
 
                 <img src="/palmirror.png" width={64} alt="logo" />
                 <div className="w-full h-0.5 bg-white/5 mb-6"></div>
 
-                <motion.button className="rounded-full bg-white/5 border border-white/5 p-3">
-                    <Plus size={32} />
-                </motion.button>
+                <div className="relative w-full">
+                    <motion.div
+                        initial={{
+                            height: "3.5rem",
+                            width: "3.5rem",
+                            borderRadius: '64px',
+                            y: 0
+                        }}
+                        animate={
+                            showingCreate ? {
+                                x: Math.min(window.innerWidth * 0.07, 100),
+                                height: '8rem',
+                                width: '15rem',
+                                borderRadius: '12px',
+                                y: [0, 30, 0, 0, 0, 0, 0, 0, 0],
+                            } : {
+                                height: "3.5rem",
+                                width: "3.5rem",
+                                borderRadius: '64px',
+                                y: 0
+                            }
+                        }
+
+                        className="flex bg-[#1d1c1d] border border-white/5 absolute p-4 font-sans ml-1">
+                        <motion.button
+                            initial={{
+                                top: '50%',
+                                left: '50%',
+                                x: '-50%',
+                                y: '-50%',
+                                opacity: 1
+                            }}
+                            animate={showingCreate ? {
+                                top: '1%',
+                                left: '100%',
+                                x: '-100%',
+                                y: '0%',
+                                opacity: 0.5
+                            } : {
+                                top: '50%',
+                                left: '50%',
+                                x: '-50%',
+                                y: '-50%',
+                                opacity: 1
+                            }}
+
+                            whileTap={{
+                                scale: 0.9
+                            }}
+
+                            className="absolute p-2"
+                            onClick={(e) => {
+                                setShowingCreate(!showingCreate)
+                            }}
+                        >
+                            <motion.div
+                                animate={showingCreate ? {
+                                    rotate: '45deg'
+                                } : {
+                                    rotate: '0deg'
+                                }}
+                            >
+
+
+                                <Plus className="text-white/80" size={32} />
+                            </motion.div>
+                        </motion.button>
+                        <motion.div
+                            initial={{
+                                scale: 0,
+                                opacity: 0
+                            }}
+                            animate={showingCreate ? {
+                                scale: 1,
+                                opacity: 1
+                            } : {
+                                scale: 0,
+                                opacity: 0
+                            }}
+                            transition={
+                                {
+                                    type: 'spring',
+                                    mass: 1,
+                                    stiffness: 300,
+                                    damping: 25
+                                }
+                            }
+                            className="absolute origin-top-left flex flex-col gap-2 items-start"
+                        >
+                            {/* <Button onClick={() => {
+                                setSetupCharacterShowing(true);
+                                setShowingCreate(false);
+                            }}><PenLine /> Setup Character</Button>
+                            <SetupCharacter open={setupCharacterShowing} changeOpen={(v: boolean) => setSetupCharacterShowing(v)} onSetupComplete={() => {
+                                setSetupCharacterShowing(false);
+                            }} />
+
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={importCharacter}
+                                style={{ display: 'none' }}
+                                accept=".plmc"
+                            />
+                            <Button onClick={() => fileInputRef.current?.click()}><Import /> Import from file</Button> */}
+                        </motion.div>
+                    </motion.div>
+                </div>
 
                 <div className="flex flex-col gap-2 h-full justify-center">
-                    <SidebarButton 
-                        path="/discover" 
-                        icon={<Compass />} 
-                        onClick={() => setActiveTab("/discover")} 
-                        isActive={activeTab === "/discover"} 
+                    <SidebarButton
+                        path="/discover"
+                        icon={<Compass />}
+                        onClick={() => setActiveTab("/discover")}
+                        isActive={activeTab === "/discover"}
                     />
-                    <SidebarButton 
-                        path="/" 
-                        icon={<MessageCircle />} 
-                        onClick={() => setActiveTab("/")} 
-                        isActive={activeTab === "/"} 
+                    <SidebarButton
+                        path="/"
+                        icon={<MessageCircle />}
+                        onClick={() => setActiveTab("/")}
+                        isActive={activeTab === "/"}
                     />
-                    <SidebarButton 
-                        path="/settings" 
-                        icon={<Settings />} 
-                        onClick={() => setActiveTab("/settings")} 
-                        isActive={activeTab === "/settings"} 
+                    <SidebarButton
+                        path="/settings"
+                        icon={<Settings />}
+                        onClick={() => setActiveTab("/settings")}
+                        isActive={activeTab === "/settings"}
                     />
                 </div>
             </motion.div>

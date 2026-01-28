@@ -40,7 +40,7 @@ import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 import { MessagePreview } from "@/components/MessagePreview";
 import { LinearBlur } from "@/components/utilities/LinearBlur";
-import { ChevronLeft, ChevronRight, ListCollapse } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, ListCollapse } from "lucide-react";
 import { UserPersonality } from "@/types/UserPersonality";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import { ApiProfile } from "@/components/chat/ChatSettings";
@@ -1764,6 +1764,9 @@ ${entryTitle}
               </div>
             )}
         </div> 
+
+        
+
         <ChatHeader
           characterData={characterData}
           fromDomain={!!entryTitle}
@@ -1892,6 +1895,18 @@ ${entryTitle}
             <div ref={messageEndRef} />
           </div>
         </div>
+
+        {!PLMSecContext?.isSecureReady() && (
+          <div className="bg-blue-600/20 border border-blue-600 text-blue-300 p-3 rounded-xl z-1">
+            <div className="flex gap-2 items-center">
+              <Info />
+              <p>Chat not saved</p>
+            </div>
+            <p className="text-sm opacity-70 mt-2">In this guest mode, you cannot save chats and this will be gone when you refresh. To save and get more features, setup <button onClick={() => {
+              router.push("/secure")
+            }} className="underline cursor-pointer">PalMirror Secure.</button></p>
+          </div>
+        )}
 
         <SkipToSceneModal modalState={skipToSceneModalState} setModalState={setSkipToSceneModalState} skipToSceneCallback={(b) => skipToScene(b)}/>
               
