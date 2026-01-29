@@ -92,9 +92,8 @@ export default function DiscoverPage() {
 
     return (
         <motion.div
-            animate={{
-                marginLeft: isOpen ? 100 : 0,
-            }}
+            initial={{ marginLeft: !isOpen ? 0 : window.innerWidth > 640 ? 110 : 0 }}
+            animate={{ marginLeft: !isOpen ? 0 : window.innerWidth > 640 ? 110 : 0 }}
             
             className="flex min-h-screen p-6 px-0 gap-4 font-sans!">
 

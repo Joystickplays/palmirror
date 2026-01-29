@@ -78,14 +78,15 @@ export default function SetupCharacter({ open, changeOpen, onSetupComplete }: Se
 
 
             <div className="flex flex-col gap-4 my-4 px-4 overflow-y-scroll max-h-[70vh]">
-                <div className="p-4 px-6 palmirror-exc w-full rounded-2xl mt-4 flex justify-between items-center">
+                <div className="p-4 px-6 palmirror-exc w-full rounded-2xl mt-4 flex flex-col sm:flex-row justify-between items-center">
                     <h1 className="palmirror-exc-text font-extrabold! text-xl">PalMirror Experience</h1>
-                    <div className="flex items-center gap-2">
-                        <p className="text-white/20 text-xs w-[200px] text-end">Memories, continuity, immersive worlds, and more.</p>
+                    <div className="flex flex-col sm:flex-row items-center gap-2 mt-2 sm:mt-0">
+                        <p className="text-white/20 text-xs w-full sm:w-[200px] text-center sm:text-end">Memories, continuity, immersive worlds, and more.</p>
                         <Button onClick={() => {
                             router.push("/experience/create")
                             onSetupComplete?.();
-                        }} variant={"palmirror"}>Create</Button>
+                        }} variant={"palmirror"}
+                        className="w-full sm:w-fit">Create</Button>
                     </div>
                 </div>
                 <div className="flex flex-col gap-2">
