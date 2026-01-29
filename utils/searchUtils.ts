@@ -222,8 +222,18 @@ const PROVIDERS = {
             });
         },
         getCharacter: async (id: string): Promise<CharacterData> => {
-            const proxyUrl = `/api/fetch/jannyCharacter?id=${id}`;
-            const response = await fetch(proxyUrl);
+            const targetUrl = `https://jannyai.com/api/v1/characters/${id}`;
+            const proxyUrl = `/api/fetch/jannyCharacter`;
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url: targetUrl,
+                    method: 'GET'
+                })
+            });
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

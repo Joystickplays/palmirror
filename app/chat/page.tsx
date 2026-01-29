@@ -1726,6 +1726,7 @@ ${entryTitle}
 
   return (
     <div className={`grid place-items-center ${currentTheme.bg}`}>
+      
       <ToastContainer
         position="top-right"
         autoClose={5000}

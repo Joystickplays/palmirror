@@ -2,43 +2,45 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { gotScraping } from 'got-scraping';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return res.status(405).json({ error: 'Method not allowed' });
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed. Use POST for proxying.' });
     }
 
-    const { id } = req.query;
+    const { url, headers, method = 'GET', body } = req.body;
 
-    if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: 'Missing or invalid character ID' });
+    if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: 'Missing or invalid target URL' });
     }
-
-    const targetUrl = `https://jannyai.com/api/v1/characters/${id}`;
 
     try {
-        const response = await gotScraping({
-            url: targetUrl,
+        const options: any = {
+            url: url,
+            method: method,
+            headers: headers,
             headerGeneratorOptions: {
                 browsers: [{ name: 'chrome', minVersion: 120 }],
                 devices: ['desktop'],
                 locale: 'en-US',
             }
-        });
+        };
 
-        if (!response.ok) {
-            const errorText = await response;
-            console.error(`Upstream Error ${response.statusCode}:`, errorText);
-            return res.status(response.statusCode).json({ error: `Failed to fetch: ${response}` });
+        if (body) {
+            if (typeof body === 'object') {
+                options.json = body;
+            } else {
+                options.body = body;
+            }
         }
 
-        const data = JSON.parse(response.body);
+        const response = await gotScraping(options);
 
-        // if (response.headers.get('cache-control')) {
-        //     res.setHeader('Cache-Control', response.headers.get('cache-control')!);
-        // }
+        if (response.headers['content-type']) {
+            res.setHeader('Content-Type', response.headers['content-type']);
+        }
 
-        res.status(200).json(data);
-    } catch (error) {
+        res.status(response.statusCode).send(response.body);
+    } catch (error: any) {
         console.error('Proxy API Error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(error.response?.statusCode || 500).json({ error: error.message || 'Internal server error' });
     }
 }
