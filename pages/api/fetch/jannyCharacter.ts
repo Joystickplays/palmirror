@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { gotScraping } from 'got-scraping';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -12,43 +13,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const targetUrl = `https://jannyai.com/api/v1/characters/${id}`;
-    
-    const refererUrl = `https://jannyai.com/characters/${id}`;
 
     try {
-        const response = await fetch(targetUrl, {
-            method: 'GET',
-            headers: {
-                // teehee browser in nextjs fetch
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-                'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
-                'Accept': '*/*',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Origin': 'https://jannyai.com', 
-                'Referer': refererUrl,
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-origin',
-                'Connection': 'keep-alive',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-            },
-            redirect: 'follow', 
+        const response = await gotScraping({
+            url: targetUrl,
+            headerGeneratorOptions: {
+                browsers: [{ name: 'chrome', minVersion: 120 }],
+                devices: ['desktop'],
+                locale: 'en-US',
+            }
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Upstream Error ${response.status}:`, errorText);
-            return res.status(response.status).json({ error: `Failed to fetch: ${response.statusText}` });
+            const errorText = await response;
+            console.error(`Upstream Error ${response.statusCode}:`, errorText);
+            return res.status(response.statusCode).json({ error: `Failed to fetch: ${response}` });
         }
 
-        const data = await response.json();
-        
-        if (response.headers.get('cache-control')) {
-            res.setHeader('Cache-Control', response.headers.get('cache-control')!);
-        }
+        const data = JSON.parse(response.body);
+
+        // if (response.headers.get('cache-control')) {
+        //     res.setHeader('Cache-Control', response.headers.get('cache-control')!);
+        // }
 
         res.status(200).json(data);
     } catch (error) {

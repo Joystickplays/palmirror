@@ -9,6 +9,7 @@ import { motion } from "framer-motion"
 import { Search } from "lucide-react"
 import CharacterCatalog from "@/components/homescreen/CharacterCatalog";
 import CharacterCardDrawer from "@/components/homescreen/CharacterCardDrawer";
+import SearchArea from "@/components/homescreen/SearchArea";
 
 
 
@@ -34,7 +35,7 @@ export default function DiscoverPage() {
         (async () => {
             const result = await searchCharacters({
                 provider: "janny.ai",
-                query: "+Fluff +Game +AnyPOV +Fictional",
+                query: "+Angst +Game +AnyPOV",
                 excludeNsfw: false
             })
 
@@ -96,10 +97,7 @@ export default function DiscoverPage() {
             }} className="flex min-h-screen p-6 px-0 gap-4 font-sans!">
 
             <div className="top-0 left-0 flex fixed justify-end mr-4 p-8 w-full z-10 pointer-events-none">
-                <div className="flex items-center gap-2 p-1 px-4 bg-white/5 border border-white/5 rounded-full backdrop-blur-xl pointer-events-auto">
-                    <Search />
-                    <Input placeholder="Search" className="focus:ring-0! focus:ring-offset-0! bg-transparent border-0" />
-                </div>
+                <SearchArea setCharacterCardChar={setCharCardData} setCharacterCardOpen={setCharCardOpen} />
             </div>
 
             <div className="flex flex-col gap-8 mt-22 min-w-0">
@@ -133,7 +131,8 @@ export default function DiscoverPage() {
             </div>
 
 
-        <CharacterCardDrawer charCardOpen={charCardOpen} setCharCardOpen={setCharCardOpen} charCardData={charCardData} />
+            <CharacterCardDrawer charCardOpen={charCardOpen} setCharCardOpen={setCharCardOpen} charCardData={charCardData} />
+            <p className="fixed bottom-0 right-0 m-4 opacity-10 text-xs">These characters are greatly served by <a className="underline" target="_blank" href="https://jannyai.com">JannyAI</a></p>
 
         </motion.div>
     )

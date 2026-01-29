@@ -1,20 +1,126 @@
 "use client";
 
-import { useSidebarStore } from "@/context/zustandStore/Sidebar";
+import { useContext, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronsLeft, Compass, Menu, MessageCircle, Plus, Settings } from "lucide-react";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSidebarStore } from "@/context/zustandStore/Sidebar";
+import { usePathname, useRouter } from "next/navigation";
+import { usePMNotification } from "../notifications/PalMirrorNotification";
 import SidebarButton from "./SidebarButton";
+import { Button } from "../ui/button";
+import { toast } from "react-toastify";
+
+import pako from "pako";
+
+import { CharacterData } from "@/types/CharacterData";
+
+import { ChevronsLeft, Compass, Import, Menu, MessageCircle, PenLine, Plus, Settings } from "lucide-react";
+import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
+import { PLMSecureContext } from "@/context/PLMSecureContext";
+import SetupCharacter from "../modals/SetupCharacter";
+
 
 export default function Sidebar() {
-    const { isOpen, setOpen } = useSidebarStore();
+    const { isOpen, setOpen, showSetupCharacter, setShowSetupCharacter } = useSidebarStore();
     const pathname = usePathname();
+    const PMNotify = usePMNotification();
+    const router = useRouter();
+    const PLMsecureContext = useContext(PLMSecureContext);
 
     const [activeTab, setActiveTab] = useState(pathname);
 
 
     const [showingCreate, setShowingCreate] = useState(false);
+
+
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    const importCharacter = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files![0];
+        if (!file) {
+            PMNotify.error("No file selected.");
+            return;
+        }
+
+        const reader = new FileReader();
+
+        toast.promise(
+            new Promise<void>((resolve, reject) => {
+                reader.onload = async function (event) {
+                    try {
+                        const fileContent = event.target?.result as ArrayBuffer;
+
+                        const text = new TextDecoder().decode(fileContent);
+                        const firstDelimiterIndex = text.indexOf("\n\n");
+                        const delimiterIndex = text.indexOf(
+                            "\n\n",
+                            firstDelimiterIndex + 1
+                        );
+                        if (delimiterIndex === -1) {
+                            reject(
+                                new Error(
+                                    "Invalid file format: unable to find the data delimiter."
+                                )
+                            );
+                            return;
+                        }
+
+                        const compressedData = fileContent.slice(delimiterIndex + 2);
+                        const compressedDataT = text.slice(delimiterIndex + 2);
+                        const decompressedData = file.name
+                            .split(".")
+                            .slice(0, -1)
+                            .join(".")
+                            .includes("ucm")
+                            ? compressedDataT
+                            : pako.ungzip(new Uint8Array(compressedData), { to: "string" });
+                        const characterData: CharacterData = JSON.parse(decompressedData);
+                        if (characterData.plmex.domain?.active && !isPalMirrorSecureActivated()) {
+                            PMNotify.info("Use PalMirror Secure for PalMirror Experience Domain characters!")
+                            reject(
+                                "Domain enabled character!"
+                            )
+                            return;
+                        }
+
+                        localStorage.setItem(
+                            "characterData",
+                            JSON.stringify(characterData)
+                        );
+
+                        if (characterData.plmex.domain?.active) {
+                            const chatKey = crypto.randomUUID()
+                            PLMsecureContext?.setSecureData(`METADATA${chatKey}`, {
+                                ...characterData,
+                                id: chatKey,
+                                lastUpdated: new Date().toISOString(),
+                            })
+                            sessionStorage.setItem("chatSelect", chatKey)
+                            router.push("/experience/domain")
+                            return;
+                        }
+                        sessionStorage.removeItem("chatSelect");
+                        router.push("/chat");
+
+                        resolve();
+                    } catch (err) {
+                        reject(
+                            new Error(
+                                "Failed to import the character. Please check the file format."
+                            )
+                        );
+                        console.error("Error while importing character:", err);
+                    }
+                };
+
+                reader.readAsArrayBuffer(file);
+            }),
+            {
+                pending: "Processing character file...",
+                success: "Character imported successfully.",
+                error: "Failed to import the character.",
+            }
+        );
+    };
 
     useEffect(() => {
         setActiveTab(pathname);
@@ -134,12 +240,12 @@ export default function Sidebar() {
                             }
                             className="absolute origin-top-left flex flex-col gap-2 items-start"
                         >
-                            {/* <Button onClick={() => {
-                                setSetupCharacterShowing(true);
+                            <Button onClick={() => {
+                                setShowSetupCharacter(true);
                                 setShowingCreate(false);
                             }}><PenLine /> Setup Character</Button>
-                            <SetupCharacter open={setupCharacterShowing} changeOpen={(v: boolean) => setSetupCharacterShowing(v)} onSetupComplete={() => {
-                                setSetupCharacterShowing(false);
+                            <SetupCharacter open={showSetupCharacter} changeOpen={(v: boolean) => setShowSetupCharacter(v)} onSetupComplete={() => {
+                                setShowSetupCharacter(false);
                             }} />
 
                             <input
@@ -149,7 +255,7 @@ export default function Sidebar() {
                                 style={{ display: 'none' }}
                                 accept=".plmc"
                             />
-                            <Button onClick={() => fileInputRef.current?.click()}><Import /> Import from file</Button> */}
+                            <Button onClick={() => fileInputRef.current?.click()}><Import /> Import from file</Button>
                         </motion.div>
                     </motion.div>
                 </div>
