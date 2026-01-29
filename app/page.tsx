@@ -785,7 +785,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!isSecureActivated && typeof window !== 'undefined') {
+    if (!localStorage.getItem("secureMetadata") && typeof window !== 'undefined') {
       const hasVisitedBefore = sessionStorage.getItem("palmirror_home_visited");
       
       if (!hasVisitedBefore) {
