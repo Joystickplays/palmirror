@@ -223,22 +223,14 @@ const PROVIDERS = {
         },
         getCharacter: async (id: string): Promise<CharacterData> => {
             const targetUrl = `https://jannyai.com/api/v1/characters/${id}`;
-            const proxyUrl = `/api/fetch/jannyCharacter`;
-            const response = await fetch(proxyUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    url: targetUrl,
-                    method: 'GET'
-                })
-            });
+            const proxyUrl = `https://whateverorigin.org/get?url=${encodeURIComponent(targetUrl)}`;
+            const response = await fetch(proxyUrl);
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const data = await response.json();
+            const wrapper = await response.json();
+            const data = JSON.parse(wrapper.contents);
         
             const imageUrl = "https://image.jannyai.com/bot-avatars/" + data.avatar;
             const imageBase64 = await getImageBase64(imageUrl);
