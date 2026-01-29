@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, memo, useCallback } from "react"
+import { useEffect, useState, memo, useCallback, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Loader, SearchIcon } from "lucide-react"
 import { motion } from "framer-motion"
@@ -70,6 +70,8 @@ function SearchArea({
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
 
+    const searchInput = useRef<HTMLInputElement>(null);
+
     useEffect(() => {
         if (searchQuery.trim().length === 0) {
             setSearchResults([]);
@@ -100,6 +102,7 @@ function SearchArea({
     }, [searchQuery]);
 
     const handleSelectCharacter = useCallback((char: SearchResultItem) => {
+        searchInput.current?.blur();
         setCharacterCardChar(char);
         setCharacterCardOpen(true);
         setSearchBarFocused(false);
@@ -110,6 +113,7 @@ function SearchArea({
             <div className="flex items-center justify-center gap-2">
                 <SearchIcon className="opacity-80" />
                 <Input
+                    ref={searchInput}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setSearchBarFocused(true)}
