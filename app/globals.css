@@ -299,7 +299,7 @@
   padding: 1px; 
   background: linear-gradient(120deg, #ff8ca1, #ffb3c6, #8cc1e6, #9e8ce6, #ff8ca1);
   background-size: 300% 300%;
-  z-index: 1;
+  z-index: 10;
 
 
   -webkit-mask:
@@ -312,6 +312,8 @@
   box-shadow: none;
   opacity: 0.5;
   animation: gradient-sweep 15s ease-in-out infinite;
+
+  pointer-events: none;
 }
 
 .palmirror-exc--light::after {
