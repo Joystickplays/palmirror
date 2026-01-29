@@ -217,7 +217,7 @@ function ChatCard({
       }}
       key={chat.lastUpdated}
       className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full ${
-        chat.plmex.domain?.active && "palmirror-exc"
+        chat.plmex.domain?.active && PLMGlobalConfigServiceInstance.get("highend") ? "palmirror-exc" : "palmirror-exc--light"
       }`}
       layout={PLMGlobalConfigServiceInstance.get("cardFlyIn") ? settled : true}
     >
@@ -919,9 +919,9 @@ export default function Home() {
 
   return isSecureActivated ? (
     <motion.div 
-    animate={{
-      marginLeft: isOpen ? 100 : 0,
-    }}
+    initial={{ marginLeft: !isOpen ? 0 : window.innerWidth > 640 ? 110 : 0 }}
+    animate={{ marginLeft: !isOpen ? 0 : window.innerWidth > 640 ? 110 : 0 }}
+            
     className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-(family-name:--font-geist-sans)">
       <div className="flex grow w-full">
         <AnimatePresence mode="popLayout">

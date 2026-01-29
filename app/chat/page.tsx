@@ -1903,7 +1903,7 @@ ${entryTitle}
               <Info />
               <p>Chat not saved</p>
             </div>
-            <p className="text-sm opacity-70 mt-2">In this guest mode, you cannot save chats and this will be gone when you refresh. To save and get more features, setup <button onClick={() => {
+            <p className="text-sm opacity-70 mt-2">In this guest mode, you cannot save chats and this chat won&apos;t persist after a refresh. To save and get more features, setup <button onClick={() => {
               router.push("/secure")
             }} className="underline cursor-pointer">PalMirror Secure.</button></p>
           </div>

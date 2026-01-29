@@ -17,5 +17,10 @@ export const useSidebarStore = create<SidebarState>((set) => ({
     isOpen: getInitialState(),
     setOpen: (open: boolean) => set({ isOpen: open }),
     showSetupCharacter: false,
-    setShowSetupCharacter: (open: boolean, character?: CharacterData) => set({ showSetupCharacter: open })
+    setShowSetupCharacter: (open: boolean, character?: CharacterData) => {
+        if (character) {
+            localStorage.setItem('characterData', JSON.stringify(character));
+        }
+        set({ showSetupCharacter: open })
+    }
 }));

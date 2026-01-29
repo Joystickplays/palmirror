@@ -283,6 +283,49 @@
   pointer-events: none;
 }
 
+.palmirror-exc--light {
+  position: relative;
+  border-radius: 12px;
+  background: transparent;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.palmirror-exc--light::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px; 
+  background: linear-gradient(120deg, #ff8ca1, #ffb3c6, #8cc1e6, #9e8ce6, #ff8ca1);
+  background-size: 300% 300%;
+  z-index: 1;
+
+
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+
+  box-shadow: none;
+  opacity: 0.5;
+  animation: gradient-sweep 15s ease-in-out infinite;
+}
+
+.palmirror-exc--light::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(255,255,255,0.02); 
+  z-index: -1;
+  -webkit-mask: none;
+  mask: none;
+}
+
 @keyframes gradient-sweep {
   0% {
     background-position: 0% 50%;
