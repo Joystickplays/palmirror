@@ -1,10 +1,11 @@
+import { CharacterData } from '@/types/CharacterData';
 import { create } from 'zustand';
 
 interface SidebarState {
     isOpen: boolean;
     setOpen: (open: boolean) => void;
     showSetupCharacter: boolean;
-    setShowSetupCharacter: (open: boolean) => void;
+    setShowSetupCharacter: (open: boolean, character?: CharacterData) => void;
 }
 
 const getInitialState = () => {
@@ -16,5 +17,5 @@ export const useSidebarStore = create<SidebarState>((set) => ({
     isOpen: getInitialState(),
     setOpen: (open: boolean) => set({ isOpen: open }),
     showSetupCharacter: false,
-    setShowSetupCharacter: (open: boolean) => set({ showSetupCharacter: open })
+    setShowSetupCharacter: (open: boolean, character?: CharacterData) => set({ showSetupCharacter: open })
 }));

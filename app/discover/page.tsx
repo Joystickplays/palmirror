@@ -94,7 +94,9 @@ export default function DiscoverPage() {
         <motion.div
             animate={{
                 marginLeft: isOpen ? 100 : 0,
-            }} className="flex min-h-screen p-6 px-0 gap-4 font-sans!">
+            }}
+            
+            className="flex min-h-screen p-6 px-0 gap-4 font-sans!">
 
             <div className="top-0 left-0 flex fixed justify-end mr-4 p-8 w-full z-10 pointer-events-none">
                 <SearchArea setCharacterCardChar={setCharCardData} setCharacterCardOpen={setCharCardOpen} />

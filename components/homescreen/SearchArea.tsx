@@ -1,13 +1,64 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, memo, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Loader, SearchIcon } from "lucide-react"
 import { motion } from "framer-motion"
 import { searchCharacters, SearchResultItem } from "@/utils/searchUtils";
 import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHeight"
 
-export default function SearchArea({
+const CharacterButton = memo(({ char, idx, onSelect }: { 
+    char: SearchResultItem, 
+    idx: number, 
+    onSelect: (char: SearchResultItem) => void 
+}) => {
+    return (
+        <motion.button
+            initial={{
+                opacity: 0,
+                x: -20
+            }}
+            animate={{
+                opacity: 1,
+                x: 0
+            }}
+            whileHover={{
+                backgroundColor: "rgba(255, 255, 255, 0.01)",
+                paddingRight: '20px',
+                transition: {
+                    type: 'spring',
+                    mass: 1,
+                    stiffness: 160,
+                    damping: 20,
+                    delay: 0
+                }
+            }}
+            transition={{
+                type: 'spring',
+                mass: 1,
+                stiffness: 160,
+                damping: 20,
+                // delay: idx * 0.1
+            }}
+            className="p-4 pl-12 cursor-pointer text-end relative h-28"
+            onMouseDown={(e) => {
+                e.preventDefault();
+                onSelect(char);
+            }}
+        >
+            <img src={char.image} alt={char.name} className="absolute left-0 top-0 h-full w-32 object-cover"
+                style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%)' }}
+            />
+            <h1 className="font-extrabold z-10">{char.name}</h1>
+            <p className="text-sm opacity-60 z-10">
+                {char.description?.length > 50 ? `${char.description.slice(0, 50)}...` : char.description}
+            </p>
+        </motion.button>
+    )
+})
+CharacterButton.displayName = "CharacterButton"
+
+function SearchArea({
     setCharacterCardChar,
     setCharacterCardOpen
 }: {
@@ -48,6 +99,12 @@ export default function SearchArea({
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery]);
 
+    const handleSelectCharacter = useCallback((char: SearchResultItem) => {
+        setCharacterCardChar(char);
+        setCharacterCardOpen(true);
+        setSearchBarFocused(false);
+    }, [setCharacterCardChar, setCharacterCardOpen]);
+
     return (
         <div className={`flex items-center justify-start gap-2 px-4 py-1 w-full sm:w-64 h-full rounded-full bg-white/5 border border-white/5 backdrop-blur-lg transition-all pointer-events-auto ${searchBarFocused ? "sm:w-84" : ""}`}>
             <div className="flex items-center justify-center gap-2">
@@ -71,50 +128,12 @@ export default function SearchArea({
                         </div>) : (
                         <div className="p-0 flex flex-col">
                             {searchResults.map((char, idx) => (
-                                <motion.button
-                                    initial={{
-                                        opacity: 0,
-                                        x: -20
-                                    }}
-                                    animate={{
-                                        opacity: 1,
-                                        x: 0
-                                    }}
-                                    whileHover={{
-                                        backgroundColor: "rgba(255, 255, 255, 0.01)",
-                                        paddingRight: '20px',
-                                        transition: {
-                                            type: 'spring',
-                                            mass: 1,
-                                            stiffness: 160,
-                                            damping: 20,
-                                            delay: 0
-                                        }
-                                    }}
-                                    transition={{
-                                        type: 'spring',
-                                        mass: 1,
-                                        stiffness: 160,
-                                        damping: 20,
-                                        delay: idx * 0.1
-                                    }}
-                                    key={char.id}
-                                    className="p-4 pl-12 cursor-pointer text-end relative h-28"
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        setCharacterCardChar(char);
-                                        setCharacterCardOpen(true);
-                                        setSearchBarFocused(false);
-                                    }}
-                                >
-                                    <img src={char.image} alt={char.name} className="absolute left-0 top-0 h-full w-32 object-cover"
-                                        style={{ maskImage: 'linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%)' }}
-                                    />
-                                    <h1 className="font-extrabold z-10">{char.name}</h1>
-                                    <p className="text-sm opacity-60 z-10">
-                                        {char.description?.length > 50 ? `${char.description.slice(0, 50)}...` : char.description}
-                                    </p>
-                                </motion.button>
+                                <CharacterButton 
+                                    key={char.id} 
+                                    char={char} 
+                                    idx={idx} 
+                                    onSelect={handleSelectCharacter} 
+                                />
                             ))}
                         </div>
                     )
@@ -123,3 +142,5 @@ export default function SearchArea({
         </div>
     );
 }
+
+export default memo(SearchArea)

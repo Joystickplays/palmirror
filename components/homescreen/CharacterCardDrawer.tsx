@@ -7,6 +7,8 @@ import { Button } from "../ui/button";
 import { ExternalLink, Loader, MessageCircle, MoreHorizontal, Pencil } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
 import { useRouter } from "next/navigation";
+import { useSidebarStore } from "@/context/zustandStore/Sidebar";
+import React from "react";
 
 
 interface CharacterCardDrawerProps {
@@ -16,6 +18,8 @@ interface CharacterCardDrawerProps {
 }
 
 export default function CharacterCardDrawer({ charCardOpen, setCharCardOpen, charCardData }: CharacterCardDrawerProps) {
+
+    const setShowSetupCharacter = useSidebarStore(s => s.setShowSetupCharacter)
 
     const PMNotify = usePMNotification();
     const router = useRouter();
@@ -70,13 +74,16 @@ export default function CharacterCardDrawer({ charCardOpen, setCharCardOpen, cha
 
 
                 <div className="fixed flex gap-2 bottom-0 w-full bg-background border border-white/5 rounded-t-xl p-3">
-                    <Button onClick={startChat} disabled={resolving || resolvedCharacter === undefined} className="flex-1">{(resolving || resolvedCharacter === undefined) ? <Loader className="animate-spin" /> : <MessageCircle />}Start chat</Button>
+                    <Button onClick={startChat} disabled={resolving || resolvedCharacter === undefined} className="flex-1">{(resolving) ? <Loader className="animate-spin" /> : <MessageCircle />}Start chat</Button>
                     <Popover>
                         <PopoverTrigger>
                             <Button variant={"outline"}><MoreHorizontal /></Button>
                         </PopoverTrigger>
                         <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans">
-                            <Button className="justify-start" variant="outline"><Pencil />Edit</Button>
+                            <Button disabled={resolving || resolvedCharacter === undefined} onClick={() => {
+                                setShowSetupCharacter(true, resolvedCharacter)
+                                setCharCardOpen(false)
+                            }} className="justify-start" variant="outline"><Pencil />Edit</Button>
                             <Button onClick={() => {
                                 window.open(charCardData?.charLink, "_blank")
                             }} className="justify-start" variant="outline"><ExternalLink />Go to external page</Button>
