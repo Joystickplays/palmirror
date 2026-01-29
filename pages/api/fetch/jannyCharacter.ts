@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { gotScraping } from 'got-scraping';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
@@ -13,34 +12,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-        const options: any = {
-            url: url,
+        const response = await fetch(url, {
             method: method,
             headers: headers,
-            headerGeneratorOptions: {
-                browsers: [{ name: 'chrome', minVersion: 120 }],
-                devices: ['desktop'],
-                locale: 'en-US',
-            }
-        };
+            body: body ? (typeof body === 'object' ? JSON.stringify(body) : body) : undefined
+        });
 
-        if (body) {
-            if (typeof body === 'object') {
-                options.json = body;
-            } else {
-                options.body = body;
-            }
+        const contentType = response.headers.get('content-type');
+        if (contentType) {
+            res.setHeader('Content-Type', contentType);
         }
 
-        const response = await gotScraping(options);
-
-        if (response.headers['content-type']) {
-            res.setHeader('Content-Type', response.headers['content-type']);
-        }
-
-        res.status(response.statusCode).send(response.body);
+        const responseData = await response.text();
+        res.status(response.status).send(responseData);
     } catch (error: any) {
         console.error('Proxy API Error:', error);
-        res.status(error.response?.statusCode || 500).json({ error: error.message || 'Internal server error' });
+        res.status(500).json({ error: error.message || 'Internal server error' });
     }
 }
