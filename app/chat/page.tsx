@@ -612,12 +612,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
             }
           }
 
-          messagesList = messagesList.slice(0, -1);
-          setMessages(messagesList);
-
-
-          // wait for 250ms because race conditions idk
-          await new Promise((resolve) => setTimeout(resolve, 250));
+          messagesList.pop();
         }
       }
 
@@ -644,20 +639,30 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     }
 
     let assistantMessageObject: Message;
-    const extraContentId = crypto.randomUUID();
+    let extraContentId = crypto.randomUUID();
 
     if (existingMessage) {
       // PMNotify.success("using existing message object for regeneration");
-      assistantMessageObject = existingMessage;
+      assistantMessageObject = { ...existingMessage };
+      if (assistantMessageObject.extraContent) {
+        assistantMessageObject.extraContent = [...assistantMessageObject.extraContent];
+      }
 
       if (regenerate) {
-        if (!assistantMessageObject.extraContent) assistantMessageObject.extraContent = [];
-        assistantMessageObject.extraContent.push({
-          id: extraContentId,
-          content: "",
-        })
-        assistantMessageObject.focusingOnIdx = assistantMessageObject.extraContent?.length || 2 - 1;
-        assistantMessageObject.stillGenerating = true;
+        const lastExtra = assistantMessageObject.extraContent?.[(assistantMessageObject.extraContent?.length || 0) - 1];
+        const isPrepped = lastExtra && lastExtra.content === "" && assistantMessageObject.stillGenerating;
+
+        if (isPrepped && lastExtra) {
+          extraContentId = lastExtra.id;
+        } else {
+          if (!assistantMessageObject.extraContent) assistantMessageObject.extraContent = [];
+          assistantMessageObject.extraContent.push({
+            id: extraContentId,
+            content: "",
+          })
+          assistantMessageObject.focusingOnIdx = assistantMessageObject.extraContent.length;
+          assistantMessageObject.stillGenerating = true;
+        }
       }
     } else {
       assistantMessageObject = { 
@@ -949,10 +954,17 @@ ${entryTitle}
     try {
 
       if (destination === "chat") {
-        setMessages((p) => [
-          ...p,
-          assistantMessageObject,
-        ]);
+        if (!regenerate) {
+          setMessages((p) => [
+            ...p,
+            assistantMessageObject,
+          ]);
+        } else {
+          setMessages((p) => [
+            ...p.slice(0, -1),
+            assistantMessageObject,
+          ]);
+        }
       }
 
       abortController.current = new AbortController();
@@ -1121,10 +1133,26 @@ ${entryTitle}
 
   const regenerateMessage = () => {
     const updatedMessages = [...messages];
-    const lastMsg = updatedMessages.pop();
+    const lastMsgIndex = updatedMessages.length - 1;
+    const lastMsg = updatedMessages[lastMsgIndex];
 
+    const optimisticMsg = { ...lastMsg };
+    const extraContentId = crypto.randomUUID();
+    
+    if (!optimisticMsg.extraContent) optimisticMsg.extraContent = [];
+    else optimisticMsg.extraContent = [...optimisticMsg.extraContent];
+
+    optimisticMsg.extraContent.push({
+      id: extraContentId,
+      content: "",
+    });
+    optimisticMsg.focusingOnIdx = optimisticMsg.extraContent.length;
+    optimisticMsg.stillGenerating = true;
+
+    updatedMessages[lastMsgIndex] = optimisticMsg;
     setMessages(updatedMessages);
-    handleSendMessage(null, true, true, "", false, "send", "", "chat", lastMsg);
+
+    handleSendMessage(null, true, true, "", false, "send", "", "chat", optimisticMsg);
     secondLastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
