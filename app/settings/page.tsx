@@ -22,6 +22,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import NumberFlow from "@number-flow/react";
+import UserPersonalities from "@/components/UserPersonalities";
 
 export default function SettingsPage() {
     const router = useRouter();
@@ -260,6 +261,9 @@ export default function SettingsPage() {
                     Back
                 </Button>
             </div>
+
+
+            <UserPersonalities />
 
             {Object.entries(settingsSchema).map(([groupId, group]) => (
                 <div key={groupId} className="flex flex-col gap-2">

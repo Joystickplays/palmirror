@@ -2,8 +2,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
-import { useSpring, animated } from '@react-spring/web';
-import { useDrag } from '@use-gesture/react';
 import { Pencil, Rewind, Check, MessagesSquare, RotateCw, ChevronDown, MailQuestion } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +30,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useMotionValue, useSpring, useTransform, useDragControls, PanInfo, animate } from 'framer-motion';
 import { CharacterData } from "@/types/CharacterData";
 
 import TypingIndication from "@/components/Typing"
@@ -166,18 +164,31 @@ const MessageCard: React.FC<MessageCardProps> = ({
   //   setConfigHighend(!!PLMGC.get("highend"))
   // }, [])
 
-  const [{ scale }, apiScaleSpring] = useSpring(() => ({
-    scale: 1,
-    config: { tension: 100, friction: 20 },
-  }));
+  const x = useMotionValue(0);
+  const scale = useMotionValue(1);
+  const height = useMotionValue(100);
+  const fontSize = useMotionValue(1);
+  const blur = useMotionValue(0);
+  const xOffset = useMotionValue(0);
 
-  const [{ x, y, height, fontSize, blur }, apiSpring] = useSpring(() => ({
-    x: 0,
-    y: 0,
-    height: 100,
-    fontSize: 1,
-    blur: 0,
-  }));
+  const animatedScale = useSpring(scale, { stiffness: 200, damping: 15 });
+  const animatedXOffset = useSpring(xOffset, { stiffness: 200, damping: 15 });
+  const animatedHeight = useSpring(height, { stiffness: 600, damping: 30 });
+  const animatedFontSize = useSpring(fontSize, { stiffness: 600, damping: 30 });
+  const animatedBlur = useSpring(blur, { stiffness: 600, damping: 30 });
+  const [dragStarted, setDragStarted] = useState(false);
+  const dragControls = useDragControls();
+
+  const heightTransform = useTransform(animatedHeight, h => `${h}%`);
+  const fontSizeTransform = useTransform(animatedFontSize, s => `${s}rem`);
+  const blurTransform = useTransform(animatedBlur, b => `blur(${b}px)`);
+  const gapTransform = useTransform(animatedFontSize, s => `${s / 2}rem`);
+  const marginTopTransform = useTransform(animatedFontSize, s => `${s / 2}rem`);
+  const userNameFontSizeTransform = useTransform(animatedFontSize, s => `${s / 1.5}rem`);
+  const cardPaddingTransform = useTransform(animatedFontSize, s => `${s / 2}rem`);
+  const cardPaddingLeftTransform = useTransform(animatedFontSize, s => `${s}rem`);
+
+  const overlayOpacity = useTransform(x, (val) => val < -50 ? Math.min((Math.abs(val) - 50) / 100, 1) : 0);
 
   let aboutToRegenerate = false;
   const [isEditing, setIsEditing] = useState(false);
@@ -216,11 +227,16 @@ const MessageCard: React.FC<MessageCardProps> = ({
     setIsEditing(true);
   }
 
-  const bind = useDrag(({ down, movement: [mx], velocity: [vx] }) => {
+  const isEligibleForRegenerate = !globalIsThinking && !stillGenerating && role !== "user" && !isEditing && isLastMessage;
+
+  const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const currentX = x.get();
+    
     const dragThreshold = -200;
-    const isEligibleForRegenerate = !globalIsThinking && !stillGenerating && role !== "user" && !isEditing && isLastMessage;
-    const isRegenerateAction = mx < dragThreshold && isEligibleForRegenerate;
-    setCanRegenerate(isEligibleForRegenerate)
+    const isRegenerateAction = currentX < dragThreshold && isEligibleForRegenerate;
+    
+    setCanRegenerate(isEligibleForRegenerate);
+
     if (isRegenerateAction && !aboutToRegenerate) {
       aboutToRegenerate = true;
       setUserAboutToRegen(true);
@@ -231,33 +247,38 @@ const MessageCard: React.FC<MessageCardProps> = ({
       setUserAboutToRegen(false);
     }
 
-    apiSpring.start({
-      x: down
-        ? (0.75 * mx) / (role === "user" || stillGenerating || !isLastMessage || globalIsThinking || isEditing || mx > 0 ? 10 : 1) + (isRegenerateAction ? -50 : 0)
-        : 0,
-      y: 0,
-      height: 100,
-      blur: configHighend ? (isRegenerateAction ? 4 : (down && canRegenerate ? 0.01 * -mx : 0)) : 0,
-      fontSize: 1,
-      config: { tension: 190, friction: 18 },
-    });
+    scale.set(isRegenerateAction ? 0.95 : 1);
+    xOffset.set(isRegenerateAction ? -50 : 0);
 
-    apiScaleSpring.start({
-      scale: down ? (isRegenerateAction ? 0.95 : 1) : 1,
-    });
-
-    if (((vx > 2 && mx < 0) || mx < dragThreshold) && !down && isEligibleForRegenerate) {
-      apiSpring.start({
-        x: -500,
-        y: 0,
-        height: 0,
-        fontSize: 0,
-        blur: 30,
-        config: { tension: 190, friction: 18 },
-      });
-      setTimeout(triggerRegenerate, 250);
+    if (configHighend) {
+       const targetBlur = isRegenerateAction ? 4 : (isEligibleForRegenerate ? Math.abs(currentX) * 0.01 : 0);
+       blur.set(targetBlur);
     }
-  }, { axis: "x" });
+  }
+
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      const currentX = x.get();
+      const dragThreshold = -200;
+      
+      const isFling = info.velocity.x < -500; 
+      const isPastThreshold = currentX < dragThreshold;
+
+      if ((isPastThreshold || isFling) && isEligibleForRegenerate) {
+        animate(x, -500, { duration: 0.2 });
+        animate(height, 0, { duration: 0.2 });
+        animate(fontSize, 0, { duration: 0.2 });
+        animate(blur, 30, { duration: 0.2 });
+        
+        setTimeout(triggerRegenerate, 250);
+      } else {
+        aboutToRegenerate = false;
+        setUserAboutToRegen(false);
+        scale.set(1);
+        xOffset.set(0);
+        blur.set(0);
+      }
+      setDragStarted(false);
+  };
 
   const extractStatusData = (input: string): StatusData => {
     const statusRegex = /---\s*STATUS:\s*((?:.+?\s*[=:]\s*.+(?:\n|$))*)/i;
@@ -585,7 +606,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
         )}
 
         {statuses.length > 0 && (
-          <animated.div key="idkwhatyouwant" style={{ marginTop: fontSize.to(s => `${s}rem`) }} className="flex gap-2 overflow-x-auto">
+          <motion.div key="idkwhatyouwant" style={{ marginTop: fontSizeTransform }} className="flex gap-2 overflow-x-auto">
             {statuses.map((status) => (
               <AnimatePresence key={status.key} mode="popLayout">
                 <Dialog>
@@ -625,7 +646,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                                 placeholder="Reason for change"
                                 value={changingStatusReason}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setChangingStatusReason(e.target.value)}
-                                initial={{ opacity: 0, scale: 0.8, y: -70 }}
+                                initial={{ opacity: 0, scale: 0.95, y: -70 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0 }}
                                 transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 17,
@@ -649,30 +670,38 @@ const MessageCard: React.FC<MessageCardProps> = ({
               </AnimatePresence>
             ))}
 
-          </animated.div>
+          </motion.div>
         )}
       </div>
     );
   };
 
   return (
-    <animated.div
+    <motion.div
+      drag="x"
+      dragControls={dragControls}
+      dragListener={false}
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={{ left: isEligibleForRegenerate ? 0.7 : 0.05, right: 0.05 }}
+      onDragStart={() => setDragStarted(true)}
+      onDrag={handleDrag}
+      onDragEnd={handleDragEnd}
       style={{
         x,
-        y,
-        scale,
-        height: height.to(h => `${h}%`),
-        fontSize: fontSize.to(s => `${s}rem`),
-        filter: blur.to(b => `blur(${b}px)`),
-        gap: fontSize.to(s => `${s / 2}rem`),
-        marginTop: fontSize.to(s => `${s / 2}rem`)
+        y: 0,
+        scale: animatedScale,
+        height: heightTransform,
+        fontSize: fontSizeTransform,
+        filter: blurTransform,
+        gap: gapTransform,
+        marginTop: marginTopTransform
       }}
       className="flex flex-col justify-end min-h-full overflow-hidden"
     >
-      <animated.p className={`${role === "user" ? "ml-auto" : "mr-auto"} opacity-50`} style={{ fontSize: fontSize.to(s => `${s / 1.5}rem`) }}>
+      <motion.p className={`${role === "user" ? "ml-auto" : "mr-auto"} opacity-50`} style={{ fontSize: userNameFontSizeTransform, x: animatedXOffset }}>
         {role === "user" ? `${currentTheme.showUserName ? characterData.userName || "Y/N" : ""}` : characterData.name || "Character"}
-      </animated.p>
-      <Drawer open={showAltDrawer} onOpenChange={(open) => { setShowAltDrawer(open) }} > {/* Alternate messages Drawer */}
+      </motion.p>
+      <Drawer open={showAltDrawer} onOpenChange={(open) => { setShowAltDrawer(open) }} >
         <DrawerContent className="w-auto max-w-[750px] min-w-[50vw] font-sans overflow-y-visible">
           <div className="max-h-[80vh] overflow-y-auto">
             <div>
@@ -714,28 +743,27 @@ const MessageCard: React.FC<MessageCardProps> = ({
       </Drawer>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div>
+          <motion.div style={{ x: animatedXOffset }}>
             <Card
-              {...bind()}
+              onPointerDown={(e) => dragControls.start(e)}
               className={`rounded-xl sm:max-w-lg max-w-full w-fit border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
                 ? `${currentTheme.userBg} ml-auto rounded-br-md text-end`
                 : `${currentTheme.assistantBg} mr-auto rounded-bl-md`
                 } ${isEditing ? "w-full" : ""}`}
             >
               <CardContent className="p-0">
-                <animated.div className="whitespace-pre-line wrap-break-word max-w-full markdown-content overflow-hidden" style={{
-                  padding: fontSize.to(s => `${s / 2}rem`),
-                  paddingLeft: fontSize.to(s => `${s}rem`),
-                  paddingRight: fontSize.to(s => `${s}rem`),
+                <motion.div className="whitespace-pre-line wrap-break-word max-w-full markdown-content overflow-hidden" style={{
+                  padding: cardPaddingTransform,
+                  paddingLeft: cardPaddingLeftTransform,
+                  paddingRight: cardPaddingLeftTransform,
                 }}>
                   {renderContent()}
-                  {/* Swipe to regenerate overlay */}
-                </animated.div>
+                </motion.div>
               </CardContent>
               {!configHighend && (
-                <animated.div className="absolute inset-0 flex items-end justify-end z-10 text-white bg-opacity-0 pointer-events-none select-none"
+                <motion.div className="absolute inset-0 flex items-end justify-end z-10 text-white bg-opacity-0 pointer-events-none select-none"
                   style={{
-                    opacity: canRegenerate ? x.to(val => -val / 100) : x.to(() => 0)
+                    opacity: overlayOpacity
                   }}>
 
                   <AnimateChangeInSize className="bg-black/50 rounded-2xl">
@@ -768,24 +796,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
                         {" "}to rewrite...</p>
                     </div>
                   </AnimateChangeInSize>
-                </animated.div>
+                </motion.div>
               )}
             </Card>
-            {/* <AnimatePresence>
-            {!globalIsThinking && isLastMessage && role === "assistant" && !isEditing && (
-              <motion.div
-              variants={toolbarVariants}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              layout
-              className="flex flex-row gap-1 w-full mt-1 px-1 origin-top-left">
-                <MotionButton onClick={triggerRegenerate} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><RotateCw className="h-3 opacity-50" /></MotionButton>    
-                <MotionButton onClick=startEditing} variants={toolItemVariants} variant="outline" size="icon" className="p-2 px-1 border  rounded-lg"><Pencil className="h-3 opacity-50" /></MotionButton>    
-              </motion.div>
-              )}
-            </AnimatePresence> */}
-          </div>
+          </motion.div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-64 font-sans font-semibold">
           {isGreetingMessage && characterData.alternateInitialMessages && (
@@ -813,7 +827,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
         </ContextMenuContent>
       </ContextMenu>
 
-    </animated.div >
+    </motion.div >
   );
 };
 

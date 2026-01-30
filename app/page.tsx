@@ -64,6 +64,8 @@ import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHei
 import discord from "@/public/discord.svg"
 import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
+import Sidebar from "@/components/homescreen/Sidebar";
+import { useSidebarStore } from "@/context/zustandStore/Sidebar";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
   function sortByLastUpdated(
@@ -215,7 +217,7 @@ function ChatCard({
       }}
       key={chat.lastUpdated}
       className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full ${
-        chat.plmex.domain?.active && "palmirror-exc"
+        chat.plmex.domain?.active && PLMGlobalConfigServiceInstance.get("highend") ? "palmirror-exc" : "palmirror-exc--light"
       }`}
       layout={PLMGlobalConfigServiceInstance.get("cardFlyIn") ? settled : true}
     >
@@ -488,7 +490,10 @@ export default function Home() {
 
   const PMNotify = usePMNotification();
 
+  const { isOpen } = useSidebarStore();
+
   const [isSecureActivated, setIsSecureActivated] = useState(false);
+  const [hasVisited, setHasVisited] = useState(false);
   const [isSecureReady, setIsSecureReady] = useState(false);
   const [PLMSecurePass, setPLMSecurePass] = useState("");
   const PLMsecureContext = useContext(PLMSecureContext);
@@ -554,32 +559,7 @@ export default function Home() {
     });
   };
 
-  const startChat = () => {
-    if (
-      !characterData.name ||
-      !characterData.personality ||
-      !characterData.initialMessage
-    ) {
-      PMNotify.error(
-        "Please fill in all required fields (name, personality, first message)."
-      );
-      return;
-    }
-
-    setCharacterData((prevData) => {
-      const updatedData = {
-        ...prevData,
-        image: "",
-        plmex: defaultCharacterData.plmex,
-      };
-      localStorage.setItem("characterData", JSON.stringify(updatedData));
-      PMNotify.success("Character data saved! Starting chat...");
-      return updatedData;
-    });
-    sessionStorage.removeItem("chatSelect");
-    router.push("/chat");
-  };
-
+  
   const getCharacterId: (url: string) => string | null = (
     url: string
   ): string | null => {
@@ -804,6 +784,19 @@ export default function Home() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!localStorage.getItem("secureMetadata") && typeof window !== 'undefined') {
+      const hasVisitedBefore = sessionStorage.getItem("palmirror_home_visited");
+      
+      if (!hasVisitedBefore) {
+        sessionStorage.setItem("palmirror_home_visited", "true");
+        router.push("/discover");
+      } else {
+        setHasVisited(true);
+      }
+    }
+  }, [isSecureActivated, router]);
+
   const authPasskey = async () => {
     if (
       PLMsecureContext?.hasCredential &&
@@ -925,24 +918,11 @@ export default function Home() {
 
 
   return isSecureActivated ? (
-    <div className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-(family-name:--font-geist-sans)">
-      <div className="z-100 fixed flex justify-center lg:justify-start w-screen mix-blend-color-dodge">
-        <motion.h1
-          initial={{ scale: 1, y: -100 }}
-          animate={{ scale: 1, y: 0 }}
-          transition={{
-            type: "spring",
-            mass: 1,
-            damping: 23,
-            stiffness: 161,
-            scale: { type: "spring", mass: 1, damping: 18, stiffness: 100 },
-          }}
-          className="text-1xl lg:text-2xl mx-6 lg:mx-10 font-extrabold tracking-tight pb-2 w-fit opacity-100 text-[#aaaaaa]"
-        >
-          PalMirror
-        </motion.h1>
-      </div>
-
+    <motion.div 
+    initial={{ marginLeft: !isOpen ? 0 : window.innerWidth > 640 ? 110 : 0 }}
+    animate={{ marginLeft: !isOpen ? 0 : window.innerWidth > 640 ? 110 : 0 }}
+            
+    className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-(family-name:--font-geist-sans)">
       <div className="flex grow w-full">
         <AnimatePresence mode="popLayout">
           {!isSecureReady && (
@@ -1082,7 +1062,7 @@ export default function Home() {
                     <p className="opacity-50 text-sm">
                       {chatsLoading
                         ? "Loading your chats..."
-                        : "No chats found."}
+                        : "No chats found. Try the Discover page!"}
                     </p>
                   )}
                 
@@ -1093,63 +1073,46 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      {isSecureReady && (
+      
+
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        theme="dark"
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".plmc"
+        style={{ display: "none" }}
+        onChange={importCharacter}
+      />
+    </motion.div>
+  ) : hasVisited ? (
+    <div
+    className="grid items-center justify-items-center content-center min-h-screen p-8 pb-10 gap-4 sm:p-20 font-(family-name:--font-geist-sans)">
         <motion.div
-          initial={{ opacity: 0, y: 200 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            type: "spring",
-            mass: 1,
-            damping: 19,
-            stiffness: 161,
-            delay: 0.1,
-          }}
-          className="fixed bottom-0 pb-7"
-        >
-          <div className="flex items-center content-center justify-center gap-2 max-w-fit border border-white/10 p-2 rounded-full">
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger>
-                  <GetFromPlatform
-                    router={router}
-                    linkChar={linkChar}
-                    setLinkChar={setLinkChar}
-                    getChubaiInfo={getChubaiInfo}
-                    iconForm
-                  />
-              </TooltipTrigger>
-              <TooltipContent className="font-sans">
-                Get from a platform
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger>
-                <SetupCharacter
-                  router={router}
-                  fileInputRef={fileInputRef}
-                  characterData={characterData}
-                  handleInputChange={handleInputChange}
-                  startChat={startChat}
-                  iconForm
-                />
-              </TooltipTrigger>
-              <TooltipContent className="font-sans">
-                Setup character
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger>
-                <Button onClick={() => router.push("/settings")} className="rounded-full" size="icon" variant="ghost">
-                  <Settings className="w-6! h-6!" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="font-sans">
-                Settings
-              </TooltipContent>
-            </Tooltip>
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col gap-4 items-center">
+          <h1 className="text-2xl font-extrabold tracking-tight pb-2 text-center">
+            Save your chats and more with PalMirror Secure
+          </h1>
+          <p className="text-sm opacity-60 text-center max-w-md">
+            Enable encrypted chat saving, persistent memories, and unlock the full PalMirror Experience.
+          </p>
+          <div className="pb-7">
+            <Button onClick={() => router.push("/secure")} size="lg">
+              Setup PalMirror Secure
+            </Button>
           </div>
         </motion.div>
-      )}
-
+      
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -1168,132 +1131,5 @@ export default function Home() {
         onChange={importCharacter}
       />
     </div>
-  ) : (
-    <div className="grid items-center justify-items-center content-center min-h-screen p-8 pb-10 gap-4 sm:p-20 font-(family-name:--font-geist-sans)">
-      <h1 className="scroll-m-20 text-1xl font-extrabold tracking-tight">
-        PalMirror
-      </h1>
-      <h1 className="text-3xl font-extrabold tracking-tight lg:text-5xl pb-2 text-start flex flex-col sm:flex-row items-center -gap-1 sm:gap-4">
-        <span className="opacity-25">Your World.<br /></span>
-        Your Reflection.
-      </h1>
-
-      <div className="pb-7">
-        <Button onClick={() => setOnboardingOpen(true)}>
-          {`Start Onboarding`}
-        </Button>
-        {/* <Accordion type="single" collapsible className="w-fit mt-4">
-          <AccordionItem value="item-1">
-            <AccordionTrigger></AccordionTrigger>
-            <AccordionContent>
-              <div className="flex justify-items-center items-center gap-1 flex-row">
-                <GetFromPlatform
-                  router={router}
-                  linkChar={linkChar}
-                  setLinkChar={setLinkChar}
-                  getChubaiInfo={getChubaiInfo}
-                />
-                        <Button
-          className=""
-          onClick={() => router.push("/search")}
-        >
-          Search for a character
-        </Button>
-        
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion> */}
-      </div>
-      {/* <p className="text-sm opacity-40 text-center">PalMirror does NOT claim ownership of any given character.</p> */}
-      <div className="flex gap-4 absolute bottom-0 left-0 p-6 items-center justify-between w-full">
-        <a className="opacity-20 hover:opacity-80 transition-opacity" href="https://discord.gg/DhaszrVYZ7" target="_blank" rel="noopener noreferrer">
-          <img src={"./discord.svg"} alt="Discord Logo" className="w-8 h-8" />
-        </a>
-        <p className="text-sm opacity-10 max-w-[70vw] text-end">
-          An opinionated, immersive, {" "}
-          <u>
-            <a href="https://github.com/Joystickplays/palmirror">open-source</a>
-          </u>{" "}
-          AI chat client project
-        </p>
-      </div>
-
-
-      <Dialog open={onboardingOpen} onOpenChange={setOnboardingOpen}>
-        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-w-[90vw]! h-[90vh] p-6 md:p-12 font-sans flex flex-col gap-2">
-          <h1 className="text-xl md:text-2xl font-extrabold">PalMirror <span className="opacity-50">Onboarding</span> </h1>
-          <p className="text-sm opacity-50">PalMirror is an AI chat client that has both privacy, functions and sleek interfaces.<br />It is made to be really easy to setup:</p>
-          <div className="flex flex-col md:flex-row justify-center items-center w-full h-full flex-1">
-            <div className="w-full md:h-full flex-1  flex flex-col gap-2 items-center p-4 md:p-12">
-              <h2 className="text-xl md:text-2xl font-bold">Try out chatting</h2>
-              <p className="opacity-50 text-center">Get a quick feel on how PalMirror works for you.</p>
-              <div className="flex flex-col md:flex-row justify-center items-center h-full w-full gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <SetupCharacter
-                        router={router}
-                        fileInputRef={fileInputRef}
-                        characterData={characterData}
-                        handleInputChange={handleInputChange}
-                        startChat={startChat}
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="font-sans">
-                    Quickly create a character from scratch to chat
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <GetFromPlatform
-                  router={router}
-                  linkChar={linkChar}
-                  setLinkChar={setLinkChar}
-                  getChubaiInfo={getChubaiInfo}
-                />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="font-sans">
-                    Get a character from platforms like chub.ai and JannyAI
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
-            <div className="relative w-full h-10 md:w-10 md:h-full flex items-center justify-center">
-              <div className="w-full h-px md:w-px md:h-full bg-white/50"></div>
-              <p className="absolute bg-background p-1 whitespace-nowrap">Want more?</p>
-            </div>
-            <div className="w-full md:h-full flex-1  flex flex-col gap-2 items-center p-4 md:p-12">
-              <h2 className="text-xl md:text-2xl font-bold">Get the full experience</h2>
-              <p className="opacity-50 text-center">Enable encrypted chat saving and more features.</p>
-              <div className="flex flex-row justify-center items-center h-full w-full gap-2">
-                <Button onClick={() => router.push("/secure")}>Setup PalMirror Secure</Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        theme="dark"
-      />
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".plmc"
-        style={{ display: "none" }}
-        onChange={importCharacter}
-      />
-    </div>
-  );
+  ) : null;
 }

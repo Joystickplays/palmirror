@@ -40,7 +40,7 @@ import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 import { MessagePreview } from "@/components/MessagePreview";
 import { LinearBlur } from "@/components/utilities/LinearBlur";
-import { ChevronLeft, ChevronRight, ListCollapse } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, ListCollapse } from "lucide-react";
 import { UserPersonality } from "@/types/UserPersonality";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import { ApiProfile } from "@/components/chat/ChatSettings";
@@ -612,12 +612,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
             }
           }
 
-          messagesList = messagesList.slice(0, -1);
-          setMessages(messagesList);
-
-
-          // wait for 250ms because race conditions idk
-          await new Promise((resolve) => setTimeout(resolve, 250));
+          messagesList.pop();
         }
       }
 
@@ -644,20 +639,30 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     }
 
     let assistantMessageObject: Message;
-    const extraContentId = crypto.randomUUID();
+    let extraContentId = crypto.randomUUID();
 
     if (existingMessage) {
       // PMNotify.success("using existing message object for regeneration");
-      assistantMessageObject = existingMessage;
+      assistantMessageObject = { ...existingMessage };
+      if (assistantMessageObject.extraContent) {
+        assistantMessageObject.extraContent = [...assistantMessageObject.extraContent];
+      }
 
       if (regenerate) {
-        if (!assistantMessageObject.extraContent) assistantMessageObject.extraContent = [];
-        assistantMessageObject.extraContent.push({
-          id: extraContentId,
-          content: "",
-        })
-        assistantMessageObject.focusingOnIdx = assistantMessageObject.extraContent?.length || 2 - 1;
-        assistantMessageObject.stillGenerating = true;
+        const lastExtra = assistantMessageObject.extraContent?.[(assistantMessageObject.extraContent?.length || 0) - 1];
+        const isPrepped = lastExtra && lastExtra.content === "" && assistantMessageObject.stillGenerating;
+
+        if (isPrepped && lastExtra) {
+          extraContentId = lastExtra.id;
+        } else {
+          if (!assistantMessageObject.extraContent) assistantMessageObject.extraContent = [];
+          assistantMessageObject.extraContent.push({
+            id: extraContentId,
+            content: "",
+          })
+          assistantMessageObject.focusingOnIdx = assistantMessageObject.extraContent.length;
+          assistantMessageObject.stillGenerating = true;
+        }
       }
     } else {
       assistantMessageObject = { 
@@ -949,10 +954,17 @@ ${entryTitle}
     try {
 
       if (destination === "chat") {
-        setMessages((p) => [
-          ...p,
-          assistantMessageObject,
-        ]);
+        if (!regenerate) {
+          setMessages((p) => [
+            ...p,
+            assistantMessageObject,
+          ]);
+        } else {
+          setMessages((p) => [
+            ...p.slice(0, -1),
+            assistantMessageObject,
+          ]);
+        }
       }
 
       abortController.current = new AbortController();
@@ -1121,10 +1133,26 @@ ${entryTitle}
 
   const regenerateMessage = () => {
     const updatedMessages = [...messages];
-    const lastMsg = updatedMessages.pop();
+    const lastMsgIndex = updatedMessages.length - 1;
+    const lastMsg = updatedMessages[lastMsgIndex];
 
+    const optimisticMsg = { ...lastMsg };
+    const extraContentId = crypto.randomUUID();
+    
+    if (!optimisticMsg.extraContent) optimisticMsg.extraContent = [];
+    else optimisticMsg.extraContent = [...optimisticMsg.extraContent];
+
+    optimisticMsg.extraContent.push({
+      id: extraContentId,
+      content: "",
+    });
+    optimisticMsg.focusingOnIdx = optimisticMsg.extraContent.length;
+    optimisticMsg.stillGenerating = true;
+
+    updatedMessages[lastMsgIndex] = optimisticMsg;
     setMessages(updatedMessages);
-    handleSendMessage(null, true, true, "", false, "send", "", "chat", lastMsg);
+
+    handleSendMessage(null, true, true, "", false, "send", "", "chat", optimisticMsg);
     secondLastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -1726,6 +1754,7 @@ ${entryTitle}
 
   return (
     <div className={`grid place-items-center ${currentTheme.bg}`}>
+      
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -1764,6 +1793,9 @@ ${entryTitle}
               </div>
             )}
         </div> 
+
+        
+
         <ChatHeader
           characterData={characterData}
           fromDomain={!!entryTitle}
@@ -1892,6 +1924,18 @@ ${entryTitle}
             <div ref={messageEndRef} />
           </div>
         </div>
+
+        {!PLMSecContext?.isSecureReady() && (
+          <div className="bg-blue-600/20 border border-blue-600 text-blue-300 p-3 rounded-xl z-1">
+            <div className="flex gap-2 items-center">
+              <Info />
+              <p>Chat not saved</p>
+            </div>
+            <p className="text-sm opacity-70 mt-2">In this guest mode, you cannot save chats and this chat won&apos;t persist after a refresh. To save and get more features, setup <button onClick={() => {
+              router.push("/secure")
+            }} className="underline cursor-pointer">PalMirror Secure.</button></p>
+          </div>
+        )}
 
         <SkipToSceneModal modalState={skipToSceneModalState} setModalState={setSkipToSceneModalState} skipToSceneCallback={(b) => skipToScene(b)}/>
               
