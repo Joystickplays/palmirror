@@ -128,7 +128,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         id="Message"
         className={`w-full p-2 ${userPromptThinking ? "text-white/50" : ""} ${
           currentTheme.assistantBg
-        } rounded-[27px] rounded-t-2xl pr-16 pl-4`}
+        } rounded-[27px] rounded-t-2xl sm:rounded-b-none ring-0! ring-offset-0! pr-16 pl-4`}
         value={localMessage}
         onChange={handleInputChange}
         onKeyDown={(e) => localHandleSendMessage(e)}
@@ -142,12 +142,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <motion.div
-          className="absolute right-2 bottom-2"
+          className="absolute right-2 bottom-2 sm:right-0 sm:bottom-0"
           // whileTap={{ scale: 0.8 }}
           // transition={{ type: 'spring', mass: 1, stiffness: 200, damping: 11 }}
           >
             <Button
-              className=" p-2 rounded-full"
+              className=" p-2 rounded-full sm:rounded-none sm:rounded-tl-xl"
               size="icon"
               onClick={handleButtonClick}
             >

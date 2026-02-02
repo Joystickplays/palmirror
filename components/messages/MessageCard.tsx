@@ -232,7 +232,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const currentX = x.get();
     
-    const dragThreshold = -200;
+    const dragThreshold = -100;
     const isRegenerateAction = currentX < dragThreshold && isEligibleForRegenerate;
     
     setCanRegenerate(isEligibleForRegenerate);
@@ -746,7 +746,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
           <motion.div style={{ x: animatedXOffset }}>
             <Card
               onPointerDown={(e) => dragControls.start(e)}
-              className={`rounded-xl sm:max-w-lg max-w-full w-fit border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
+              className={`rounded-xl sm:max-w-xl max-w-full w-fit border-0 grow-0 shrink h-fit touch-pan-y ${role === "user"
                 ? `${currentTheme.userBg} ml-auto rounded-br-md text-end`
                 : `${currentTheme.assistantBg} mr-auto rounded-bl-md`
                 } ${isEditing ? "w-full" : ""}`}

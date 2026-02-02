@@ -53,7 +53,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getE
       filter: configHighend ? 'blur(5px)' : 'blur(0px)'
     }}
     transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 26 }}
-    className={`border border-white/10 rounded-xl absolute inset-1 md:inset-6 box-border h-fit ${currentTheme.bg} overflow-hidden p-5 z-10`}>
+    className={`border border-white/10 rounded-xl sm:rounded-t-none absolute inset-1 sm:inset-0 box-border h-fit ${currentTheme.bg} overflow-hidden p-5 z-10`}>
 
       <CardContent className={`flex justify-between items-center ${currentTheme.bg} overflow-hidden p-0`}>
 

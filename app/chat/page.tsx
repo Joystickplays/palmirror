@@ -654,7 +654,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         const isMainPrepped = assistantMessageObject.focusingOnIdx === 0 && assistantMessageObject.content === "" && assistantMessageObject.stillGenerating;
 
         if (isMainPrepped) {
-           // Do nothing, let it use existing main slot
+           // btw did u know i like hotdogs
         } else if (isPrepped && lastExtra) {
           extraContentId = lastExtra.id;
         } else {
