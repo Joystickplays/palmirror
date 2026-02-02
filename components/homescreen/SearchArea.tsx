@@ -86,7 +86,8 @@ function SearchArea({
                         provider: 'janny.ai',
                         query: searchQuery,
                         page: 1,
-                        excludeNsfw: false
+                        excludeNsfw: false,
+                        sortBy: 'totalToken:desc'
                     });
                     setSearchResults(results);
                 } catch (e) {

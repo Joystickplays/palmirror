@@ -77,7 +77,9 @@ export default function DiscoverPage() {
             const result = await searchCharacters({
                 provider: "janny.ai",
                 query: TACtags.join(' '),
-                excludeNsfw: false
+                excludeNsfw: false,
+                sortBy: 'totalToken:desc'
+
             })
 
             setTACCharacters(result)

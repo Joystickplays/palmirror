@@ -19,6 +19,7 @@ export interface SearchOptions {
   query: string;
   page?: number;
   excludeNsfw?: boolean;
+  sortBy?: string;
 }
 
 
@@ -91,7 +92,7 @@ export const getImageBase64 = async (url: string): Promise<string> => {
 
 const PROVIDERS = {
     'chub.ai': {
-        buildRequest: (cleanQuery: string, page: number, exclusion: string[], inclusion: string[], excludeNsfw: boolean) => {
+        buildRequest: (cleanQuery: string, page: number, exclusion: string[], inclusion: string[], excludeNsfw: boolean, _: any) => {
             const params = new URLSearchParams({
                 first: '20',
                 page: page.toString(),
@@ -158,7 +159,7 @@ const PROVIDERS = {
         }
     },
     'janny.ai': {
-        buildRequest: (cleanQuery: string, page: number, exclusion: string[], inclusion: string[], excludeNsfw: boolean) => {
+        buildRequest: (cleanQuery: string, page: number, exclusion: string[], inclusion: string[], excludeNsfw: boolean, sortBy?: string) => {
             const filters = ["totalToken <= 4101 AND totalToken >= 29"];
             
             if (excludeNsfw) filters.push("isNsfw = false");
@@ -197,7 +198,7 @@ const PROVIDERS = {
                             highlightPostTag: "__/ais-highlight__",
                             hitsPerPage: 20, 
                             page: page,
-                            // sort: ["createdAtStamp:desc"]
+                            sort: sortBy ? [sortBy] : undefined
                         }]
                     })
                 }
@@ -253,14 +254,15 @@ export const searchCharacters = async ({
     provider, 
     query, 
     page = 1, 
-    excludeNsfw = false 
+    excludeNsfw = false ,
+    sortBy
 }: SearchOptions): Promise<SearchResultItem[]> => {
     const { clean, exclusion, inclusion } = extractTags(query);
     const handler = PROVIDERS[provider];
     
     if (!handler) throw new Error(`Provider ${provider} not supported`);
 
-    const { url, options } = handler.buildRequest(clean, page, exclusion, inclusion, excludeNsfw);
+    const { url, options } = handler.buildRequest(clean, page, exclusion, inclusion, excludeNsfw, sortBy);
     
     try {
         const res = await fetch(url, options);
