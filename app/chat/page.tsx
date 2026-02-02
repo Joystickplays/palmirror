@@ -651,8 +651,11 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       if (regenerate) {
         const lastExtra = assistantMessageObject.extraContent?.[(assistantMessageObject.extraContent?.length || 0) - 1];
         const isPrepped = lastExtra && lastExtra.content === "" && assistantMessageObject.stillGenerating;
+        const isMainPrepped = assistantMessageObject.focusingOnIdx === 0 && assistantMessageObject.content === "" && assistantMessageObject.stillGenerating;
 
-        if (isPrepped && lastExtra) {
+        if (isMainPrepped) {
+           // Do nothing, let it use existing main slot
+        } else if (isPrepped && lastExtra) {
           extraContentId = lastExtra.id;
         } else {
           if (!assistantMessageObject.extraContent) assistantMessageObject.extraContent = [];
@@ -1529,7 +1532,13 @@ ${entryTitle}
 
   // Initial Assistant Message
   useEffect(() => {
+    const isDomainStartToken = sessionStorage.getItem("chatFromNewDomain") == "1";
+
+    if (isDomainStartToken && !entryTitle) return;
+
     if (messages.length === 0 && characterData.initialMessage) {
+      const isDomainStart = isDomainStartToken;
+
       const statusData: StatusData = characterData.plmex.dynamicStatuses.map(
         (status) => ({
           key: status.name,
@@ -1537,23 +1546,37 @@ ${entryTitle}
         })
       );
       const messageId = crypto.randomUUID()
+      
+      const initialMessageObj: Message = {
+        id: messageId,
+        role: "assistant",
+        content:
+          !isDomainStart ? characterData.initialMessage + buildStatusSection(statusData) : "",
+        focusingOnIdx: 0,
+        stillGenerating: isDomainStart,
+      }
+
       setMessages([
-        {
-          id: messageId,
-          role: "assistant",
-          content:
-            characterData.initialMessage + buildStatusSection(statusData),
-          focusingOnIdx: 0,
-          stillGenerating: false,
-        },
+        initialMessageObj
       ]);
 
-      if (entryTitle && sessionStorage.getItem("chatFromNewDomain") == "1") {
+
+      if (isDomainStart) {
         sessionStorage.removeItem("chatFromNewDomain");
-        regenerateMessage();
+        handleSendMessage(
+          null,
+          true,
+          true,
+          "",
+          false,
+          "send",
+          "",
+          "chat",
+          initialMessageObj
+        );
       }
     }
-  }, [characterData.initialMessage]);
+  }, [characterData.initialMessage, entryTitle]);
 
   // Auto-scroll to Bottom
   useEffect(() => {
@@ -1776,7 +1799,7 @@ ${entryTitle}
           restDelta: 0.00001,
           filter: { type: "spring", mass: 1, damping: 38, stiffness: 161 },
         }}
-        className="grid max-w-160 w-full h-dvh p-1 sm:p-8 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto relative"
+        className="grid max-w-160 w-full h-dvh p-1 sm:p-0 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto relative"
       >
         <div className="fixed w-full h-40 z-1"
         >
