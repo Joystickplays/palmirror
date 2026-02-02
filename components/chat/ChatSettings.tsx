@@ -589,14 +589,18 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
                   <Label>Temperature</Label>
                   <Label className="font-bold">{temperature}</ Label>
                 </div>
-                <Slider defaultValue={[0.5]} min={0} max={1.5} step={0.01} onValueChange={(val: number[]) => { handleTemperatureChange(val) }} value={[temperature]} />
+                <div data-vaul-no-drag>
+                  <Slider defaultValue={[0.5]} min={0} max={1.5} step={0.01} onValueChange={(val: number[]) => { handleTemperatureChange(val) }} value={[temperature]} />
+                </div>
               </div>
               <div className="flex flex-col gap-4">
                 <div className="flex row justify-between">
                   <Label>Reasoning effort</Label>
                   <Label className="font-bold">{reasoningEffortLabels[reasoningEffort]}</ Label>
                 </div>
-                <Slider defaultValue={[0]} min={0} max={4} step={1} onValueChange={(val: number[]) => { handleReasoningEffortChange(val) }} value={[reasoningEffort]} />
+                <div data-vaul-no-drag>
+                  <Slider defaultValue={[0]} min={0} max={4} step={1} onValueChange={(val: number[]) => { handleReasoningEffortChange(val) }} value={[reasoningEffort]} />
+                </div>
               </div>
             </div>
             <div className="flex gap-2 pt-8">
