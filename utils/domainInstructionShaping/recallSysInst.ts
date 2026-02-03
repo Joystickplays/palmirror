@@ -3,7 +3,7 @@ export type ChatHistory = {
   timestampStructure: string;
 }
 
-export function getRecallSysInst(memories: string[], lastChat: ChatHistory, domainGuide?: string) {
+export function getRecallSysInst(memories: string[], lastChat: ChatHistory, domainGuide?: string, flashcards?: string[]) {
   // sent as assistant! emulating a cot system
   return `ASSISTANT RECALIBRATION
 I am informed of the 3 immersion systems of the above.
@@ -14,6 +14,10 @@ I am instructed to
 I should make <TIMESTEP>s for every chat I make.
 I should make sure my timestep entries is as simple as possible and not overcomplicating.
 I should also make sure the timestep entries capture key moments in that particular moments, not just random wording.
+
+
+${flashcards && flashcards.length > 0 ? `I must also keep in mind these Context Reminders:
+${flashcards.map(fc => `- ${fc}`).join('\n')}` : ""}
 
 
 ${domainGuide && `

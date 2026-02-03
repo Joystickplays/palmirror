@@ -31,7 +31,7 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall } from "@/utils/domainData";
+import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall, getDomainFlashcards } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/notifications/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/notifications/MemoryNotificationProvider";
 import SuggestionBar from "@/components/chat/bars/SuggestionBar";
@@ -677,6 +677,24 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       };
     }
 
+    let flashcardInstructions = "";
+    if (associatedDomain) {
+      const flashcards = await getDomainFlashcards(associatedDomain);
+      if (flashcards.length > 0) {
+        const msgCount = messagesList.filter(m => m.role !== 'system').length;
+        const activeFC = flashcards.filter(fc => {
+          if (!fc.content.trim()) return false;
+          if (fc.frequency === 1) return msgCount <= 2;
+          if (fc.frequency === 11) return true;
+          const interval = 12 - fc.frequency;
+          return (msgCount % interval === 0);
+        });
+        if (activeFC.length > 0) {
+          flashcardInstructions = `\n[ Context Reminders ]:\n${activeFC.map(fc => `- ${fc.content}`).join('\n')}\n`;
+        }
+      }
+    }
+
     const systemPrompt = await getSystemMessage(
       characterData,
       userPersonality,
@@ -685,7 +703,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       modelInstructions +
         (activeSteers.length > 0 && steerApplyMethod === "system"
           ? generateSteerPrompt({ steers: activeSteers })
-          : "")
+          : ""),
     );
 
     // hopefully doesnt break anything further
@@ -864,7 +882,14 @@ ${entryTitle}
             }
           ]
           : []
-        )
+        ),
+        ...(flashcardInstructions !== "" ? [
+          {
+            role: "system" as "user" | "assistant" | "system",
+            content: flashcardInstructions,
+            name: "system"
+          }
+        ] : []),
       ];
 
       if (associatedDomain) {

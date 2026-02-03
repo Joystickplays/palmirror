@@ -11,12 +11,18 @@ class PLMGlobalConfigService {
   }
 
   set(key: string, value: any, persist = false) {
-    if (!this.setFn) throw new Error("PLMGlobalConfig not initialized yet!");
+    if (!this.setFn) {
+      console.warn("PLMGlobalConfig not initialized yet!");
+      return;
+    }
     this.setFn(key, value, persist);
   }
 
   get<T = any>(key: string): T | undefined {
-    if (!this.getFn) throw new Error("PLMGlobalConfig not initialized yet!");
+    if (!this.getFn) {
+      console.warn("PLMGlobalConfig not initialized yet!");
+      return undefined;
+    }
     return this.getFn<T>(key);
   }
 }

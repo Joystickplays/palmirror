@@ -21,11 +21,13 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Loader } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library } from 'lucide-react';
 
 import AttributeProgress from "@/components/domains/AttributeProgress";
 
 import { ToastContainer } from "react-toastify";
+import FlashcardItem from "@/components/domains/FlashcardItem";
+import ChatCard from "@/components/domains/ChatCard";
 
 
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
@@ -33,17 +35,12 @@ import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
 import { CharacterData, ChatMetadata, defaultCharacterData } from "@/types/CharacterData";
-import { DomainAttributeEntry, DomainMemoryEntry } from "@/types/EEDomain"
+import { DomainAttributeEntry, DomainMemoryEntry, DomainFlashcardEntry } from "@/types/EEDomain"
 
-import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, reverseDomainAttribute, setDomainGuide, setDomainMemories } from "@/utils/domainData";
+import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, reverseDomainAttribute, setDomainGuide, setDomainMemories, setDomainFlashcards } from "@/utils/domainData";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHeight";
-import { generateChatCompletion, independentInitOpenAI } from "@/utils/portableAi";
-import { generateChatEntriesSysInst } from "@/utils/generateChatEntriesSysInst";
-import { UserPersonality } from "@/types/UserPersonality";
-import CardStack from "@/components/utilities/CardStack";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import AskForUnlockSecure from "@/components/secure/AskForUnlockSecure";
 
@@ -78,10 +75,6 @@ const ExperienceDomainPage: React.FC = () => {
 
     const [showingNewChat, setShowingNewChat] = useState(false);
     const [newChatName, setNewChatName] = useState("");
-    const [newChatSuggestionShow, setNewChatSuggestionShow] = useState(false);
-    const [newChatSuggestionGenVisualShown, setNewChatSuggestionGenVisualShown] = useState(false);
-    const [newChatSuggestionGenerating, setNewChatSuggestionGenerating] = useState(false);
-    const [newChatSuggestions, setNewChatSuggestions] = useState("");
 
     const [showingMemoryManager, setShowingMemoryManager] = useState(false);
 
@@ -98,6 +91,7 @@ const ExperienceDomainPage: React.FC = () => {
 
     const [domainGuideText, setDomainGuideText] = useState("");
     const [showDomainGuideEditor, setShowDomainGuideEditor] = useState(false);
+    const [showingFlashcards, setShowingFlashcards] = useState(false);
 
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
@@ -149,75 +143,6 @@ const ExperienceDomainPage: React.FC = () => {
         }
     }
 
-    const generateScenarios = async () => {
-        setNewChatSuggestionGenVisualShown(true);
-        setNewChatSuggestionGenerating(true);
-        setNewChatSuggestions("");
-        let modelName = "gpt-3.5-turbo"
-        const settings = localStorage.getItem("Proxy_settings");
-        if (settings) {
-            const settingsParse = JSON.parse(settings)
-            modelName = settingsParse.modelName
-        }
-
-
-        const sysInst = generateChatEntriesSysInst()
-
-        let userPersonality = null
-        const storedData = localStorage.getItem("userPersonalities");
-        if (storedData) { 
-            const userPrs = JSON.parse(storedData) 
-            const usingPrs = userPrs.find((p: UserPersonality) => p.using)
-            if (usingPrs) {
-                userPersonality = { name: usingPrs.name, personality: usingPrs.personality }
-            };
-        }
-
-        const userMsg = `
-CONTEXT:
-
-The lead character, ${character.name}'s personality:
-${character.personality}
-
-${userPersonality && `
-The second lead character, ${userPersonality.name}'s personality:
-${userPersonality.personality}`}
-
-Reference scenarios:
-${chatList.length === 0 ? "None, use example scenarios" : chatList.toReversed().slice(-3).map((chat) => `- ${chat.entryTitle}`).join("\n")}
-
-`
-        
-        try {
-            const block = await generateChatCompletion({
-                model: modelName,
-                temperature: 0.7,
-                stream: false,
-                messages: [{
-                    role: "system",
-                    content: sysInst
-                }, {
-                    role: "user",
-                    content: userMsg
-                }]
-            }).next()
-            if (block.value?.choices?.[0]?.message?.content) {
-                setNewChatSuggestions(block.value.choices[0].message.content);
-            }
-            setNewChatSuggestionGenerating(false);
-        } catch (e) {
-            PMNotify.error("Failed to generate scenarios. Please try again.");
-            PMNotify.error(e instanceof Error ? e.message : String(e));
-            setNewChatSuggestionGenerating(false);
-        }
-    }
-
-    useEffect(() => {
-        (async () => {
-            console.log(await independentInitOpenAI())
-        })();
-    }, [])
-
     useEffect(() => {
         reloadCharacter()
     }, [domainId]);
@@ -254,27 +179,6 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.toReversed().
 
         refreshChatList();
     }, [isSecureReady]);
-
-    const formatDateWithLocale = (dateInput: string | Date): string => {
-        const date = new Date(dateInput); // Ensure the input is a Date object
-
-        if (isNaN(date.getTime())) {
-            throw new Error("Invalid Date");
-        }
-
-        const options: Intl.DateTimeFormatOptions = {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true, // Ensures am/pm format
-            month: "long",
-        };
-
-        const time = date.toLocaleString("en-US", options); // Get time in "hh:mm am/pm" format
-        const day = String(date.getDate()).padStart(2, "0"); // Ensure day is 2 digits
-        const month = date.toLocaleString("en-US", { month: "long" }); // Month name (e.g., "January")
-
-        return `${day} ${time}`;
-    };
 
     
     useEffect(() => {
@@ -365,72 +269,17 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.toReversed().
                         }
 
                         return (
-                            <motion.div
-                                initial={
-                                    { scale: configHighend ? 0.8 : 1, opacity: 0 }
-                                }
-                                animate={{
-                                    opacity: 1,
-                                    scale: 1,
-                                }}
-                                exit={{ opacity: 0, scale: 0.5 }}
-                                transition={{
-                                    type: "tween",
-                                    duration: 0.3,
-                                    ease: "easeOut",
-
-                                    delay: 0.05 * idx
-                                }}
+                            <ChatCard 
                                 key={chat.lastUpdated}
-                                className="flex flex-col gap-1.5 p-6 border rounded-xl h-full"
-                                layout
-                            >
-                                <h2 className={`font-bold ml-auto`}>{chat.entryTitle}</h2>
-                                <p className="opacity-70 ml-auto text-xs">
-                                    {formatDateWithLocale(chat.lastUpdated)}
-                                </p>
-                                <div className="flex justify-end gap-2">
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button className="p-1 px-3" variant="outline"><EllipsisVertical /></Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans p-4">
-                                            <Button
-                                                className="p-1 px-3 justify-start!"
-                                                variant="destructive"
-                                                onClick={() => {
-                                                    setChatAboutToDelete(chat.id);
-                                                    setShowingChatDelete(true);
-                                                }}
-                                            >
-                                                <Trash2 /> Delete
-                                            </Button>
-                                            <Button
-                                                className="p-1 px-3 justify-start!"
-                                                variant="outline"
-                                                onClick={() => {
-                                                    setSelectedChat(chat);
-                                                    setShowingChatTimesteps(true);
-                                                }}
-                                            >
-                                                <History /> View timesteps
-                                            </Button>
-                                        </PopoverContent>
-                                    </Popover>
-                                    <Button
-                                        variant={"outline"}
-                                        onClick={() => {
-                                            sessionStorage.setItem("chatSelect", chat.id);
-                                            sessionStorage.setItem("chatAssociatedDomain", domainId);
-                                            sessionStorage.setItem("chatEntryName", chat.entryTitle || "");
-                                            sessionStorage.setItem("chatTimesteps", JSON.stringify(chat.timesteps || []))
-                                            router.push(`/chat`);
-                                        }}
-                                    >
-                                        Continue <ArrowRight />
-                                    </Button>
-                                </div>
-                            </motion.div>
+                                chat={chat}
+                                idx={idx}
+                                configHighend={configHighend}
+                                domainId={domainId}
+                                setChatAboutToDelete={setChatAboutToDelete}
+                                setShowingChatDelete={setShowingChatDelete}
+                                setSelectedChat={setSelectedChat}
+                                setShowingChatTimesteps={setShowingChatTimesteps}
+                            />
                         )
                     })}
                 </div>
@@ -495,130 +344,6 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.toReversed().
                     <Label htmlFor="chat-name">Entry name</Label>
                     <Input ref={newChatInput} autoComplete="off" value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
                     <p className="text-xs opacity-50">{`A good entry name should the reflect the moment you're capturing in this new chat. For example, "First Encounter", "Moving Day", "Evening Complication", etc.`}<br /><br />{`PalMirror will look through your past chat entries and let your AI know how far you and this character has progressed together.`}</p>
-                    <AnimateChangeInHeight className="border border-white/10 rounded-xl">
-                        <motion.div
-                        className={`${newChatSuggestionShow ? "p-4" : "p-2 px-4"} flex flex-col gap-2`}>
-                            <div className={`flex ${newChatSuggestionShow ? "justify-center" : "justify-between"}`}>
-                                <motion.h1
-                                layoutId="needSome"
-                                layout="position"
-                                className={`w-fit font-bold text-xl`}>{`Need some help?`}</motion.h1>
-                                <AnimatePresence mode="popLayout">
-                                    {!newChatSuggestionShow && (
-                                        <motion.div
-                                        layout
-                                        layoutId="openclose"
-                                        key="open"
-                                        >
-                                            <Button onClick={() => setNewChatSuggestionShow(true)} className="h-6 w-12 text-xs">Open</Button>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                            
-
-                            <AnimatePresence mode="popLayout">
-                                {newChatSuggestionShow && (
-                                    <motion.div
-                                    exit={{ opacity: 0, y: 20 }}
-                                    transition={{ duration: 0.1 }}
-                                    className="flex flex-col gap-6">
-                                        <p className="opacity-75 text-sm">{`Use your configured AI to generate multiple scenarios for this new chat, ensuring they're diverse, imaginative, and creatively unpredictable.`}
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <Button className="inline-block ml-1" variant="outline" size="smIcon"><Info /></Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="font-sans">
-                                                    {`To generate the scenarios, PalMirror will send your entire character's (& any active user) personality tokens, and also the last 3 of your own chat entries as reference.`}
-                                                </PopoverContent>
-                                            </Popover>
-                                        </p>
-                                        
-
-                                        <div className="flex flex-row justify-center items-center gap-2 h-42 pb-1 w-full">
-                                            {newChatSuggestionGenVisualShown && newChatSuggestions === "" ? (
-                                                <>
-                                                    <CardStack center tooltip>
-                                                        <div className="flex-none h-32 sm:h-42 aspect-6/3 border border-white/10 rounded-xl p-4 bg-background">
-                                                            <div className="flex flex-col gap-1 shimmer-content-wrapper ">
-                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                                <div className="h-4 w-3/4 rounded-md bg-white/50"></div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex-none aspect-6/3 h-32 sm:h-42 border border-white/10 rounded-xl p-4 bg-background">
-                                                            <div className="flex flex-col gap-1 shimmer-content-wrapper">
-                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                                <div className="h-4 w-full rounded-md bg-white/50"></div>
-                                                                <div className="h-4 w-3/4 rounded-md bg-white/50"></div>
-                                                            </div>
-                                                        </div>
-                                                    </CardStack>
-                                                </>
-                                            ) : newChatSuggestionGenVisualShown ? (
-                                                <>
-                                                    <CardStack center>
-                                                        {newChatSuggestions.split("|").map((suggestion, idx) => (
-                                                            <motion.div 
-                                                            initial={{ scale: 0.8, opacity: 0, y: 100 }}
-                                                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                                                            transition={{ 
-                                                                type: 'spring', mass: 1, stiffness: 339, damping: 36,
-                                                                delay: 0.05 * idx,
-                                                                scale: {
-                                                                    type: 'spring',
-                                                                    mass: 1,
-                                                                    stiffness: 160,
-                                                                    damping: 40,
-                                                                }
-                                                            }}
-                                                            key={idx} className="flex-none flex flex-col gap-2 bg-background aspect-6/3 h-32 sm:h-42 border border-white/10 rounded-xl p-4 ">
-                                                                <p className="text-sm max-h-24 overflow-y-scroll font-sans">{suggestion.replace(/^- /, "")}</p>
-                                                                <Button className="mt-auto" variant={"outline"} onClick={() => {
-                                                                    setNewChatName(suggestion);
-                                                                    setNewChatSuggestionShow(false)
-                                                                    // if (newChatInput.current) {
-                                                                    //     newChatInput.current.focus();
-                                                                    // }
-                                                                    newChatDialog.current?.scrollTo({ top: 0, behavior: "smooth" });
-                                                                }}>Use this</Button>
-                                                            </motion.div>
-                                                        ))}
-                                                    </CardStack>
-
-                                                </>
-                                            ) : (
-                                                <p className="text-sm opacity-50 italic">Suggestions will appear here!</p>
-                                            )}
-                                        </div>
-
-
-
-                                        <div className="flex gap-2">
-                                            <Button disabled={newChatSuggestionGenerating} className="flex-1" onClick={generateScenarios}>
-                                                {newChatSuggestionGenerating ? 
-                                                (<>
-                                                    <p>Generating...</p>
-                                                    <Loader className="animate-spin" />
-                                                </>) : "Start generating"}
-                                            </Button>
-                                            <motion.div
-                                                layout
-                                                layoutId="openclose"
-                                                key="close" className="w-fit ml-auto">
-                                                <Button variant="outline" onClick={() => {
-                                                    setNewChatSuggestionShow(false);
-                                                    newChatDialog.current?.scrollTo({ top: 0, behavior: "smooth" });
-                                                }}>Close</Button>
-                                            </motion.div>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </motion.div>
-                    </AnimateChangeInHeight>
                     <Button onClick={() => {
                         setShowingNewChat(false)
                         if (newChatName.trim() === "") {
@@ -743,7 +468,10 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.toReversed().
             <Dialog open={showDomainGuideEditor} onOpenChange={setShowDomainGuideEditor}>
                 <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold mb-4">Domain guide</DialogTitle>
+                        <div className="flex items-center justify-between mb-4">
+                            <DialogTitle className="text-2xl font-bold">Domain guide</DialogTitle>
+                             <Button className="mr-4" variant="outline" size="sm" onClick={() => setShowingFlashcards(true)}><Library /> Flashcards</Button>
+                        </div>
                     </DialogHeader>
                     <p className="opacity-50 text-xs whitespace-pre-line">{`Domain guides help set the overall context and rules for how the character should behave within this domain.
                         
@@ -755,6 +483,60 @@ ${chatList.length === 0 ? "None, use example scenarios" : chatList.toReversed().
                         <Button className="w-full" variant="outline" onClick={() => setShowDomainGuideEditor(false)}>Discard</Button>
                         <Button className="w-full" onClick={() => {setDomainGuide( domainId, domainGuideText ); setShowDomainGuideEditor(false)}}><Check /> Apply</Button>
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showingFlashcards} onOpenChange={setShowingFlashcards}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
+                     <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Flashcards</DialogTitle>
+                    </DialogHeader>
+                    <p className="opacity-50 text-xs">Flashcards are user-inserted memories that appear at a set frequency. When Domain Guide is not sufficient, these flashcards help reinforce important context even more periodically.</p>
+                    
+                     <div className="flex flex-col gap-4">
+                        <AnimatePresence mode="popLayout">
+                            {(character.plmex.domain?.flashcards || []).map((fc, idx) => (
+                                <FlashcardItem
+                                    key={fc.id}
+                                    flashcard={fc}
+                                    onUpdate={(updated) => {
+                                        const newFC = [...(character.plmex.domain?.flashcards || [])];
+                                        newFC[idx] = updated;
+                                        setCharacter({
+                                            ...character,
+                                            plmex: {
+                                                ...character.plmex,
+                                                domain: { ...character.plmex.domain!, flashcards: newFC }
+                                            }
+                                        });
+                                        setDomainFlashcards(domainId, newFC);
+                                    }}
+                                    onDelete={() => {
+                                        const newFC = (character.plmex.domain?.flashcards || []).filter((_, i) => i !== idx);
+                                        setCharacter({
+                                            ...character,
+                                            plmex: {
+                                                ...character.plmex,
+                                                domain: { ...character.plmex.domain!, flashcards: newFC }
+                                            }
+                                        });
+                                        setDomainFlashcards(domainId, newFC);
+                                    }}
+                                />
+                            ))}
+                        </AnimatePresence>
+                        <Button className="w-full" variant="outline" onClick={() => {
+                            const newFC = [...(character.plmex.domain?.flashcards || []), { id: crypto.randomUUID(), content: "", frequency: 1 }];
+                             setCharacter({
+                                ...character,
+                                plmex: {
+                                    ...character.plmex,
+                                    domain: { ...character.plmex.domain!, flashcards: newFC }
+                                }
+                                });
+                                setDomainFlashcards(domainId, newFC);
+                        }}><CirclePlus className="mr-2" /> Add Flashcard</Button>
+                     </div>
                 </DialogContent>
             </Dialog>
 

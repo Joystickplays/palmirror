@@ -6,7 +6,7 @@ import { ChatHistory, getTotalChatsSysInst } from './domainInstructionShaping/ch
 import { getMemorySysInst } from './domainInstructionShaping/memorySysInst';
 
 import { CharacterData, defaultCharacterData } from '@/types/CharacterData';
-import { DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, DomainTimestepEntry } from "@/types/EEDomain"
+import { DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, DomainTimestepEntry, DomainFlashcardEntry } from "@/types/EEDomain"
 import { getTimestepSysInst } from './domainInstructionShaping/timestepSysInst';
 import { getTaggingSysInst } from './domainInstructionShaping/taggingSysInst';
 import { getRecallSysInst } from './domainInstructionShaping/recallSysInst';
@@ -440,6 +440,53 @@ export async function getDomainGuide(domainID: string): Promise<string | null> {
     }
 }
 
+export async function getDomainFlashcards(domainID: string): Promise<DomainFlashcardEntry[]> {
+    if (typeof window === 'undefined') return [];
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) return [];
+
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+
+        if (
+            data &&
+            data.plmex &&
+            data.plmex.domain &&
+            data.plmex.domain.flashcards
+        ) {
+            return data.plmex.domain.flashcards as DomainFlashcardEntry[];
+        }
+
+        return [];
+    } catch (error) {
+        console.error("Failed to get domain flashcards:", error);
+        return [];
+    }
+}
+
+export async function setDomainFlashcards(domainID: string, flashcards: DomainFlashcardEntry[]) {
+    if (typeof window === 'undefined') return;
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) return;
+
+    try {
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        
+        if (data) {
+            if (!data.plmex.domain) {
+                return;
+            }
+            data.plmex.domain.flashcards = flashcards;
+            await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+        }
+    }
+    catch (error) {
+        console.error("Failed to set domain flashcards:", error);
+    }
+}
+
 export async function setDomainGuide(domainID: string, guideText: string) {
     if (typeof window === 'undefined') {
         return;
@@ -503,5 +550,6 @@ export async function buildAssistantRecall(domainID: string) {
   if (allChats.length < 2) {
     return "";
   }
-  return getRecallSysInst(memories, sortByLastUpdated(allChats)[1], !!(await getDomainGuide(domainID)) ? await getDomainGuide(domainID) as string : undefined);
+  const flashcards = await getDomainFlashcards(domainID);
+  return getRecallSysInst(memories, sortByLastUpdated(allChats)[1], !!(await getDomainGuide(domainID)) ? await getDomainGuide(domainID) as string : undefined, flashcards.map(fc => fc.content));
 }

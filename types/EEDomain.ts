@@ -6,6 +6,12 @@ export interface DomainMemoryEntry {
     associatedMessage: string;
 }
 
+export interface DomainFlashcardEntry {
+    id: string;
+    content: string;
+    frequency: number;
+}
+
 export interface DomainAttributeHistory {
     associatedMessage: string;
     change: number;
@@ -28,4 +34,5 @@ export interface EXDomain {
     memories: Array<DomainMemoryEntry>;
     attributes: Array<DomainAttributeEntry>;
     guide?: string;
+    flashcards?: Array<DomainFlashcardEntry>;
 }
