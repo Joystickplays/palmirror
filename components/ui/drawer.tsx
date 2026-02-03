@@ -4,6 +4,7 @@ import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
+import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService"
 
 const Drawer = ({
   shouldScaleBackground = true,
@@ -25,13 +26,21 @@ const DrawerClose = DrawerPrimitive.Close
 const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Overlay
-    ref={ref}
-    className={cn("fixed inset-0 z-50 bg-black/60 backdrop-blur-xs", className)}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  const isHighEnd = PLMGlobalConfigServiceInstance.get("highend")
+
+  return (
+    <DrawerPrimitive.Overlay
+      ref={ref}
+      className={cn(
+        "fixed inset-0 z-50 bg-black/60 transition-all duration-200",
+        isHighEnd ? "backdrop-blur-lg" : "backdrop-blur-none",
+        className
+      )}
+      {...props}
+    />
+  )
+})
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
 
 const DrawerContent = React.forwardRef<
