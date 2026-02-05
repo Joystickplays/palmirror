@@ -23,7 +23,7 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({
 
   return (
     <motion.button
-      onClick={() => {
+      onPointerDown={() => {
         vib(1);
         onKeyPress(btn);
       }}
@@ -54,7 +54,6 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({
           },
         },
         tap: {
-          scale: 1.1,
           backgroundColor: "rgba(255, 255, 255, 0.2)",
           // transition: { 
           //   backgroundColor: { duration: 0 }
