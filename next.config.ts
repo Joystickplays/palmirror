@@ -1,38 +1,14 @@
-import withPWAInit from 'next-pwa';
+import withSerwistInit from "@serwist/next";
 
-const withPWA = withPWAInit({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development', 
-  runtimeCaching: [
-    {
-      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'images',
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 30 * 24 * 60 * 60,
-        },
-      },
-    },
-    {
-      urlPattern: /\.(?:css|js)$/i,
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'static-assets',
-        expiration: {
-          maxEntries: 50,
-        },
-      },
-    },
-  ],
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+  reloadOnOnline: true,
 });
 
 const nextConfig = {
-  turbopack: {
-  },
+  turbopack: {},
 };
 
-export default withPWA(nextConfig);
+export default withSerwist(nextConfig);
