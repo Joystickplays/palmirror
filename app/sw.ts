@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 import { defaultCache } from "@serwist/next/worker";
-import { Serwist, type RuntimeCaching, CacheFirst, StaleWhileRevalidate, ExpirationPlugin } from "serwist";
+import { Serwist, type RuntimeCaching, CacheFirst, StaleWhileRevalidate, NetworkFirst, ExpirationPlugin } from "serwist";
 
 declare const self: ServiceWorkerGlobalScope & {
   __SW_MANIFEST: any;
@@ -23,6 +23,18 @@ const runtimeCaching: RuntimeCaching[] = [
     matcher: /\.(?:css|js)$/i,
     handler: new StaleWhileRevalidate({
       cacheName: "static-assets",
+      plugins: [
+        new ExpirationPlugin({
+          maxEntries: 50,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+        }),
+      ],
+    }),
+  },
+  {
+    matcher: ({ request }) => request.mode === "navigate",
+    handler: new NetworkFirst({
+      cacheName: "pages",
       plugins: [
         new ExpirationPlugin({
           maxEntries: 50,
