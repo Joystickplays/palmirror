@@ -217,7 +217,9 @@ function ChatCard({
       }}
       key={chat.lastUpdated}
       className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full ${
-        chat.plmex.domain?.active && PLMGlobalConfigServiceInstance.get("highend") ? "palmirror-exc" : "palmirror-exc--light"
+        chat.plmex.domain?.active ? 
+        PLMGlobalConfigServiceInstance.get("highend") ? "palmirror-exc" : "palmirror-exc--light"
+        : ""
       }`}
       layout={PLMGlobalConfigServiceInstance.get("cardFlyIn") ? settled : true}
     >
