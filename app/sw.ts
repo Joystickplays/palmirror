@@ -33,14 +33,34 @@ const runtimeCaching: RuntimeCaching[] = [
   },
   {
     matcher: ({ request }) => request.mode === "navigate",
-    handler: new NetworkFirst({
-      cacheName: "pages",
-      plugins: [
-        new ExpirationPlugin({
-          maxEntries: 50,
-        }),
-      ],
-    }),
+    handler: async ({ request, event }) => {
+      const strategy = new NetworkFirst({
+        cacheName: "pages",
+        plugins: [
+          new ExpirationPlugin({
+            maxEntries: 50,
+          }),
+        ],
+      });
+
+      try {
+        const response = await strategy.handle({ request, event });
+        if (response) return response;
+        throw new Error("No response from NetworkFirst");
+      } catch (error) {
+        // Return the cached home page as a fallback to allow the app to load
+        // even if the specific page wasn't cached.
+        const cache = await caches.open("pages");
+        const cachedResponse = await cache.match("/", {
+          ignoreSearch: true,
+        });
+        
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        throw error;
+      }
+    },
   },
   ...defaultCache,
 ];
