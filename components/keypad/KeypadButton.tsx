@@ -1,3 +1,4 @@
+import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";
 import { motion } from "framer-motion";
 import React, { useState } from "react";
 
@@ -18,7 +19,7 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({
     useState(false);
 
   const vib = (duration: number) => {
-    if ("vibrate" in navigator) navigator.vibrate(duration);
+    if ("vibrate" in navigator && PLMGlobalConfigServiceInstance.get("haptics")) navigator.vibrate(duration);
   };
 
   return (

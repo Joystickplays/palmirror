@@ -46,6 +46,7 @@ import { usePMNotification } from "@/components/notifications/PalMirrorNotificat
 import { ApiProfile } from "@/components/chat/ChatSettings";
 import { Label } from "@/components/ui/label";
 import CascadeAskToMove from "@/components/cascade/CascadeAskToMove";
+import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";
 
 
 let openai: OpenAI;
@@ -486,7 +487,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
   }, []);
 
   const vibrate = (duration: number) => {
-    if ("vibrate" in navigator) navigator.vibrate(duration);
+    if ("vibrate" in navigator && PLMGlobalConfigServiceInstance.get("haptics")) navigator.vibrate(duration);
   };
 
   const checkAndTrimMessages = (

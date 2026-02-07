@@ -1,3 +1,5 @@
+import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";
+import React from "react";
 import { useEffect, useRef, useState } from "react";
 
 interface UseTypewriterOptions {
@@ -8,7 +10,7 @@ interface UseTypewriterOptions {
 }
 
 const vibrate = (duration: number) => {
-  if ("vibrate" in navigator) navigator.vibrate(duration);
+  if ("vibrate" in navigator && PLMGlobalConfigServiceInstance.get("haptics")) navigator.vibrate(duration);
 };
 
 export function useTypewriter(

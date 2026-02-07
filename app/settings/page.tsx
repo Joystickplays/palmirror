@@ -23,15 +23,18 @@ import {
 } from "@/components/ui/dialog";
 import NumberFlow from "@number-flow/react";
 import UserPersonalities from "@/components/UserPersonalities";
+import { CheckCircle, Info, X } from "lucide-react";
 
 export default function SettingsPage() {
     const router = useRouter();
     const globalConfig = usePLMGlobalConfig();
 
     const [showHighend, setShowHighend] = useState(false);
+    const [showHapticsDemo, setShowHapticsDemo] = useState(false);
+
     const [settings, setSettings] = useState<Record<string, any>>({});
 
-
+    
 
     type BooleanSetting = {
         type: "boolean";
@@ -140,6 +143,13 @@ export default function SettingsPage() {
         effects: {
             title: "Effects",
             items: {
+                haptics: {
+                    type: "boolean",
+                    key: "haptics",
+                    default: true,
+                    label: "Haptic feedback",
+                    onChange: (value) => value && setShowHapticsDemo(true),
+                },
                 typing: {
                     type: "boolean",
                     key: "typing",
@@ -293,6 +303,55 @@ export default function SettingsPage() {
                         </Button>
                         <Button onClick={() => setShowHighend(false)} variant="outline">
                             Continue anyway
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Haptics dialog */}
+            <Dialog open={showHapticsDemo} onOpenChange={setShowHapticsDemo}>
+                <DialogContent className="font-sans">
+                    <DialogHeader>
+                        <DialogTitle>Haptic feedback</DialogTitle>
+                    </DialogHeader>
+                    <DialogDescription>
+                        
+                        <div className="flex justify-center items-center p-6">
+                            <Slider max={10} onValueChange={() => navigator.vibrate(10)} />
+                        </div>
+
+
+                        <p>{`Slide around to test haptics. Haptics are applied to various interactions within the app to provide a more tactile experience, for example, character typing.`}</p>
+
+                        <h1 className="uppercase font-bold text-sm opacity-80 mt-4">Results</h1>
+                        <div className="flex flex-col gap-4 p-2 pl-4 mt-2">
+                            <div className="flex items-center gap-4">
+                                <CheckCircle className="min-w-8 h-8 text-green-200" />
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-green-200">{`Distinct clicks and taps`}</span>
+                                    <p className="text-xs opacity-90">{`Your device and browser fully support precision haptic feedback.`}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <Info className="min-w-8 h-8 text-yellow-200" />
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-yellow-200">{`General vibrations`}</span>
+                                    <p className="text-xs opacity-90">{`Haptics are working, but feel less precise. This is common due to Web API limitations on some hardware.`}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <X className="min-w-8 h-8 text-red-200" />
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-red-200">{`No feedback felt`}</span>
+                                    <p className="text-xs opacity-90">{`Your hardware may not support haptics, or they are disabled. Try toggling Silent/Vibrate mode or checking browser permissions.`}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </DialogDescription>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button onClick={() => setShowHapticsDemo(false)}>
+                            Got it
                         </Button>
                     </DialogFooter>
                 </DialogContent>
