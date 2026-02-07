@@ -258,7 +258,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       const currentX = x.get();
-      const dragThreshold = -200;
+      const dragThreshold = -100;
       
       const isFling = info.velocity.x < -500; 
       const isPastThreshold = currentX < dragThreshold;
