@@ -16,7 +16,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/utils/systemMessageGeneration";
 import OpenAI from "openai";
 import { CharacterData, ChatMetadata, defaultCharacterData } from "@/types/CharacterData";
-import { DomainAttributeEntry, DomainMemoryEntry, DomainTimestepEntry } from "@/types/EEDomain"
+import { DomainAttributeEntry, DomainMemoryEntry, DomainTimestepEntry, DomainFlashcardEntry } from "@/types/EEDomain"
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import {
@@ -677,23 +677,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       };
     }
 
-    let flashcardInstructions = "";
-    if (associatedDomain) {
-      const flashcards = await getDomainFlashcards(associatedDomain);
-      if (flashcards.length > 0) {
-        const msgCount = messagesList.filter(m => m.role !== 'system').length;
-        const activeFC = flashcards.filter(fc => {
-          if (!fc.content.trim()) return false;
-          if (fc.frequency === 1) return msgCount <= 2;
-          if (fc.frequency === 11) return true;
-          const interval = 12 - fc.frequency;
-          return (msgCount % interval === 0);
-        });
-        if (activeFC.length > 0) {
-          flashcardInstructions = `\n[ Context Reminders ]:\n${activeFC.map(fc => `- ${fc.content}`).join('\n')}\n`;
-        }
-      }
-    }
+    
 
     const systemPrompt = await getSystemMessage(
       characterData,
@@ -883,16 +867,49 @@ ${entryTitle}
           ]
           : []
         ),
-        ...(flashcardInstructions !== "" ? [
-          {
-            role: "system" as "user" | "assistant" | "system",
-            content: flashcardInstructions,
-            name: "system"
-          }
-        ] : []),
       ];
 
       if (associatedDomain) {
+
+
+        // flashcards
+        let activeFC: DomainFlashcardEntry[] = [];
+        const flashcards = await getDomainFlashcards(associatedDomain);
+        if (flashcards.length > 0) {
+          const msgCount = messagesList.filter(m => m.role !== 'system').length;
+          activeFC = flashcards.filter(fc => {
+            if (!fc.content.trim()) return false;
+            if (fc.frequency === 1) return msgCount <= 2;
+            if (fc.frequency === 11) return true;
+            const interval = 12 - fc.frequency;
+            return (msgCount % interval === 0);
+          }).filter(fc => {
+            return Math.random() * 100 < fc.chance;
+          });
+        }
+        if (activeFC.length > 0) {
+          const groupedByDistance: Record<number, string[]> = {};
+          activeFC.forEach(fc => {
+            const d = fc.distance || 0;
+            if (!groupedByDistance[d]) groupedByDistance[d] = [];
+            groupedByDistance[d].push(fc.content);
+          });
+
+          const distances = Object.keys(groupedByDistance).map(Number).sort((a, b) => b - a);
+          for (const dist of distances) {
+            const content = `\n[ Context Reminders ]:\n${groupedByDistance[dist].map(c => `- ${c}`).join('\n')}\n`;
+            let index = finalMessages.length - dist;
+            if (index < 0) index = 0;
+            if (index > finalMessages.length) index = finalMessages.length;
+
+            finalMessages.splice(index, 0, {
+              role: "user" as "user" | "assistant" | "system",
+              content: content,
+              name: "system"
+            });
+          }
+        }
+
         const assistantRecall = await buildAssistantRecall(associatedDomain)
         if (assistantRecall !== "") {
           if (finalMessages.length < 7) {

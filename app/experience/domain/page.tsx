@@ -196,7 +196,7 @@ const ExperienceDomainPage: React.FC = () => {
 
 
     return (
-        <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-(family-name:--font-geist-sans)">
+        <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-sans">
             <motion.div
                 initial={configHighend ? { opacity: 0, scale: 0.8, y: -100 } : { opacity: 0, scale: 1, y: -10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -384,7 +384,7 @@ const ExperienceDomainPage: React.FC = () => {
                                     >
                                         <p className={isForgotten ? "blur-xs opacity-50 select-none" : ""}>{memory.memory}</p>
                                         <div className="flex gap-2 justify-end">
-                                            <Button variant={isForgotten ? "outline" : "destructive"}disabled={isForgotten}
+                                            <Button variant={isForgotten ? "outline" : "destructive"} disabled={isForgotten}
                                                 onClick={() => {
                                                     if (!isForgotten && character.plmex.domain) {
                                                         const updatedMemories = [...character.plmex.domain.memories];
@@ -468,9 +468,9 @@ const ExperienceDomainPage: React.FC = () => {
             <Dialog open={showDomainGuideEditor} onOpenChange={setShowDomainGuideEditor}>
                 <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
                     <DialogHeader>
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-4 relative">
                             <DialogTitle className="text-2xl font-bold">Domain guide</DialogTitle>
-                             <Button className="mr-4" variant="outline" size="sm" onClick={() => setShowingFlashcards(true)}><Library /> Flashcards</Button>
+                            <Button className="absolute right-4 top-0 hidden sm:flex" variant="outline" size="sm" onClick={() => { setShowingFlashcards(true); }}><Library /> Flashcards</Button>
                         </div>
                     </DialogHeader>
                     <p className="opacity-50 text-xs whitespace-pre-line">{`Domain guides help set the overall context and rules for how the character should behave within this domain.
@@ -479,6 +479,7 @@ const ExperienceDomainPage: React.FC = () => {
                     `}</p>
 
                     <Textarea value={domainGuideText} onChange={(e) => setDomainGuideText(e.target.value)} rows={10}></Textarea>
+                    <Button className="w-full flex sm:hidden" variant="outline" size="sm" onClick={() => { setShowingFlashcards(true); }}><Library /> Flashcards</Button>
                     <div className="flex gap-2 w-full">
                         <Button className="w-full" variant="outline" onClick={() => setShowDomainGuideEditor(false)}>Discard</Button>
                         <Button className="w-full" onClick={() => {setDomainGuide( domainId, domainGuideText ); setShowDomainGuideEditor(false)}}><Check /> Apply</Button>
@@ -526,7 +527,7 @@ const ExperienceDomainPage: React.FC = () => {
                             ))}
                         </AnimatePresence>
                         <Button className="w-full" variant="outline" onClick={() => {
-                            const newFC = [...(character.plmex.domain?.flashcards || []), { id: crypto.randomUUID(), content: "", frequency: 1 }];
+                            const newFC = [...(character.plmex.domain?.flashcards || []), { id: crypto.randomUUID(), content: "", frequency: 1, chance: 80, distance: 10 }];
                              setCharacter({
                                 ...character,
                                 plmex: {

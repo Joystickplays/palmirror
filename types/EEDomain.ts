@@ -10,6 +10,8 @@ export interface DomainFlashcardEntry {
     id: string;
     content: string;
     frequency: number;
+    chance: number;
+    distance: number;
 }
 
 export interface DomainAttributeHistory {
