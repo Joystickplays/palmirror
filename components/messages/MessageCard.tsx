@@ -39,6 +39,7 @@ import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
 import { AnimateChangeInHeight } from '../utilities/animate/AnimateHeight';
 import { AnimateChangeInSize } from '../utilities/animate/AnimateSize';
 import { Label } from "@/components/ui/label"
+import { PLMGlobalConfigServiceInstance } from '@/context/PLMGlobalConfigService';
 
 const MarkdownView = React.memo(
   ({ content, className }: { content: string; className?: string }) => {
@@ -129,7 +130,7 @@ type StatusData = Array<{ key: string; value: string }>;
 
 
 const vibrate = (duration: number) => {
-  if ("vibrate" in navigator) {
+  if ("vibrate" in navigator && PLMGlobalConfigServiceInstance.get("haptics")) {
     navigator.vibrate(duration);
   }
 };
