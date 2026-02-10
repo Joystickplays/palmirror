@@ -6,11 +6,13 @@ interface AnimateChangeInHeightProps {
   children: React.ReactNode
   className?: string
   style?: React.CSSProperties
+  instantOnFirstMount?: boolean
 }
 
-export const AnimateChangeInHeight: React.FC<AnimateChangeInHeightProps> = ({ children, className, style }) => {
+export const AnimateChangeInHeight: React.FC<AnimateChangeInHeightProps> = ({ children, className, style, instantOnFirstMount = false }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [height, setHeight] = useState<number | 'auto'>('auto')
+  const [forceInstant, setForceInstant] = useState(instantOnFirstMount)
 
   useEffect(() => {
     if (containerRef.current) {
@@ -28,12 +30,19 @@ export const AnimateChangeInHeight: React.FC<AnimateChangeInHeightProps> = ({ ch
     }
   }, [])
 
+  useEffect(() => {
+    if (forceInstant && height !== 'auto') {
+      const t = setTimeout(() => setForceInstant(false), 50)
+      return () => clearTimeout(t)
+    }
+  }, [height, forceInstant])
+
   return (
     <motion.div
       className={classNames(className, 'overflow-hidden')}
       style={{ height, ...style }}
       animate={{ height }}
-      transition={{ type: 'spring', stiffness: 200, damping: 23 }}
+      transition={forceInstant ? { duration: 0 } : { type: 'spring', stiffness: 200, damping: 23 }}
     >
       <div ref={containerRef}>{children}</div>
     </motion.div>

@@ -31,7 +31,7 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall, getDomainFlashcards } from "@/utils/domainData";
+import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall, getDomainFlashcards, getDomainGuide } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/notifications/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/notifications/MemoryNotificationProvider";
 import SuggestionBar from "@/components/chat/bars/SuggestionBar";
@@ -74,6 +74,11 @@ interface Message {
       reasoningContent?: string;
     }>;
     focusingOnIdx: number; // 0 for main content, 1+ for extra contents
+    regenerationOptions?: {
+      rewriteBase?: string;
+      recalledFlashcards?: Array<DomainFlashcardEntry>;
+      recallDomainGuide?: boolean;
+    };
     stillGenerating: boolean;
 }
 
@@ -119,6 +124,8 @@ const ChatPage = () => {
   const [associatedDomain, setAssociatedDomain] = useState<string>("");
   const [entryTitle, setEntryTitle] = useState<string>("");
   const [chatTimesteps, setChatTimesteps] = useState<Array<DomainTimestepEntry>>([])
+  const [domainGuide, setDomainGuide] = useState<string>("");
+  const [domainFlashcards, setDomainFlashcards] = useState<Array<DomainFlashcardEntry>>([]);
   const attributeNotification = useAttributeNotification();
   const memoryNotification = useMemoryNotification();
 
@@ -989,7 +996,34 @@ ${entryTitle}
           finalMessages = compressedMessages;
         }
 
+        //regen options
+        //rewrite base
+
+        if (regenerate && mode === "send") {
+          const lastUserMessage = [...finalMessages].reverse().find(m => m.role === "user");
+          
+
+          if (lastUserMessage) {
+            if (assistantMessageObject.regenerationOptions?.recalledFlashcards) {
+              const recalledFC = assistantMessageObject.regenerationOptions.recalledFlashcards;
+              if (recalledFC.length > 0) {
+                const fcContent = recalledFC.map(fc => `- ${fc.content}`).join("\n");
+                lastUserMessage.content = lastUserMessage.content + `\n\n[SYSTEM NOTE]: For your next message, you have been recalled the following context reminders:\n${fcContent}\nSince the user themselves explicitly attach these, you MUST apply the flashcard instructions in the next message. Incorporate them naturally into your next response strictly so.`;
+              }
+            }
+
+            if (assistantMessageObject.regenerationOptions?.recallDomainGuide) {
+              if (domainGuide && domainGuide.trim() !== "") {
+                lastUserMessage.content = lastUserMessage.content + `\n\n[SYSTEM NOTE]: For your next message, you have been recalled the entire domain guide below:\n"""${domainGuide}"""\nYou must follow the guide strictly in your next response. Do not acknowledge, just follow it.`;
+              }
+            }
+
+            if (assistantMessageObject.regenerationOptions?.rewriteBase && assistantMessageObject.regenerationOptions?.rewriteBase !== "") {
+              lastUserMessage.content = lastUserMessage.content + "\n\n[SYSTEM NOTE]: For your next message, please generate in accordance to this user note: " + assistantMessageObject.regenerationOptions?.rewriteBase + "\nYou must follow this instruction strictly. Do not acknowledge, just follow it.";
+            }
+          }
         }
+      }
 
         
 
@@ -1003,12 +1037,12 @@ ${entryTitle}
         if (!regenerate) {
           setMessages((p) => [
             ...p,
-            assistantMessageObject,
+            { ...assistantMessageObject },
           ]);
         } else {
           setMessages((p) => [
             ...p.slice(0, -1),
-            assistantMessageObject,
+             { ...assistantMessageObject },
           ]);
         }
       }
@@ -1072,6 +1106,7 @@ ${entryTitle}
                   content: assistantMessage,
                   focusingOnIdx: 0,
                   stillGenerating: true,
+                  regenerationOptions: assistantMessageObject.regenerationOptions
                 },
               ]);
             } else {
@@ -1094,6 +1129,7 @@ ${entryTitle}
                   content: assistantMessageObject.content,
                   focusingOnIdx: assistantMessageObject.focusingOnIdx,
                   stillGenerating: true,
+                  regenerationOptions: assistantMessageObject.regenerationOptions
               },
             ]);
             }
@@ -1103,7 +1139,7 @@ ${entryTitle}
           }
         setMessages((p) => [
           ...p.slice(0, -1),
-          { ...p[p.length - 1], stillGenerating: false },
+          { ...p[p.length - 1], stillGenerating: false, regenerationOptions: assistantMessageObject.regenerationOptions },
         ]);
         if (configTokenWatch) {
           setTokenHitStamps([]);
@@ -1114,6 +1150,7 @@ ${entryTitle}
           role: "assistant",
           content: assistantMessage,
           focusingOnIdx: 0,
+          regenerationOptions: assistantMessageObject.regenerationOptions,
           stillGenerating: false,
         });
       } else if (destination === "suggest-bar") {
@@ -1177,12 +1214,17 @@ ${entryTitle}
     }
   };
 
-  const regenerateMessage = () => {
+  const regenerateMessage = (optionsOverride?: any) => {
     const updatedMessages = [...messages];
     const lastMsgIndex = updatedMessages.length - 1;
     const lastMsg = updatedMessages[lastMsgIndex];
 
     const optimisticMsg = { ...lastMsg };
+
+    if (optionsOverride && typeof optionsOverride === 'object') {
+      optimisticMsg.regenerationOptions = optionsOverride;
+    }
+
     const extraContentId = crypto.randomUUID();
     
     if (!optimisticMsg.extraContent) optimisticMsg.extraContent = [];
@@ -1736,6 +1778,15 @@ ${entryTitle}
     }
   }, []);
 
+  useEffect(() => {
+    getDomainGuide(associatedDomain).then((guide) => {
+      setDomainGuide(guide || "");
+    });
+    getDomainFlashcards(associatedDomain).then((flashcards) => {
+      setDomainFlashcards(flashcards);
+    });
+  }, [associatedDomain]);
+
   
   // Domain tagging system
   useEffect(() => {
@@ -1948,6 +1999,16 @@ ${entryTitle}
                           rewindTo={rewindTo}
                           changeStatus={changeStatus}
                           messageListRef={messageListRef}
+                          domainFlashcards={domainFlashcards}
+                          domainGuide={domainGuide}
+                          regenerationOptions={message.regenerationOptions}
+                          changeRegenOptions={(options) => {
+                            setMessages((prev) => {
+                              const updated = [...prev];
+                              updated[index] = { ...updated[index], regenerationOptions: options };
+                              return updated;
+                            });
+                          }}
                           configHighend={configHighend}
                           configTyping={configTyping}
                           configAutoCloseFormatting={configAutoCloseFormatting}

@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
-import { Pencil, Rewind, Check, MessagesSquare, RotateCw, ChevronDown, MailQuestion } from 'lucide-react';
+import { Pencil, Rewind, Check, MessagesSquare, RotateCw, ChevronDown, MailQuestion, ArrowUp, X, Book  } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox"
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/context-menu"
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform, useDragControls, PanInfo, animate } from 'framer-motion';
 import { CharacterData } from "@/types/CharacterData";
+import { DomainFlashcardEntry } from '@/types/EEDomain';
 
 import TypingIndication from "@/components/Typing"
 import { useTypewriter } from '../utilities/Typewriter';
@@ -40,6 +41,7 @@ import { AnimateChangeInHeight } from '../utilities/animate/AnimateHeight';
 import { AnimateChangeInSize } from '../utilities/animate/AnimateSize';
 import { Label } from "@/components/ui/label"
 import { PLMGlobalConfigServiceInstance } from '@/context/PLMGlobalConfigService';
+import { Textarea } from '../ui/textarea';
 
 const MarkdownView = React.memo(
   ({ content, className }: { content: string; className?: string }) => {
@@ -107,7 +109,11 @@ interface MessageCardProps {
   reasoningContent?: string;
   role: string;
   stillGenerating: boolean;
-  regenerateFunction: () => void;
+  regenerateFunction: (options?: {
+    rewriteBase?: string;
+    recalledFlashcards?: Array<DomainFlashcardEntry>;
+    recallDomainGuide?: boolean;
+  }) => void;
   globalIsThinking: boolean;
   isGreetingMessage: boolean;
   isLastMessage: boolean;
@@ -116,6 +122,18 @@ interface MessageCardProps {
   rewindTo: (index: number) => void;
   changeStatus: (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => void;
   messageListRef: React.RefObject<HTMLDivElement>;
+  domainFlashcards: Array<DomainFlashcardEntry>;
+  domainGuide: string;
+  regenerationOptions?: {
+    rewriteBase?: string;
+    recalledFlashcards?: Array<DomainFlashcardEntry>;
+    recallDomainGuide?: boolean;
+  };
+  changeRegenOptions: (options: {
+    rewriteBase?: string;
+    recalledFlashcards?: Array<DomainFlashcardEntry>;
+    recallDomainGuide?: boolean;
+  }) => void;
   configTyping: boolean;
   configHighend: boolean;
   configAutoCloseFormatting: boolean;
@@ -154,6 +172,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
   rewindTo,
   changeStatus,
   messageListRef,
+  domainFlashcards,
+  domainGuide,
+  regenerationOptions,
+  changeRegenOptions,
   configTyping,
   configHighend,
   configAutoCloseFormatting
@@ -189,7 +211,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const cardPaddingTransform = useTransform(animatedFontSize, s => `${s / 2}rem`);
   const cardPaddingLeftTransform = useTransform(animatedFontSize, s => `${s}rem`);
 
-  const overlayOpacity = useTransform(x, (val) => val < -50 ? Math.min((Math.abs(val) - 50) / 100, 1) : 0);
+  const overlayOpacity = useTransform(x, (val) => {
+    const threshold = val > 0 ? 25 : 50;
+    const absVal = Math.abs(val);
+    return absVal > threshold ? Math.min((absVal - threshold) / threshold, 1) : 0;
+  });
+  const [overlayDir, setOverlayDir] = useState<"left" | "right">("left");
 
   let aboutToRegenerate = false;
   const [isEditing, setIsEditing] = useState(false);
@@ -210,6 +237,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const [canRegenerate, setCanRegenerate] = useState(false);
   const [userAboutToRegen, setUserAboutToRegen] = useState(false);
+  const [showRegenOptions, setShowRegenOptions] = useState(false);
+  const [localRegenOptions, setLocalRegenOptions] = useState(regenerationOptions);
 
   const [showReasoning, setShowReasoning] = useState(true);
   const reasoningDivRef = useRef<HTMLDivElement>(null);
@@ -219,8 +248,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const [presentableText, setPresentableText] = useState("");
 
-  const triggerRegenerate = useCallback(() => {
-    regenerateFunction();
+  const triggerRegenerate = useCallback((options?: any) => {
+    regenerateFunction(options);
   }, [regenerateFunction]);
 
   const startEditing = () => {
@@ -248,6 +277,16 @@ const MessageCard: React.FC<MessageCardProps> = ({
       setUserAboutToRegen(false);
     }
 
+    if (currentX < 0) {
+      if (overlayDir !== "left") {
+        setOverlayDir("left");
+      }
+    } else {
+      if (overlayDir !== "right") {
+        setOverlayDir("right");
+      }
+    }
+
     scale.set(isRegenerateAction ? 0.95 : 1);
     xOffset.set(isRegenerateAction ? -50 : 0);
 
@@ -264,6 +303,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
       const isFling = info.velocity.x < -500; 
       const isPastThreshold = currentX < dragThreshold;
 
+      const isFlingForRegenOpts = info.velocity.x > 500;
+
+
       if ((isPastThreshold || isFling) && isEligibleForRegenerate) {
         animate(x, -500, { duration: 0.2 });
         animate(height, 0, { duration: 0.2 });
@@ -275,6 +317,31 @@ const MessageCard: React.FC<MessageCardProps> = ({
         aboutToRegenerate = false;
         setUserAboutToRegen(false);
         scale.set(1);
+
+        if (isFlingForRegenOpts) {
+          setLocalRegenOptions(regenerationOptions);
+          setShowRegenOptions(true);
+          
+          animate(x, 800, { 
+            type: 'spring',
+            velocity: info.velocity.x / 3,
+            modifyTarget: () => 0,
+            power: 0.1,
+            bounceStiffness: 200,
+            bounceDamping: 20
+          });
+          setDragStarted(false);
+          return;
+        }
+
+        animate(x, 0, { 
+          type: 'spring',
+          velocity: info.velocity.x / 3,
+          modifyTarget: () => 0,
+          power: 0.1,
+          bounceStiffness: 200,
+          bounceDamping: 20
+         });
         xOffset.set(0);
         blur.set(0);
       }
@@ -500,12 +567,41 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   }, [presentableText])
 
+  useEffect(() => {
+    if (role === "user" && isLastMessage && messageListRef.current) {
+      const scrollDuration = 500;
+      const startTime = Date.now();
+      let reqId: number;
+
+      const performScroll = () => {
+        if (messageListRef.current) {
+          messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+        }
+
+        if (Date.now() - startTime < scrollDuration) {
+          reqId = requestAnimationFrame(performScroll);
+        }
+      };
+
+      reqId = requestAnimationFrame(performScroll);
+
+      return () => cancelAnimationFrame(reqId);
+    }
+  }, [presentableText, role, isLastMessage, messageListRef]) // because of more race conditions and scary stuff, this ugly little ass will do
+
 
   useEffect(() => {
     if (userAboutToRegen) {
       vibrate(50);
     }
   }, [userAboutToRegen])  
+
+  useEffect(() => {
+    if (!showRegenOptions) {
+      animate(x, 0);
+    }
+  }, [showRegenOptions])
+
 
 
   const renderContent = () => {
@@ -591,7 +687,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
               <div className="border border-white/10 rounded-xl p-2 px-4 text-white/50 text-sm">
                 <MailQuestion className="mx-auto my-2" />
                 <p>{`Hmm, this message doesn't contain any text.`}</p>
-                <Button onClick={regenerateFunction} className="my-2 mt-4 ml-auto block" variant="outline">Regenerate</Button>
+                <Button onClick={() => regenerateFunction()} className="my-2 mt-4 ml-auto block" variant="outline">Regenerate</Button>
               </div>
             )}
 
@@ -678,12 +774,134 @@ const MessageCard: React.FC<MessageCardProps> = ({
   };
 
   return (
+    <AnimateChangeInHeight className="relative w-full h-full" instantOnFirstMount={role === "user"}>
+      <div className="relative w-full h-full pb-4">
+      <AnimatePresence mode="popLayout">
+        {showRegenOptions && (
+          <motion.div
+          initial={{
+            x: -500,
+            opacity: 0
+          }}
+          animate={{
+            x: 0,
+            opacity: 1
+          }}
+          exit={{
+            x: -500,
+            opacity: 0
+          }}
+          transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
+          className={`${!showRegenOptions && "absolute"} mt-4 flex top-0 left-0 w-full h-full`}>
+              <div className="flex flex-col gap-1 w-full border border-white/10 rounded-xl p-4">
+                <h1 className="font-extrabold text-xl">Rewrite Options</h1>
+                <p className="opacity-75 text-sm mb-4">Influence how future rewrites in this message are made</p>
+                <Textarea
+                value={localRegenOptions?.rewriteBase || ""}
+                onChange={(e) => {
+                  setLocalRegenOptions({
+                    ...localRegenOptions,
+                    rewriteBase: e.target.value
+                  })
+                }}
+                placeholder='Information on how to write this message'></Textarea>
+                {domainFlashcards.length > 0 && (
+                  <div className="mt-4 flex flex-col gap-2">
+                    <Label className="text-xs opacity-70">Flashcard Recalls</Label>
+                    <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-2">
+                      {domainFlashcards.map((flashcard) => {
+                        const isSelected = localRegenOptions?.recalledFlashcards?.some(f => f.content === flashcard.content);
+                        return (
+                          <div key={flashcard.content} className="flex items-center justify-between p-2 px-4 rounded-lg border border-white/5">
+                            <div className="flex flex-col overflow-hidden">
+                              <span className="text-sm truncate">{flashcard.content}</span>
+                            </div>
+                            <div className="flex">
+                              <Button 
+                              onClick={() => {
+                                if (isSelected) {
+                                  setLocalRegenOptions({
+                                    ...localRegenOptions,
+                                    recalledFlashcards: localRegenOptions?.recalledFlashcards?.filter(f => f.content !== flashcard.content)
+                                  });
+                                }
+                              }}
+                              variant="outline" className={`w-8 h-8 p-0 rounded-r-none ${isSelected ? "opacity-50" : ""}`}>
+                                <X className="text-red-400" />
+                              </Button>
+                              <Button
+                              onClick={() => {
+                                if (!isSelected) {
+                                  setLocalRegenOptions({
+                                    ...localRegenOptions,
+                                    recalledFlashcards: [...(localRegenOptions?.recalledFlashcards || []), flashcard]
+                                  });
+                                }
+                              }}
+                              variant="outline" className={`w-8 h-8 p-0 rounded-l-none ${!isSelected ? "opacity-50" : ""}`}>
+                                <Check className="text-green-400" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {domainGuide !== "" && (
+                  <div className="mt-4 flex flex-col gap-2">
+                    <Label className="text-xs opacity-70">Domain Guide Recall</Label>
+                    <div className="flex items-center justify-between p-2 px-4 rounded-lg border border-white/5">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <Book className="w-6 h-6 opacity-80" />
+                        <span className="text-sm truncate">{`Recall the domain guide in future rewrites`}</span>
+                      </div>
+                      <div className="flex">
+                        <Button
+                          onClick={() => {
+                            setLocalRegenOptions({
+                              ...localRegenOptions,
+                              recallDomainGuide: false
+                            });
+                          }}
+                          variant="outline" className={`w-8 h-8 p-0 rounded-r-none ${localRegenOptions?.recallDomainGuide ? "opacity-50" : ""}`}>
+                          <X className="text-red-400" />
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setLocalRegenOptions({
+                              ...localRegenOptions,
+                              recallDomainGuide: true
+                            });
+                          }}
+                          variant="outline" className={`w-8 h-8 p-0 rounded-l-none ${!localRegenOptions?.recallDomainGuide ? "opacity-50" : ""}`}>
+                          <Check className="text-green-400" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-end gap-2 mt-2">
+                  <Button variant={"outline"} onClick={() => {
+                    changeRegenOptions(localRegenOptions || {});
+                    setShowRegenOptions(false);
+                  }}>Back</Button>
+                  <Button onClick={() => {
+                    changeRegenOptions(localRegenOptions || {});
+                    setShowRegenOptions(false);
+                    triggerRegenerate(localRegenOptions);
+                  }}>Rewrite now</Button>
+                </div>
+              </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     <motion.div
       drag="x"
       dragControls={dragControls}
       dragListener={false}
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={{ left: isEligibleForRegenerate ? 0.7 : 0.05, right: 0.05 }}
+      dragElastic={isEligibleForRegenerate ? { left: 0.7, right: 0.3 } : { left: 0.05, right: 0.05 }}
       onDragStart={() => setDragStarted(true)}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
@@ -697,7 +915,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
         gap: gapTransform,
         marginTop: marginTopTransform
       }}
-      className="flex flex-col justify-end min-h-full overflow-hidden"
+      className={`flex flex-col justify-end min-h-full overflow-hidden ${showRegenOptions ? "absolute top-0 left-0" : "relative"}`}
     >
       <motion.p className={`${role === "user" ? "ml-auto" : "mr-auto"} opacity-50`} style={{ fontSize: userNameFontSizeTransform, x: animatedXOffset }}>
         {role === "user" ? `${currentTheme.showUserName ? characterData.userName || "Y/N" : ""}` : characterData.name || "Character"}
@@ -742,6 +960,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
           </div>
         </DrawerContent>
       </Drawer>
+      
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <motion.div style={{ x: animatedXOffset }}>
@@ -762,39 +981,44 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 </motion.div>
               </CardContent>
               {!configHighend && (
-                <motion.div className="absolute inset-0 flex items-end justify-end z-10 text-white bg-opacity-0 pointer-events-none select-none"
+                <motion.div className={`absolute inset-0 flex items-end ${overlayDir === "right" ? "justify-start" : "justify-end"} z-10 text-white bg-opacity-0 pointer-events-none select-none`}
                   style={{
                     opacity: overlayOpacity
                   }}>
 
                   <AnimateChangeInSize className="bg-black/50 rounded-2xl">
                     <div className="flex gap-2 p-2 whitespace-nowrap">
-                      <RotateCw className="animate-[spin_2s_infinite] min-w-6" />
-                      <p>
-                        <AnimatePresence mode="popLayout">
-                          {
-                            userAboutToRegen ? (
-                              <motion.span 
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
-                              key="gonnaRegen">
+                      {overlayDir === "left" ? (
+                        <><RotateCw className="animate-[spin_2s_infinite] min-w-6" /><p>
+                          <AnimatePresence mode="popLayout">
+                            {userAboutToRegen ? (
+                              <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
+                                key="gonnaRegen">
                                 Release
                               </motion.span>
                             ) : (
-                              <motion.span 
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
-                              key="howtoRegen">
+                              <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
+                                key="howtoRegen">
                                 Swipe left
                               </motion.span>
-                            )
-                          }
-                        </AnimatePresence>
-                        {" "}to rewrite...</p>
+                            )}
+                          </AnimatePresence>
+                          {" "}to rewrite...</p></>
+                      ): (
+                          <>
+                            <p>
+                              Swipe right for rewrite options...</p>
+                            <ArrowUp className="animate-[bounce_2s_infinite] min-w-6 rotate-90 -scale-x-100" />
+                          </>
+                      )}
                     </div>
                   </AnimateChangeInSize>
                 </motion.div>
@@ -829,6 +1053,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
       </ContextMenu>
 
     </motion.div >
+    </div>
+    </AnimateChangeInHeight>
   );
 };
 
