@@ -318,7 +318,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
         setUserAboutToRegen(false);
         scale.set(1);
 
-        if (isFlingForRegenOpts) {
+        if (isFlingForRegenOpts && isEligibleForRegenerate) {
           setLocalRegenOptions(regenerationOptions);
           setShowRegenOptions(true);
           
@@ -1013,11 +1013,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
                           </AnimatePresence>
                           {" "}to rewrite...</p></>
                       ): (
+                          isEligibleForRegenerate && (
                           <>
                             <p>
                               Swipe right for rewrite options...</p>
                             <ArrowUp className="animate-[bounce_2s_infinite] min-w-6 rotate-90 -scale-x-100" />
                           </>
+                          )
                       )}
                     </div>
                   </AnimateChangeInSize>
