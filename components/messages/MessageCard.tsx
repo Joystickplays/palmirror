@@ -774,7 +774,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   };
 
   return (
-    <AnimateChangeInHeight className="relative w-full h-full" instantOnFirstMount={role === "user"}>
+    <div className="relative w-full h-full">
       <div className="relative w-full h-full pb-4">
       <AnimatePresence mode="popLayout">
         {showRegenOptions && (
@@ -1056,7 +1056,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
     </motion.div >
     </div>
-    </AnimateChangeInHeight>
+    </div>
   );
 };
 
