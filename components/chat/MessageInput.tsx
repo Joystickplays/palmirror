@@ -174,7 +174,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
             </span>
           </ContextMenuItem>
 
-          <ContextMenuItem
+          {/* <ContextMenuItem
             onClick={() => rewriteMessage(localMessageRef.current)}
             disabled={isThinking || userPromptThinking}
           >
@@ -182,7 +182,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
               <PenLine className="h-4 w-4" />
               Rewrite message
             </span>
-          </ContextMenuItem>
+          </ContextMenuItem> */}
 
           <ContextMenuItem 
             onSelect={showSkipToSceneModal}
