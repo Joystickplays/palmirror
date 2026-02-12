@@ -549,7 +549,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     regenerate: boolean = false,
     optionalMessage: string = "",
     userMSGaddOnList: boolean = true,
-    mode: "send" | "rewrite" | "suggest" | "call-steer" | "skip-scene" | "suggest-bar" = "send",
+    mode: "send" | "rewrite" | "suggest" | "call-steer" | "skip-scene" | "suggest-bar" | "status-change" = "send",
     rewriteBase: string = "",
     destination: "chat" | "suggest-bar" | "input" = "chat",
     existingMessage: Message | null = null,
@@ -685,7 +685,19 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       };
     }
 
-    
+    if (mode === "skip-scene") {
+      assistantMessageObject.regenerationOptions = {
+        ...(assistantMessageObject.regenerationOptions || {}),
+        rewriteBase: skipPromptBuilder(rewriteBase),
+      }
+    }
+
+    if (mode === "status-change") {
+      assistantMessageObject.regenerationOptions = {
+        ...(assistantMessageObject.regenerationOptions || {}),
+        rewriteBase: rewriteBase,
+      }
+    }
 
     const systemPrompt = await getSystemMessage(
       characterData,
@@ -792,6 +804,20 @@ Do not lead with anything like "Sure. Here's an enhanced version..." or anything
           role: "user" as "user" | "assistant" | "system",
           name: "user",
           content: skipPromptBuilder(rewriteBase),
+        },
+      ];
+    } else if (mode === "status-change") {
+      finalMessages = [
+        {
+          role: "system" as "user" | "assistant" | "system",
+          content: systemPrompt,
+          name: "system",
+        },
+        ...messagesApply.map((m) => ({ ...m, name: "-" })),
+        {
+          role: "user" as "user" | "assistant" | "system",
+          name: "user",
+          content: rewriteBase,
         },
       ];
     } else {
@@ -1593,7 +1619,8 @@ ${entryTitle}
       // Trigger a reaction from the character
       const reason = changingStatusReason || "Unspecified";
       const systemNote = `[SYSTEM NOTE: All of a sudden, ${characterData.name}'s ${changingStatus} status is "${changingStatusValue}". Make ${characterData.name} have a "${changingStatus}" status of "${changingStatusValue}" and make it react accordingly. Reason: "${reason}"]`;
-      handleSendMessage(null, true, false, systemNote, false);
+      setIsThinking(true);
+      handleSendMessage(null, true, false, "", false, "status-change", systemNote);
     }
   };
 
