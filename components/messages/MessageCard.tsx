@@ -775,7 +775,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   return (
     <div className="relative w-full h-full">
-      <div className="relative w-full h-full pb-4">
+      <div className="relative w-full h-full">
       <AnimatePresence mode="popLayout">
         {showRegenOptions && (
           <motion.div
@@ -889,7 +889,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   <Button onClick={() => {
                     changeRegenOptions(localRegenOptions || {});
                     setShowRegenOptions(false);
-                    triggerRegenerate(localRegenOptions);
+                    setTimeout(() => {
+                      triggerRegenerate(localRegenOptions);
+                    }, 250);
                   }}>Rewrite now</Button>
                 </div>
               </div>
