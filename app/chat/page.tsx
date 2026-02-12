@@ -1000,8 +1000,14 @@ ${entryTitle}
         //rewrite base
 
         if (regenerate && mode === "send") {
-          const lastUserMessage = [...finalMessages].reverse().find(m => m.role === "user");
-          
+            let lastUserMessage = finalMessages[finalMessages.length - 1]?.role === "user"
+            ? finalMessages[finalMessages.length - 1]
+            : undefined;
+
+            if (!lastUserMessage) {
+              lastUserMessage = { role: "user", content: "", name: "system" };
+              finalMessages.push(lastUserMessage);
+            }
 
           if (lastUserMessage) {
             if (assistantMessageObject.regenerationOptions?.recalledFlashcards) {
