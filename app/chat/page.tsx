@@ -40,7 +40,7 @@ import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 import { MessagePreview } from "@/components/MessagePreview";
 import { LinearBlur } from "@/components/utilities/LinearBlur";
-import { ChevronLeft, ChevronRight, Info, ListCollapse } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, ListCollapse, X } from "lucide-react";
 import { UserPersonality } from "@/types/UserPersonality";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import { ApiProfile } from "@/components/chat/ChatSettings";
@@ -160,6 +160,8 @@ const ChatPage = () => {
   const [showSuggestionBar, setShowSuggestionBar] = useState(false);
   const [suggestionBarGenerating, setSuggestionBarGenerating] = useState(false);
   const [replySuggestions, setReplySuggestions] = useState<string[]>([]);
+
+  const [isChatNotSavedHidden, setIsChatNotSavedHidden] = useState(false);
 
   const [lastApiProfileId, setLastApiProfileId] = useState<string>("");
   const [showCascadeError, setShowCascadeError] = useState(false);
@@ -1023,17 +1025,15 @@ ${entryTitle}
         }
 
         //regen options
-        //rewrite base
-
         if (regenerate && mode === "send") {
-            let lastUserMessage = finalMessages[finalMessages.length - 1]?.role === "user"
+          let lastUserMessage = finalMessages[finalMessages.length - 1]?.role === "user"
             ? finalMessages[finalMessages.length - 1]
             : undefined;
 
-            if (!lastUserMessage) {
-              lastUserMessage = { role: "user", content: "", name: "system" };
-              finalMessages.push(lastUserMessage);
-            }
+          if (!lastUserMessage) {
+            lastUserMessage = { role: "user", content: "", name: "system" };
+            finalMessages.push(lastUserMessage);
+          }
 
           if (lastUserMessage) {
             if (assistantMessageObject.regenerationOptions?.recalledFlashcards) {
@@ -1049,15 +1049,27 @@ ${entryTitle}
                 lastUserMessage.content = lastUserMessage.content + `\n\n[SYSTEM NOTE]: For your next message, you have been recalled the entire domain guide below:\n"""${domainGuide}"""\nYou must follow the guide strictly in your next response. Do not acknowledge, just follow it.`;
               }
             }
+          }
+        }
+        
+      }
 
-            if (assistantMessageObject.regenerationOptions?.rewriteBase && assistantMessageObject.regenerationOptions?.rewriteBase !== "") {
-              lastUserMessage.content = lastUserMessage.content + "\n\n[SYSTEM NOTE]: For your next message, please generate in accordance to this user note: " + assistantMessageObject.regenerationOptions?.rewriteBase + "\nYou must follow this instruction strictly. Do not acknowledge, just follow it.";
-            }
+      if (regenerate && mode === "send") {
+        let lastUserMessage = finalMessages[finalMessages.length - 1]?.role === "user"
+          ? finalMessages[finalMessages.length - 1]
+          : undefined;
+
+        if (!lastUserMessage) {
+          lastUserMessage = { role: "user", content: "", name: "system" };
+          finalMessages.push(lastUserMessage);
+        }
+
+        if (lastUserMessage) {
+          if (assistantMessageObject.regenerationOptions?.rewriteBase && assistantMessageObject.regenerationOptions?.rewriteBase !== "") {
+            lastUserMessage.content = lastUserMessage.content + "\n\n[SYSTEM NOTE]: For your next message, please generate in accordance to this user note: " + assistantMessageObject.regenerationOptions?.rewriteBase + "\nYou must follow this instruction strictly. Do not acknowledge, just follow it.";
           }
         }
       }
-
-        
 
 
       recChattedAt(chatId, Date.now())
@@ -2085,16 +2097,35 @@ ${entryTitle}
           </div>
         </div>
 
-        {!PLMSecContext?.isSecureReady() && (
-          <div className="bg-blue-600/20 border border-blue-600 text-blue-300 p-3 rounded-xl z-1">
+        {!PLMSecContext?.isSecureReady() && messages.length > 5 && !isChatNotSavedHidden && (
+          <motion.div
+          initial={{
+            opacity: 0,
+            scale: 0.95,
+            y: 10,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            y: 0,
+          }}
+          transition={{
+            type: "spring",
+            mass: 1,
+            stiffness: 160,
+            damping: 23,
+          }}
+          className="bg-blue-600/20 border border-blue-600 text-blue-300 p-3 rounded-xl z-1">
             <div className="flex gap-2 items-center">
               <Info />
               <p>Chat not saved</p>
+              <div className="w-full flex-1"></div>
+              <button onClick={() => setIsChatNotSavedHidden(true)}><X /></button>
             </div>
             <p className="text-sm opacity-70 mt-2">In this guest mode, you cannot save chats and this chat won&apos;t persist after a refresh. To save and get more features, setup <button onClick={() => {
               router.push("/secure")
             }} className="underline cursor-pointer">PalMirror Secure.</button></p>
-          </div>
+          </motion.div>
         )}
 
         <SkipToSceneModal modalState={skipToSceneModalState} setModalState={setSkipToSceneModalState} skipToSceneCallback={(b) => skipToScene(b)}/>
