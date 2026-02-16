@@ -596,11 +596,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
   }, [userAboutToRegen])  
 
+
+  const [regenIncoming, setRegenIncoming] = useState(false);
   useEffect(() => {
-    if (!showRegenOptions) {
+    if (!showRegenOptions && !regenIncoming) {
       animate(x, 0);
     }
-  }, [showRegenOptions])
+  }, [showRegenOptions, regenIncoming])
 
 
 
@@ -888,9 +890,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   }}>Back</Button>
                   <Button onClick={() => {
                     changeRegenOptions(localRegenOptions || {});
-                    animate(x, 0);
+                    setRegenIncoming(true);
+                    setShowRegenOptions(false);
                     setTimeout(() => {
-                      setShowRegenOptions(false);
                       triggerRegenerate(localRegenOptions);
                     }, 200);
                   }}>Rewrite now</Button>
