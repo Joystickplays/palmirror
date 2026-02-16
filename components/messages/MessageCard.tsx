@@ -888,10 +888,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   }}>Back</Button>
                   <Button onClick={() => {
                     changeRegenOptions(localRegenOptions || {});
-                    setShowRegenOptions(false);
+                    animate(x, 0);
                     setTimeout(() => {
+                      setShowRegenOptions(false);
                       triggerRegenerate(localRegenOptions);
-                    }, 250);
+                    }, 200);
                   }}>Rewrite now</Button>
                 </div>
               </div>
