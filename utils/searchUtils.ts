@@ -224,9 +224,13 @@ const PROVIDERS = {
         },
         getCharacter: async (id: string): Promise<CharacterData> => {
             const targetUrl = `https://jannyai.com/api/v1/characters/${id}`;
-            const proxyUrl = `https://whateverorigin.org/get?url=${encodeURIComponent(targetUrl)}`;
+            const proxyUrl = `https://cvaicors.mhi.im/${targetUrl}`;
             const response = await fetch(proxyUrl);
             
+            if (response.status === 403) {
+                throw new Error("Cloudflare blocked us. Curse you JannyAI for not providing a proper API. You say JAI is 'selfish and an asshole' but look who's talking.");
+            }
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
