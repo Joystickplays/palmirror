@@ -117,7 +117,7 @@ export default function CharacterCardDrawer({ charCardOpen, setCharCardOpen, cha
                                         <X />
                                         Blocked
                                     </div>
-                                    <p className="text-xs">JannyAI is using Cloudflare is aggressively <b>blocking ALL requests</b> that seem like they are coming from bots, which unfortunately includes our app.
+                                    <p className="text-xs">JannyAI is using Cloudflare and it is aggressively <b>blocking ALL requests</b> that seem like they are coming from bots, which unfortunately includes our app.
                                         You can still access the character by clicking the "Go to external page" button and
                                         downloading the character file, then importing it into PalMirror.</p>
                                 </motion.div>}
