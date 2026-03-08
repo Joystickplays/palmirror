@@ -12,7 +12,7 @@ import { toast } from "react-toastify";
 import pako from "pako";
 import ExifReader from 'exifreader';
 
-import { CharacterData } from "@/types/CharacterData";
+import { CharacterData, defaultCharacterData } from "@/types/CharacterData";
 
 import { ChevronsLeft, Compass, Import, Menu, MessageCircle, PenLine, Plus, Settings } from "lucide-react";
 import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
@@ -62,7 +62,7 @@ export default function Sidebar() {
                             }
 
                             const parsedChara = atob(exifData.chara.value);
-                            const characterData: CharacterData = JSON.parse(parsedChara);
+                            const characterData: CharacterData = { ...defaultCharacterData, ...JSON.parse(parsedChara) };
                             characterData.image = await new Promise((resolve, reject) => {
                                 reader.onloadend = () => {
                                     if (reader.result) {
@@ -76,6 +76,7 @@ export default function Sidebar() {
                             });
                             characterData.personality = (characterData as any).description;
                             characterData.initialMessage = (characterData as any).first_mes;
+
 
                             localStorage.setItem(
                                 "characterData",
