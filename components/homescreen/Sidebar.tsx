@@ -10,6 +10,7 @@ import { Button } from "../ui/button";
 import { toast } from "react-toastify";
 
 import pako from "pako";
+import ExifReader from 'exifreader';
 
 import { CharacterData } from "@/types/CharacterData";
 
@@ -47,7 +48,48 @@ export default function Sidebar() {
             new Promise<void>((resolve, reject) => {
                 reader.onload = async function (event) {
                     try {
+
+                        if (file.name.endsWith(".card.png")) {
+                            console.log("Processing .card.png file");
+                            const exifData = await ExifReader.load(file, {includeUnknown: true});
+                            if (!exifData || !exifData.chara.value) {
+                                reject(
+                                    new Error(
+                                        "No character data found in PNG metadata."
+                                    )
+                                );
+                                return;
+                            }
+
+                            const parsedChara = atob(exifData.chara.value);
+                            const characterData: CharacterData = JSON.parse(parsedChara);
+                            characterData.image = await new Promise((resolve, reject) => {
+                                reader.onloadend = () => {
+                                    if (reader.result) {
+                                        resolve(reader.result as string);
+                                    } else {
+                                        reject(new Error("Failed to read file as data URL"));
+                                    }
+                                };
+                                reader.onerror = reject;
+                                reader.readAsDataURL(file);
+                            });
+                            characterData.personality = (characterData as any).description;
+                            characterData.initialMessage = (characterData as any).first_mes;
+
+                            localStorage.setItem(
+                                "characterData",
+                                JSON.stringify(characterData)
+                            );
+
+                            sessionStorage.removeItem("chatSelect");
+                            router.push("/chat");
+
+                            resolve();
+                            return;
+                        }
                         const fileContent = event.target?.result as ArrayBuffer;
+
 
                         const text = new TextDecoder().decode(fileContent);
                         const firstDelimiterIndex = text.indexOf("\n\n");
@@ -253,7 +295,7 @@ export default function Sidebar() {
                                 ref={fileInputRef}
                                 onChange={importCharacter}
                                 style={{ display: 'none' }}
-                                accept=".plmc"
+                                accept=".plmc, .card.png"
                             />
                             <Button onClick={() => fileInputRef.current?.click()}><Import /> Import from file</Button>
                         </motion.div>
