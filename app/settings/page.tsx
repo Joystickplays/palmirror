@@ -34,6 +34,9 @@ export default function SettingsPage() {
 
     const [settings, setSettings] = useState<Record<string, any>>({});
 
+    const [showDevMode, setShowDevMode] = useState(false);
+    const [holdTimer, setHoldTimer] = useState<NodeJS.Timeout | null>(null);
+
     
 
     type BooleanSetting = {
@@ -42,6 +45,7 @@ export default function SettingsPage() {
         default: boolean;
         label: string;
         onChange?: (value: boolean) => void;
+        hidden?: boolean;
     };
 
     type NumberSetting = {
@@ -53,6 +57,7 @@ export default function SettingsPage() {
         max: number;
         step?: number;
         onChange?: (value: number) => void;
+        hidden?: boolean;
     };
 
     type SettingTypes = boolean | number
@@ -184,6 +189,13 @@ export default function SettingsPage() {
                     key: 'novelImageGeneration',
                     default: false,
                     label: "Generate visual novel-like images"
+                },
+                developerMode: {
+                    type: 'boolean',
+                    key: 'showDevMode',
+                    default: false,
+                    label: "Developer mode (shows extra debug info and features)",
+                    hidden: !showDevMode
                 }
             },
         },
@@ -219,6 +231,23 @@ export default function SettingsPage() {
         if (cfg.onChange) {
             if (cfg.type === "boolean") cfg.onChange(value as boolean);
             if (cfg.type === "number") cfg.onChange(value as number);
+        }
+    }
+
+    function handleTitlePressStart() {
+        const timer = setTimeout(() => {
+            setShowDevMode(true);
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+        }, 10000);
+        setHoldTimer(timer);
+    }
+
+    function handleTitlePressEnd() {
+        if (holdTimer) {
+            clearTimeout(holdTimer);
+            setHoldTimer(null);
         }
     }
 
@@ -266,7 +295,17 @@ export default function SettingsPage() {
     return (
         <div className="flex flex-col gap-6 min-h-screen px-8 lg:px-48 pb-20 p-8 sm:p-10 font-sans">
             <div className="flex justify-center sm:justify-between w-full">
-                <h1 className="text-2xl font-extrabold tracking-tight">Settings</h1>
+                <h1 
+                    className="text-2xl font-extrabold tracking-tight select-none"
+                    onMouseDown={handleTitlePressStart}
+                    onMouseUp={handleTitlePressEnd}
+                    onMouseLeave={handleTitlePressEnd}
+                    onTouchStart={handleTitlePressStart}
+                    onTouchEnd={handleTitlePressEnd}
+                    onTouchCancel={handleTitlePressEnd}
+                >
+                    Settings
+                </h1>
                 <Button variant="outline" onClick={() => router.back()} className="hidden sm:block">
                     Back
                 </Button>
@@ -275,10 +314,12 @@ export default function SettingsPage() {
 
             <UserPersonalities />
 
+
+
             {Object.entries(settingsSchema).map(([groupId, group]) => (
                 <div key={groupId} className="flex flex-col gap-2">
                     <h2 className={`font-bold ${group.title === "Experiments" && "text-xl text-yellow-400 mt-12"}`}>{group.title}</h2>
-                    {Object.entries(group.items).map(([settingId, cfg]) => renderSetting(settingId, cfg))}
+                    {Object.entries(group.items).map(([settingId, cfg]) => !cfg.hidden && renderSetting(settingId, cfg))}
                 </div>
             ))}
 
