@@ -192,7 +192,7 @@ export default function SettingsPage() {
                 },
                 developerMode: {
                     type: 'boolean',
-                    key: 'showDevMode',
+                    key: 'developerMode',
                     default: false,
                     label: "Developer mode (shows extra debug info and features)",
                     hidden: !showDevMode

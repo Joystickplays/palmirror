@@ -66,6 +66,7 @@ import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import Sidebar from "@/components/homescreen/Sidebar";
 import { useSidebarStore } from "@/context/zustandStore/Sidebar";
+import DeveloperOnly from "@/components/internal/DeveloperOnly";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
   function sortByLastUpdated(
@@ -505,10 +506,15 @@ export default function Home() {
 
   const [correctPINSecure, setCorrectPINSecure] = useState(false);
 
-  const [tagline, setTagline] = useState("");
+  
 
+  const [tagline, setTagline] = useState("");
+  
   const [chatList, setChatList] = useState<Array<ChatMetadata>>([]);
+
+  const [startLoadingChats, setStartLoadingChats] = useState(false);
   const [chatsLoading, setChatsLoading] = useState(true);
+  const [loadingChatListTook, setLoadingChatListTook] = useState(-1);
   
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   
@@ -772,6 +778,7 @@ export default function Home() {
       resolve();
       localStorage.removeItem("PLMSecureAttempts");
       localStorage.removeItem("PLMSecureLockUntil");
+      setStartLoadingChats(true);
       if (localStorage.getItem("secureMetadata")) {
         setCorrectPINSecure(true);
         const secureLength = JSON.parse(localStorage.getItem("secureMetadata") || "[]").length;
@@ -862,7 +869,7 @@ export default function Home() {
 
   useEffect(() => {
     const refreshChatList = async () => {
-      if (isSecureReady) {
+      if (startLoadingChats && PLMsecureContext) {
         let chatStore;
         try {
           chatStore = await PLMsecureContext?.getAllKeys();
@@ -877,7 +884,9 @@ export default function Home() {
             const chatData = await PLMsecureContext?.getSecureData(key);
             return chatData;
           });
+          const startTime = Date.now();
           Promise.all(chatListPromises).then((resolvedChatList) => {
+            setLoadingChatListTook(Date.now() - startTime);
             if (chatListPromises.length < 3) {
               setChatList(resolvedChatList);
               setChatsLoading(false);
@@ -893,7 +902,7 @@ export default function Home() {
     };
 
     refreshChatList();
-  }, [isSecureReady, correctPINSecure]);
+  }, [startLoadingChats]);
 
   const handleKeyPressPin = (key: string) => {
     const secureMetadata = localStorage.getItem("secureMetadata");
@@ -1087,6 +1096,9 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
+        <DeveloperOnly>
+          <p className="absolute bottom-6 opacity-70 text-xs font-mono">loading chats took {loadingChatListTook} ms</p>
+        </DeveloperOnly>
       </div>
 
       
