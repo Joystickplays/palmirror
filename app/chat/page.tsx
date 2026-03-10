@@ -1948,10 +1948,11 @@ ${entryTitle}
             : (
               <div
                 style={{
-                  maskImage: 'linear-gradient( to bottom, black 0%, black 50%, transparent 100% )'
+                  maskImage: 'linear-gradient( to bottom, black 0%, black 20%, transparent 100% )'
                 }}
-                className="h-full backdrop-blur-md pointer-events-none touch-none">
+                className="h-full pointer-events-none touch-none bg-background/80">
                 {/* poor man's blur */}
+                {/* nerfed it worse LMAO */}
               </div>
             )}
         </div> 

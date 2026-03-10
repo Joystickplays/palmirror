@@ -310,7 +310,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
         animate(x, -500, { duration: 0.2 });
         animate(height, 0, { duration: 0.2 });
         animate(fontSize, 0, { duration: 0.2 });
-        animate(blur, 30, { duration: 0.2 });
+        if (configHighend) {
+          animate(blur, 30, { duration: 0.2 });
+        }
         
         setTimeout(triggerRegenerate, 250);
       } else {
@@ -658,9 +660,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
                           maskImage: stillGenerating ? 'linear-gradient(transparent, black 80%, black)' : "",
                         }}
                         ref={reasoningDivRef}
-                        initial={{ y: -10, scale: 0.9, opacity: 0, filter: 'blur(5px)' }}
-                        animate={{ y: 0, scale: 1, opacity: 1, filter: 'blur(0px)' }}
-                        exit={{ y: -10, scale: 0.9, opacity: 0, filter: 'blur(5px)' }}
+                        initial={{ y: -10, scale: 0.9, opacity: 0, filter: configHighend ? 'blur(5px)' : 'none' }}
+                        animate={{ y: 0, scale: 1, opacity: 1, filter: configHighend ? 'blur(0px)' : 'none' }}
+                        exit={{ y: -10, scale: 0.9, opacity: 0, filter: configHighend ? 'blur(5px)' : 'none' }}
                         transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
                       >
                         <div className="mt-auto">
