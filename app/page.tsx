@@ -503,6 +503,8 @@ export default function Home() {
   const [PLMSecureLockUntil, setPLMSecureLockUntil] = useState(0);
   const [PLMSecureAttempts, setPLMSecureAttempts] = useState(0);
 
+  const [correctPINSecure, setCorrectPINSecure] = useState(false);
+
   const [tagline, setTagline] = useState("");
 
   const [chatList, setChatList] = useState<Array<ChatMetadata>>([]);
@@ -771,6 +773,10 @@ export default function Home() {
       localStorage.removeItem("PLMSecureAttempts");
       localStorage.removeItem("PLMSecureLockUntil");
       if ("vibrate" in navigator && PLMGlobalConfigServiceInstance.get("haptics")) navigator.vibrate([50, 100, 50]);
+      setCorrectPINSecure(true);
+      if (localStorage.getItem("secureMetadata")) {
+        await new Promise((res) => setTimeout(res, JSON.parse(localStorage.getItem("secureMetadata") || "[]").length * 130));
+      } 
       setIsSecureReady(true);
     });
   };
@@ -879,7 +885,7 @@ export default function Home() {
     };
 
     refreshChatList();
-  }, [isSecureReady]);
+  }, [isSecureReady, correctPINSecure]);
 
   const handleKeyPressPin = (key: string) => {
     const secureMetadata = localStorage.getItem("secureMetadata");
@@ -1001,7 +1007,7 @@ export default function Home() {
                 <div className="flex gap-2 w-full max-w-(--breakpoint-sm)">
                   {localStorage.getItem("secureMetadata") ? (
                     <div className="w-full">
-                      <PinDisplay input={PLMSecurePass} show={false} many={JSON.parse(localStorage.getItem("secureMetadata") || "[]").length} />
+                      <PinDisplay input={PLMSecurePass} show={false} many={JSON.parse(localStorage.getItem("secureMetadata") || "[]").length} correct={correctPINSecure} />
                       <Keypad onKeyPress={handleKeyPressPin} fromBottom={true} />
                     </div>
                   ) : (

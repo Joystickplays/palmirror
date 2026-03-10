@@ -5,9 +5,10 @@ interface PinDisplayProps {
   input: string;
   show: boolean;
   many?: number;
+  correct?: boolean;
 }
 
-export default function PinDisplay({ input, show, many }: PinDisplayProps) {
+export default function PinDisplay({ input, show, many, correct }: PinDisplayProps) {
   return (
     <div className="flex gap-3 justify-center min-h-[31px] w-full">
       <AnimatePresence mode="popLayout">
@@ -15,12 +16,17 @@ export default function PinDisplay({ input, show, many }: PinDisplayProps) {
         Array.from({ length: many }).map((_, idx) => (
           <motion.div 
           animate={{
-            scale: input.split("").length > idx ? 1.2 : 0.8
+            scale: correct ?
+              1.2 :
+              input.split("").length > idx ? 1 : 0.8,
+            backgroundColor: correct ? "#22c55e" : input.split("").length > idx ? "#fff" : "transparent",
+            borderColor: correct ? "#22c55e" : input.split("").length > idx ? "#fff" : "#fff"
           }}
           transition={{
-            type: 'spring', mass: 1, stiffness: 160, damping: 12
+            type: 'spring', mass: 1, stiffness: 160, damping: 12, delay: correct ? idx * 0.05 : 0
+
           }}
-          className={`rounded-full w-3 h-3 ${input.split("").length > idx ? "bg-white" : ""} border border-white transition-colors`}>
+          className={`rounded-full w-3 h-3 border border-white transition-colors`}>
 
           </motion.div>
           // <p className="text-2xl">

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { useSidebarStore } from "@/context/zustandStore/Sidebar"
 import { searchCharacters, SearchResultItem } from "@/utils/searchUtils";
 import { motion } from "framer-motion"
-import { Search } from "lucide-react"
+import { Loader, Search, SearchIcon } from "lucide-react"
 import CharacterCatalog from "@/components/homescreen/CharacterCatalog";
 import CharacterCardDrawer from "@/components/homescreen/CharacterCardDrawer";
 import SearchArea from "@/components/homescreen/SearchArea";
@@ -24,6 +24,10 @@ export default function DiscoverPage() {
     const [popularCharacters, setPopularCharacters] = useState<SearchResultItem[]>([])
     const [TACCharacters, setTACCharacters] = useState<SearchResultItem[]>([])
     const [TACtags, setTACtags] = useState<string[]>([])
+
+
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchLoading, setSearchLoading] = useState(false);
 
 
 
@@ -100,11 +104,30 @@ export default function DiscoverPage() {
             className="flex min-h-screen p-6 px-0 gap-4 font-sans!">
 
             <div className="top-0 left-0 flex fixed justify-end mr-4 p-8 w-full z-10 pointer-events-none">
-                <SearchArea setCharacterCardChar={setCharCardData} setCharacterCardOpen={setCharCardOpen} />
+                <SearchArea setCharacterCardChar={setCharCardData} setCharacterCardOpen={setCharCardOpen}></SearchArea>
             </div>
+
+
 
             <div className="flex flex-col gap-8 mt-22 min-w-0">
 
+                {/* <div className="py-32 flex flex-col gap-4 items-center justify-center w-full font-sans">
+                    <h1 className="text-4xl font-bold tracking-tight text-center">What character will you chat with?</h1>
+                    <div className={`flex items-center justify-start gap-2 px-4 py-1 w-full sm:w-64 h-full rounded-full bg-white/5 border border-white/5`}>
+                    <div className="flex items-center justify-center gap-2">
+                            <SearchIcon className="opacity-80" />
+                            <Input
+                                // aref={searchInput}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                // onFocus={() => setSearchBarFocused(true)}
+                                placeholder="Search"
+                                className="bg-transparent border-0 flex-2 w-full ring-0! ring-offset-0!"
+                            />
+                            <Loader className={`absolute right-4 top-1/2 -translate-y-1/2 animate-spin transition-opacity ${searchLoading ? "opacity-50" : "opacity-0"}`} />
+                        </div>
+                    </div>
+                </div> */}
                 <div className="flex flex-col gap-2 w-full">
                     <p className="text-lg font-bold ml-6">Must-trys</p>
 
