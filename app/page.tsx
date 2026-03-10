@@ -781,7 +781,7 @@ export default function Home() {
         if ("vibrate" in navigator && PLMGlobalConfigServiceInstance.get("haptics")) {
           navigator.vibrate(vibrationPattern);
         }
-        await new Promise((res) => setTimeout(res, vibrationPattern.reduce((sum, v) => sum + v, 0)));
+        await new Promise((res) => setTimeout(res, vibrationPattern.reduce((sum, v) => sum + v, 0) + 1250));
       } else {
         if ("vibrate" in navigator && PLMGlobalConfigServiceInstance.get("haptics")) navigator.vibrate([50, 100, 50]);
       }
