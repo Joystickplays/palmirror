@@ -772,11 +772,19 @@ export default function Home() {
       resolve();
       localStorage.removeItem("PLMSecureAttempts");
       localStorage.removeItem("PLMSecureLockUntil");
-      if ("vibrate" in navigator && PLMGlobalConfigServiceInstance.get("haptics")) navigator.vibrate([50, 100, 50]);
-      setCorrectPINSecure(true);
       if (localStorage.getItem("secureMetadata")) {
-        await new Promise((res) => setTimeout(res, JSON.parse(localStorage.getItem("secureMetadata") || "[]").length * 130));
-      } 
+        setCorrectPINSecure(true);
+        const secureLength = JSON.parse(localStorage.getItem("secureMetadata") || "[]").length;
+        const vibrationPattern = Array.from({ length: secureLength * 2 }, (_, i) =>
+          i % 2 === 0 ? 10 : 50
+        );
+        if ("vibrate" in navigator && PLMGlobalConfigServiceInstance.get("haptics")) {
+          navigator.vibrate(vibrationPattern);
+        }
+        await new Promise((res) => setTimeout(res, vibrationPattern.reduce((sum, v) => sum + v, 0)));
+      } else {
+        if ("vibrate" in navigator && PLMGlobalConfigServiceInstance.get("haptics")) navigator.vibrate([50, 100, 50]);
+      }
       setIsSecureReady(true);
     });
   };
