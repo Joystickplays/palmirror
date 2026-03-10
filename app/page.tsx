@@ -852,6 +852,9 @@ export default function Home() {
   useEffect(() => {
     if (PLMsecureContext) {
       setIsSecureReady(PLMsecureContext?.isSecureReady());
+      if (PLMsecureContext?.isSecureReady()) {
+        setStartLoadingChats(true);
+      }
     }
   }, []);
 
