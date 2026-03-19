@@ -21,7 +21,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library, GitBranch, Plus, Loader2 } from 'lucide-react';
 
 import AttributeProgress from "@/components/domains/AttributeProgress";
 
@@ -37,13 +37,15 @@ import { PLMSecureContext } from "@/context/PLMSecureContext";
 import { CharacterData, ChatMetadata, defaultCharacterData } from "@/types/CharacterData";
 import { DomainAttributeEntry, DomainMemoryEntry, DomainFlashcardEntry } from "@/types/EEDomain"
 
-import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, reverseDomainAttribute, setDomainGuide, setDomainMemories, setDomainFlashcards } from "@/utils/domainData";
+import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, reverseDomainAttribute, setDomainGuide, setDomainMemories, setDomainFlashcards, branchDomain } from "@/utils/domainData";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import AskForUnlockSecure from "@/components/secure/AskForUnlockSecure";
 import { Progress } from "@/components/ui/progress";
+import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHeight";
+import { AnimateChangeInSize } from "@/components/utilities/animate/AnimateSize";
 
 
 
@@ -81,6 +83,16 @@ const ExperienceDomainPage: React.FC = () => {
 
     const [showingDelete, setShowingDelete] = useState(false);
     const [showingDeleteVerification, setShowingDeleteVerification] = useState(false);
+
+    const [showingDMBranch, setShowingDMBranch] = useState(false);
+    const [newDMBranchName, setNewDMBranchName] = useState("");
+    const [newDMBranchFrom, setNewDMBranchFrom] = useState("");
+    const [newDMBranchSelectChat, setNewDMBranchSelectChat] = useState(false);
+
+    const [newDMBranchCreating, setNewDMBranchCreating] = useState(false);
+
+    const [newDMBranchStatus, setNewDMBranchStatus] = useState("");
+    const [newDMBranchProgress, setNewDMBranchProgress] = useState(0);
 
     const [showingChatDelete, setShowingChatDelete] = useState(false);
     const [chatAboutToDelete, setChatAboutToDelete] = useState("");
@@ -130,6 +142,7 @@ const ExperienceDomainPage: React.FC = () => {
                         setCharacter(data as CharacterData);
                         console.log("load char")
                         console.log(data)
+                        console.log(character.plmex.domain?.associatedDomainByBranch)
 
                         localStorage.setItem("characterData", JSON.stringify(data));
                         if (!data.plmex.domain) {
@@ -195,6 +208,25 @@ const ExperienceDomainPage: React.FC = () => {
         }
     }, [character])
     
+    const initiateBranchCreation = async () => {
+        setShowingDMBranch(false);
+        setNewDMBranchCreating(true);
+
+        const streamSource = branchDomain(domainId, newDMBranchName, newDMBranchFrom);
+
+        let stream = await streamSource.next()
+
+        while (!stream.done) {
+            const { humanReadable, progress } = stream.value;
+            setNewDMBranchStatus(humanReadable);
+            setNewDMBranchProgress(progress);
+            stream = await streamSource.next();
+        }
+
+        PMNotify.success("Branch created successfully! Switch to it in the Branches dropdown.");
+        setNewDMBranchCreating(false);
+
+    }
 
 
     return (
@@ -249,6 +281,37 @@ const ExperienceDomainPage: React.FC = () => {
                 <div className="flex gap-2 h-12 overflow-x-scroll -mt-4">
                     <Button variant="outline" onClick={() => router.push("/")}><ArrowLeft /></Button>
                     <div className="flex-1 w-full"></div>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button className="p-1 px-3" variant="outline"><GitBranch /></Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans p-4">
+                            {
+                                character.plmex.domain?.associatedDomainByBranch ? (
+                                    <>
+                                        <Button className="p-1 px-3 justify-start!" onClick={() => {
+                                            sessionStorage.setItem("chatSelect", character.plmex.domain?.associatedDomainByBranch || "");
+                                            setDomainId(character.plmex.domain?.associatedDomainByBranch || "");
+                                        }}><ArrowLeft />Go back to main branch</Button>
+                                        <Button key={domainId} className="p-1 px-3 justify-start!" disabled={true}
+                                        ><GitBranch /> {domainId.split("_")[2]}</Button>
+                                    </>
+                                ) : (
+                                    <Button className="p-1 px-3 justify-start!" onClick={() => setShowingDMBranch(true)}><Plus />Create new branch</Button>
+                                )
+                            }
+                            {character.plmex.domain?.childrenBranches && character.plmex.domain.childrenBranches.length > 0 && character.plmex.domain.childrenBranches.map((branchId) => (
+                                <Button key={branchId} className="p-1 px-3 justify-start!" variant="outline"
+                                onClick={() => {
+                                    sessionStorage.setItem("chatSelect", branchId);
+                                    setDomainId(branchId);
+                                }}
+                                ><GitBranch /> {branchId.split("_")[2]}</Button>
+                            ))}
+                            
+                        </PopoverContent>
+                    </Popover>
+                    {/* <Button variant="outline" onClick={() => setShowingDMBranch(true)}><Plus /> New Branch</Button> */}
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button className="p-1 px-3" variant="outline"><EllipsisVertical /></Button>
@@ -559,6 +622,111 @@ const ExperienceDomainPage: React.FC = () => {
                                 setDomainFlashcards(domainId, newFC);
                         }}><CirclePlus className="mr-2" /> Add Flashcard</Button>
                      </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showingDMBranch} onOpenChange={setShowingDMBranch}>
+                <DialogContent className="font-sans">
+                    <AnimateChangeInHeight>
+                        <AnimatePresence mode="popLayout">
+                            {newDMBranchSelectChat ? (
+                                <motion.div
+                                initial={{ opacity: 0, x: 50 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 50 }}
+                                transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 21 }}
+                                key="select-chat"
+                                className="flex flex-col gap-2"
+                                >
+                                    
+                                    <DialogHeader className="text-2xl font-bold">Select chat to start from</DialogHeader>
+
+                                    <p className="text-sm opacity-80">Choose a chat to begin your new domain branch.</p>
+
+                                    <div className="flex flex-col gap-2 max-h-96 overflow-y-auto">
+                                        {chatList.map((chat, idx) => {
+                                            if (chat.associatedDomain !== domainId) {
+                                                return null;
+                                            }
+
+                                            return (
+                                                <motion.div 
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 10 }}
+                                                transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 12, delay: (idx * 0.05) + 0.10 }}
+                                                className="border-b border-white/10 p-2" key={chat.id}>
+                                                    <p className="text-sm font-bold">{chat.entryTitle}</p>
+                                                    <Button
+                                                        variant={newDMBranchFrom === chat.id ? "default" : "outline"}
+                                                        onClick={() => setNewDMBranchFrom(chat.id)}
+                                                        className="ml-auto mt-2 block"
+                                                        disabled={newDMBranchFrom === chat.id}
+                                                    >Select{newDMBranchFrom === chat.id ? "ed" : ""}</Button>
+                                                </motion.div>
+                                            )
+                                        })}
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <Button
+                                        disabled={!newDMBranchFrom}
+                                        onClick={() => {
+                                            initiateBranchCreation();
+                                        }}
+                                        className="flex-1">Create branch</Button>
+                                        <Button 
+                                        onClick={() => {
+                                            setNewDMBranchSelectChat(false);
+                                        }}
+                                        variant="outline">Back</Button>
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0, x: -50 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -50 }}
+                                    transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 21 }}
+                                    key="branch-info"
+                                    className="flex flex-col gap-2">
+                                    <DialogHeader className="text-2xl font-bold">Create domain branch</DialogHeader>
+                                    <div className="h-48 flex justify-center items-center">
+                                        <GitBranch size={100} />
+                                    </div>
+                                    <p className="text-sm opacity-80">
+                                        {`Branch this domain to explore different directions and plots without affecting the original and see what ${character.name} would do if you didn't buy them ice cream.`}
+                                    </p>
+                                    <Input placeholder="Branch name" value={newDMBranchName} onChange={(e) => setNewDMBranchName(e.target.value)} />
+                                    <Button
+                                        disabled={!newDMBranchName.trim()}
+                                        onClick={() => {
+                                            setNewDMBranchSelectChat(true);
+                                        }}
+                                    >Next</Button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </AnimateChangeInHeight>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={newDMBranchCreating}>
+                <DialogContent className="font-sans">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Creating branch...</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-2">
+                        <Loader2 className="animate-spin mx-auto mb-6" size={100} />
+                        <p className="text-sm opacity-80">Your new domain branch is being created. This may take a few moments depending on how many chats, attributes and memories you have in this domain.</p>
+
+                        <div className="bg-red-900/50 border border-red-500 text-red-200 rounded-xl p-2">
+                            <p className="text-sm font-bold">Do not close or refresh the page while the branch is being created. This may cause data loss.</p>
+                        </div>
+                            
+                        <Progress value={newDMBranchProgress}></Progress>
+                        <p className="text-sm opacity-80">{newDMBranchStatus}</p>
+                    </div>
                 </DialogContent>
             </Dialog>
 

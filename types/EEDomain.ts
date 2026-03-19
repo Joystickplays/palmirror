@@ -35,6 +35,8 @@ export interface EXDomain {
     active: boolean;
     memories: Array<DomainMemoryEntry>;
     attributes: Array<DomainAttributeEntry>;
+    childrenBranches?: Array<string>;
+    associatedDomainByBranch?: string;
     guide?: string;
     flashcards?: Array<DomainFlashcardEntry>;
 }

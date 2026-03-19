@@ -149,7 +149,7 @@ function ChatCard({
     }
   }, []);
 
-  if (chat.associatedDomain) return null;
+  if (chat.associatedDomain || chat.plmex.domain?.associatedDomainByBranch) return null;
 
   return (
     <motion.div

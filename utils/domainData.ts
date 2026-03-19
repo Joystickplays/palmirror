@@ -1,4 +1,4 @@
-import { isPalMirrorSecureActivated, setSecureData, getSecureData, getAllKeys, PLMSecureGeneralSettings } from './palMirrorSecureUtils';
+import { isPalMirrorSecureActivated, setSecureData, getSecureData, getAllKeys, PLMSecureGeneralSettings, removeKey } from './palMirrorSecureUtils';
 import { getActivePLMSecureSession } from './palMirrorSecureSession';
 
 import { getAttributesSysInst } from './domainInstructionShaping/attributesSysInst';
@@ -370,6 +370,7 @@ export async function structureDomainTimesteps(chatID: string): Promise<string> 
 }
 
 type ChatHistoryTimed = ChatHistory & {
+    id: string;
     lastUpdated: string;
 };
 
@@ -397,6 +398,7 @@ export async function totalChatsFromDomain(domainID: string) {
                 if (!data.id) return;
 
                 return {
+                    id: data.id,
                     entryTitle: data.entryTitle,
                     timestampStructure: await structureDomainTimesteps(data.id),
                     lastUpdated: data.lastUpdated,
@@ -514,6 +516,164 @@ export async function setDomainGuide(domainID: string, guideText: string) {
     catch (error) {
         console.error("Failed to set domain guide:", error);
     }
+}
+
+export async function* branchDomain(domainID: string, branchName: string, fromChatID: string) {
+    // this is gonna be a mess, isn't it
+    // we clone the entire fucking domain and all its chats
+    // BUT chats AFTER fromChatID gets deleted and have their attributes & memory reversed
+    
+    // deletion and reversal is gonna be extremely slow but whatever
+
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return;
+    }
+    
+    try {
+        yield { humanReadable: "Creating domain branch...", progress: 0 };
+
+        const data = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        const chatStore = await totalChatsFromDomain(domainID);
+        // I FORGOT I HAVVE THIS FUNCTION LMAO
+
+        const sortedChats = sortByLastUpdated(chatStore)
+
+        const newDomainID = `${domainID}_branch_${branchName}`
+        const newDomainData = structuredClone(data);
+        newDomainData.id = newDomainID;
+        newDomainData.plmex.domain.associatedDomainByBranch = domainID;
+        newDomainData.childrenBranches = [];
+        newDomainData.lastUpdated = new Date();
+        await setSecureData(`METADATA${newDomainID}`, newDomainData, sessionKey, true);
+
+        data.plmex.domain.childrenBranches = [...(data.plmex.domain.childrenBranches || []), newDomainID];
+        await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+
+        const chatIDMap = new Map<string, string>();
+        const totalChats = sortedChats.length;
+        for (let chatIndex = 0; chatIndex < sortedChats.length; chatIndex++) {
+            const chat = sortedChats[chatIndex];
+            yield { humanReadable: `Cloning chat "${chat.entryTitle.slice(0, 50) + (chat.entryTitle.length > 50 ? '...' : '')}"...`, progress: (chatIndex / totalChats) * 10 };
+
+            const chatMetadata = await getSecureData(`METADATA${chat.id}`, sessionKey, true);
+            const chatData = await getSecureData(chat.id, sessionKey, true);
+            if (chatData) {
+                const newChatID = crypto.randomUUID();
+
+                chatIDMap.set(chat.id, newChatID);
+
+                chatMetadata.id = newChatID;
+                chatMetadata.associatedDomain = newDomainID;
+                await setSecureData(`METADATA${newChatID}`, chatMetadata, sessionKey, true);
+                await setSecureData(newChatID, chatData, sessionKey, true);
+            }
+        }
+
+        const chatStoreCloned = await totalChatsFromDomain(newDomainID);
+        const sortedClonedChats = sortByLastUpdated(chatStoreCloned)
+
+        const clonedFromChatID = chatIDMap.get(fromChatID);
+        const fromChatIndexCloned = sortedClonedChats.findIndex((chat) => chat.id === clonedFromChatID);
+        
+        const chatsAfter = sortedClonedChats.slice(0, fromChatIndexCloned);
+
+        const allMessagesToReverse: Array<{chatDisplayName: string, messages: any[]}> = [];
+        let totalMessages = 0;
+
+        for (let chatIndex = 0; chatIndex < chatsAfter.length; chatIndex++) {
+            const chat = chatsAfter[chatIndex];
+            const chatDisplayName = chat.entryTitle.slice(0, 50) + (chat.entryTitle.length > 50 ? '...' : '');
+            
+            yield { humanReadable: `Decrypting chat "${chatDisplayName}"...`, progress: 10 + (chatIndex / chatsAfter.length) * 10 };
+            
+            try {
+                const file = await getSecureData(chat.id, sessionKey, true);
+                if (file) {
+                    const decodedString = atob(file);
+                    const decodedArray = new Uint8Array(
+                        decodedString.split("").map((char) => char.charCodeAt(0))
+                    );
+                    const decoder = new TextDecoder();
+                    const json = decoder.decode(decodedArray);
+                    const parsedMessages = JSON.parse(json);
+
+                    // console.log(`Parsed messages for chat "${chatDisplayName}":`, parsedMessages.length);
+
+                    if (Array.isArray(parsedMessages)) {
+                        const messagesWithIds = parsedMessages.filter(msg => msg.id);
+                        allMessagesToReverse.push({
+                            chatDisplayName,
+                            messages: messagesWithIds
+                        });
+                        totalMessages += messagesWithIds.length;
+                    }
+                }
+            } catch (error) {
+                console.error(`Failed to decode chat "${chatDisplayName}" for reversal:`, error);
+            }
+        }
+
+        let messageCount = 0;
+        for (const {chatDisplayName, messages} of allMessagesToReverse) {
+            for (const message of messages) {
+                yield { humanReadable: `Reversing attributes and memories from chat "${chatDisplayName}" (${messageCount + 1}/${totalMessages}) ...`, progress: 20 + (messageCount / totalMessages) * 75 };
+                
+                await reverseDomainAttribute(newDomainID, message.id);
+                await deleteMemoryFromMessageIfAny(newDomainID, message.id);
+                await removeDomainTimestep(newDomainID, message.id);
+                
+                messageCount++;
+            }
+        }
+
+        for (let chatIndex = 0; chatIndex < chatsAfter.length; chatIndex++) {
+            const chat = chatsAfter[chatIndex];
+            yield { humanReadable: `Deleting chat "${chat.entryTitle.slice(0, 50) + (chat.entryTitle.length > 50 ? '...' : '')}" from new branch...`, progress: 95 + (chatIndex / chatsAfter.length) * 5 };
+
+            await removeKey(`METADATA${chat.id}`);
+            await removeKey(chat.id);
+        }
+
+        return newDomainID;
+
+
+
+
+
+        // const chatStore = await getAllKeys().then(keys => keys.filter(
+        //     (key): key is string =>
+        //         typeof key === "string" &&
+        //         key.startsWith("METADATA")
+        // ));
+
+        // const chatFetchPromises = chatStore.map(async (key) => {
+        //     const chatData: ChatMetadata = await getSecureData(key, sessionKey, true);
+        //     if (chatData?.associatedDomain === domainID) {
+        //         return { key, data: chatData };
+        //     }
+        //     return null;
+        // });
+
+        // yield { humanReadable: "Fetching domain chats...", progress: 5 };
+        // const chatDatas = await Promise.all(chatFetchPromises);
+        // const relevantChats = chatDatas.filter((chat) => {
+        //     return chat?.data.associatedDomain === domainID;
+        // })
+        // const sortedChats = sortByLastUpdated(relevantChats.map((chat) => {
+        //     return {
+        //         ...chat?.data,
+        //     }
+        // }))
+    } catch (error) {
+        console.error("Failed to get domain data for branching:", error);
+    }
+    
+
 }
 
 
