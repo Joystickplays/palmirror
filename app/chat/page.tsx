@@ -47,6 +47,7 @@ import { ApiProfile } from "@/components/chat/ChatSettings";
 import { Label } from "@/components/ui/label";
 import CascadeAskToMove from "@/components/cascade/CascadeAskToMove";
 import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";
+import { useChatSettingsScaleEffectStore } from "@/context/zustandStore/ChatSettingsScale";
 
 
 let openai: OpenAI;
@@ -156,7 +157,9 @@ const ChatPage = () => {
   ]
   const [modelInstructions, setModelInstructions] = useState("");
   const [modelName, setModelName] = useState("");
-  
+  const { isSettingsOpen } = useChatSettingsScaleEffectStore();
+
+
   const [showSuggestionBar, setShowSuggestionBar] = useState(false);
   const [suggestionBarGenerating, setSuggestionBarGenerating] = useState(false);
   const [replySuggestions, setReplySuggestions] = useState<string[]>([]);
@@ -1929,7 +1932,9 @@ ${entryTitle}
       />
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
-        animate={loaded ? { opacity: 1, scale: 1 } : false}
+        animate={loaded ? 
+          isSettingsOpen && window.innerWidth < 640 ? { opacity: 1, scale: 0.9, x: -50 } : { opacity: 1, scale: 1 }
+          : false}
         transition={{
           type: "spring",
           mass: 1,

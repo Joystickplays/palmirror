@@ -27,6 +27,7 @@ import { PLMSecureContext } from '@/context/PLMSecureContext';
 import { pmPropSysInst } from '@/utils/palmirrorProprietarySysInst'
 import { useRouter } from 'next/navigation';
 import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
+import { useChatSettingsScaleEffectStore } from '@/context/zustandStore/ChatSettingsScale';
 
 interface ChatSettingsProps {
   getExportedMessages: () => void;
@@ -47,6 +48,8 @@ export interface ApiProfile {
 
 const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, importMessages }) => {
   
+  const { setSettingsOpen } = useChatSettingsScaleEffectStore();
+
   const PLMGC = usePLMGlobalConfig();
   const [configCascadingApiProviders, setConfigCascadingApiProviders] = useState(false);
   
@@ -382,7 +385,12 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
   const isProfileWorking = currentProfile?.cascade?.working ?? true;
 
   return (
-    <Drawer repositionInputs={false} direction={"right"} onOpenChange={(open) => { if (open) loadSettings() }}>
+    <Drawer repositionInputs={false} direction={"right"} onOpenChange={(open) => { if (open) {
+      loadSettings();
+      setSettingsOpen(true);
+    } else {
+      setSettingsOpen(false);
+    } }}>
       <DrawerTrigger asChild>
         <Button variant="outline" className={`p-3 size-8 z-2 ${currentTheme.assistantBg}`}><Settings /></Button>
       </DrawerTrigger>
