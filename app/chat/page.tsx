@@ -157,7 +157,7 @@ const ChatPage = () => {
   ]
   const [modelInstructions, setModelInstructions] = useState("");
   const [modelName, setModelName] = useState("");
-  const { isSettingsOpen } = useChatSettingsScaleEffectStore();
+  const isSettingsOpen = useChatSettingsScaleEffectStore(state => state.isSettingsOpen);
 
 
   const [showSuggestionBar, setShowSuggestionBar] = useState(false);

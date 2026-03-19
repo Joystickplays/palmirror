@@ -28,6 +28,7 @@ import { pmPropSysInst } from '@/utils/palmirrorProprietarySysInst'
 import { useRouter } from 'next/navigation';
 import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
 import { useChatSettingsScaleEffectStore } from '@/context/zustandStore/ChatSettingsScale';
+import { stat } from 'fs';
 
 interface ChatSettingsProps {
   getExportedMessages: () => void;
@@ -48,7 +49,7 @@ export interface ApiProfile {
 
 const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, importMessages }) => {
   
-  const { setSettingsOpen } = useChatSettingsScaleEffectStore();
+  const setSettingsOpen = useChatSettingsScaleEffectStore(state => state.setSettingsOpen);
 
   const PLMGC = usePLMGlobalConfig();
   const [configCascadingApiProviders, setConfigCascadingApiProviders] = useState(false);
