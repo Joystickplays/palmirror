@@ -43,6 +43,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import AskForUnlockSecure from "@/components/secure/AskForUnlockSecure";
+import { Progress } from "@/components/ui/progress";
 
 
 
@@ -84,6 +85,7 @@ const ExperienceDomainPage: React.FC = () => {
     const [showingChatDelete, setShowingChatDelete] = useState(false);
     const [chatAboutToDelete, setChatAboutToDelete] = useState("");
     const [chatDeletePropagation, setChatDeletePropagation] = useState(false);
+    const [chatDeleteProgress, setChatDeleteProgress] = useState(-1);
     const [showingChatTimesteps, setShowingChatTimesteps] = useState(false);
     const [selectedChat, setSelectedChat] = useState<ChatMetadata | null>(null);
 
@@ -292,46 +294,65 @@ const ExperienceDomainPage: React.FC = () => {
                     </DialogHeader>
                     <div className="flex flex-col gap-4">
                         <p className="text-sm opacity-80">Are you sure you want to delete this chat entry? To maintain continuity across chats in this domain, all attribute changes and memories created in this chat will be lost.</p>
-                        <div className="flex gap-2">
-                            <Checkbox id="deletePropagate" checked={chatDeletePropagation} onCheckedChange={(ch) => {
-                                setChatDeletePropagation(ch === true)
-                            }}></Checkbox>
-                            <Label htmlFor="deletePropagate">Don&apos;t reverse attributes and memory</Label>
-                        </div>
-                        <Button variant="destructive" onClick={async (e) => {
-                            if (!chatDeletePropagation) {
-                                const file = await PLMsecureContext?.getSecureData(chatAboutToDelete) ?? "";
-                                const decodedString = atob(file);
-                                const decodedArray = new Uint8Array(
-                                    decodedString.split("").map((char) => char.charCodeAt(0))
-                                );
-                                const decoder = new TextDecoder();
-                                const json = decoder.decode(decodedArray);
-                                const parsedMessages = JSON.parse(json);
+                        {chatDeleteProgress === -1 ? (
+                            <>
+                                <div className="flex gap-2">
+                                    <Checkbox id="deletePropagate" checked={chatDeletePropagation} onCheckedChange={(ch) => {
+                                        setChatDeletePropagation(ch === true)
+                                    }}></Checkbox>
+                                    <Label htmlFor="deletePropagate">Don&apos;t reverse attributes and memory</Label>
+                                </div>
+                                <Button variant="destructive" onClick={async (e) => {
+                                    if (!chatDeletePropagation) {
+                                        setChatDeleteProgress(0);
+                                        const file = await PLMsecureContext?.getSecureData(chatAboutToDelete) ?? "";
+                                        const decodedString = atob(file);
+                                        const decodedArray = new Uint8Array(
+                                            decodedString.split("").map((char) => char.charCodeAt(0))
+                                        );
+                                        const decoder = new TextDecoder();
+                                        const json = decoder.decode(decodedArray);
+                                        const parsedMessages = JSON.parse(json);
 
-                                parsedMessages.forEach((message: Message) => {
-                                    deleteMemoryFromMessageIfAny(domainId, message.id);
-                                    reverseDomainAttribute(domainId, message.id);
-                                    removeDomainTimestep(domainId, message.id);
-                                });
-                            }
+                                        const totalMessages = parsedMessages.length;
+                                        for (const message of parsedMessages) {
+                                            await deleteMemoryFromMessageIfAny(domainId, message.id);
+                                            await reverseDomainAttribute(domainId, message.id);
+                                            await removeDomainTimestep(domainId, message.id);
+
+                                            setChatDeleteProgress((prev) => prev + (1 / totalMessages) * 100);
+                                        }
+                                    }
 
 
-                            PLMsecureContext?.removeKey(chatAboutToDelete);
-                            PLMsecureContext?.removeKey(`METADATA${chatAboutToDelete}`);
-                            setChatList((prevList) =>
-                                prevList.filter(
-                                    (chatItem) => chatItem.id !== chatAboutToDelete
-                                )
-                            );
+                                    PLMsecureContext?.removeKey(chatAboutToDelete);
+                                    PLMsecureContext?.removeKey(`METADATA${chatAboutToDelete}`);
+                                    setChatList((prevList) =>
+                                        prevList.filter(
+                                            (chatItem) => chatItem.id !== chatAboutToDelete
+                                        )
+                                    );
 
-                            PMNotify.info(
-                                `Chat deleted. ${chatDeletePropagation ? "Attributes and memories preserved." : "Relevant attributes and memories rolled back."}`
-                            );
-                            setShowingChatDelete(false);
+                                    PMNotify.info(
+                                        `Chat deleted. ${chatDeletePropagation ? "Attributes and memories preserved." : "Relevant attributes and memories rolled back."}`
+                                    );
+                                    setShowingChatDelete(false);
 
-                            reloadCharacter();
-                        }}>Confirm deletion</Button>
+                                    setChatDeleteProgress(-1);
+
+                                    reloadCharacter();
+                                }}>Confirm deletion</Button>
+                            </>
+                        ) : (
+                            <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 12 }}
+                            className="flex flex-col gap-2">
+                                <p className="opacity-50 text-xs">Reversing attributes and memories...</p>
+                                <Progress innerClassName="duration-100" value={chatDeleteProgress}></Progress>
+                            </motion.div>
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>
