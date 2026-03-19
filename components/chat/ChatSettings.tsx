@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useRef } from 'react';
+import React, { useEffect, useState, useContext, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -49,7 +49,7 @@ export interface ApiProfile {
 
 const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, importMessages }) => {
   
-  const setSettingsOpen = useChatSettingsScaleEffectStore(state => state.setSettingsOpen);
+  const setSettingsOpen = useChatSettingsScaleEffectStore(useCallback(state => state.setSettingsOpen, []));
 
   const PLMGC = usePLMGlobalConfig();
   const [configCascadingApiProviders, setConfigCascadingApiProviders] = useState(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useContext } from "react";
+import { useState, useEffect, useRef, useContext, useCallback } from "react";
 import React from "react";
 import MessageCard from "@/components/messages/MessageCard";
 import ChatHeader from "@/components/chat/ChatHeader";
@@ -157,7 +157,7 @@ const ChatPage = () => {
   ]
   const [modelInstructions, setModelInstructions] = useState("");
   const [modelName, setModelName] = useState("");
-  const isSettingsOpen = useChatSettingsScaleEffectStore(state => state.isSettingsOpen);
+  const isSettingsOpen = useChatSettingsScaleEffectStore(useCallback(state => state.isSettingsOpen, []));
 
 
   const [showSuggestionBar, setShowSuggestionBar] = useState(false);
