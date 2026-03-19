@@ -51,8 +51,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       // the drag looks nice idc
       // @ts-expect-error   bc idgaf ab typing this??? who r u
       <motion.button
-        whileTap={{ scale: scaleOnPress ? 0.95 : 1 }}
-        transition={{ duration: 0.1 }}
+        whileTap={{ scale: scaleOnPress ? 0.95 : 1, transition: {
+            duration: 0.3,
+        } }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
         // drag
         // dragElastic={0.01}
         // dragConstraints={{
