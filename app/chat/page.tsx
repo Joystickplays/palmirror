@@ -196,15 +196,15 @@ const ChatPage = () => {
   const [scrollDirection, setScrollDirection] = useState<"up" | "down">("up");
   const [graceWait, setGraceWait] = useState(Date.now());
 
+  let lastScrollPos = useRef(0);
+
   useMotionValueEvent(scrollY, "change", (current: number) => {
     if (Date.now() - graceWait < 2000) { return; }
-    const prev =
-      typeof (scrollY).getPrevious === "function"
-        ? ((scrollY).getPrevious() as number)
-        : 0;
-    const diff = current - prev;
-    setScrollDirection(diff > 0 ? "down" : "up");
-    // setGraceWait(Date.now() - 1000)
+    const diff = Math.abs(current - lastScrollPos.current);
+    if (diff > 30) {
+      setScrollDirection(current > lastScrollPos.current ? "down" : "up");
+      lastScrollPos.current = current;
+    }
   })
   
   // useEffect(() => {
