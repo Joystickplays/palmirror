@@ -96,7 +96,7 @@ export function setDomainAttributes(domainID: string, responsibleMessage: string
     }
 }
 
-export async function reverseDomainAttribute(domainID: string, message: string) {
+export async function reverseDomainAttribute(domainID: string, message: string | Array<string>) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -112,8 +112,14 @@ export async function reverseDomainAttribute(domainID: string, message: string) 
 
         attributes.forEach(entry => {
             entry.history.forEach(history => {
-                if (history.associatedMessage === message){
-                    entry.value -= history.change
+                if (Array.isArray(message)) {
+                    if (message.includes(history.associatedMessage)) {
+                        entry.value -= history.change
+                    }
+                } else {
+                    if (history.associatedMessage === message) {
+                        entry.value -= history.change
+                    }
                 }
             })
         })
@@ -228,7 +234,7 @@ export async function addDomainMemory(domainID: string, associatedMessage: strin
     }
 }
 
-export async function deleteMemoryFromMessageIfAny(domainID: string, responsibleMessage: string) {
+export async function deleteMemoryFromMessageIfAny(domainID: string, responsibleMessage: string | Array<string>) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -241,7 +247,12 @@ export async function deleteMemoryFromMessageIfAny(domainID: string, responsible
     try {
         const memories = await getDomainMemories(domainID)
 
-        const filteredMemories = memories.filter((memory) => memory.associatedMessage !== responsibleMessage)
+        const filteredMemories = memories.filter((memory) => {
+            if (Array.isArray(responsibleMessage)) {
+                return !responsibleMessage.includes(memory.associatedMessage);
+            }
+            return memory.associatedMessage !== responsibleMessage;
+        });
         await setDomainMemories(domainID, filteredMemories)
     } catch (error) {
         console.error("Failed to delete memory from chat:", error)
@@ -336,7 +347,7 @@ export async function addDomainTimestep(chatID: string, associatedMessage: strin
     }
 }
 
-export async function removeDomainTimestep(chatID: string, associatedMessage: string) {
+export async function removeDomainTimestep(chatID: string, associatedMessage: string | Array<string>) {
     if (typeof window === 'undefined') {
         return;
     }
@@ -348,7 +359,12 @@ export async function removeDomainTimestep(chatID: string, associatedMessage: st
     try {
         const data = await getSecureData(`METADATA${chatID}`, sessionKey, true);
         if (data) {
-            data.timesteps = data.timesteps.filter((timestep: DomainTimestepEntry) => timestep.associatedMessage !== associatedMessage);
+            data.timesteps = data.timesteps.filter((timestep: DomainTimestepEntry) => {
+                if (Array.isArray(associatedMessage)) {
+                    return !associatedMessage.includes(timestep.associatedMessage);
+                }
+                return timestep.associatedMessage !== associatedMessage;
+            });
             await setSecureData(`METADATA${chatID}`, data, sessionKey, true);
         }
     } catch (error) {
@@ -547,7 +563,7 @@ export async function* branchDomain(domainID: string, branchName: string, fromCh
         const newDomainData = structuredClone(data);
         newDomainData.id = newDomainID;
         newDomainData.plmex.domain.associatedDomainByBranch = domainID;
-        newDomainData.childrenBranches = [];
+        newDomainData.plmex.domain.childrenBranches = [];
         newDomainData.lastUpdated = new Date();
         await setSecureData(`METADATA${newDomainID}`, newDomainData, sessionKey, true);
 
@@ -558,7 +574,7 @@ export async function* branchDomain(domainID: string, branchName: string, fromCh
         const totalChats = sortedChats.length;
         for (let chatIndex = 0; chatIndex < sortedChats.length; chatIndex++) {
             const chat = sortedChats[chatIndex];
-            yield { humanReadable: `Cloning chat "${chat.entryTitle.slice(0, 50) + (chat.entryTitle.length > 50 ? '...' : '')}"...`, progress: (chatIndex / totalChats) * 10 };
+            yield { humanReadable: `Cloning chat "${chat.entryTitle.slice(0, 50) + (chat.entryTitle.length > 50 ? '...' : '')}"...`, progress: (chatIndex / totalChats) * 25 };
 
             const chatMetadata = await getSecureData(`METADATA${chat.id}`, sessionKey, true);
             const chatData = await getSecureData(chat.id, sessionKey, true);
@@ -589,7 +605,7 @@ export async function* branchDomain(domainID: string, branchName: string, fromCh
             const chat = chatsAfter[chatIndex];
             const chatDisplayName = chat.entryTitle.slice(0, 50) + (chat.entryTitle.length > 50 ? '...' : '');
             
-            yield { humanReadable: `Decrypting chat "${chatDisplayName}"...`, progress: 10 + (chatIndex / chatsAfter.length) * 10 };
+            yield { humanReadable: `Decrypting chat "${chatDisplayName}"...`, progress: 25 + (chatIndex / chatsAfter.length) * 25 };
             
             try {
                 const file = await getSecureData(chat.id, sessionKey, true);
@@ -619,21 +635,19 @@ export async function* branchDomain(domainID: string, branchName: string, fromCh
         }
 
         let messageCount = 0;
-        for (const {chatDisplayName, messages} of allMessagesToReverse) {
-            for (const message of messages) {
-                yield { humanReadable: `Reversing attributes and memories from chat "${chatDisplayName}" (${messageCount + 1}/${totalMessages}) ...`, progress: 20 + (messageCount / totalMessages) * 75 };
+        const messageIdReverse = allMessagesToReverse.flatMap(({ messages }) => messages.map(msg => msg.id));
+        
+        yield { humanReadable: `Reversing attributes from chats...`, progress: 50 };
+        await reverseDomainAttribute(newDomainID, messageIdReverse);
+        yield { humanReadable: `Reversing memories from chats...`, progress: 75 };
+        await deleteMemoryFromMessageIfAny(newDomainID, messageIdReverse);
+        yield { humanReadable: `Reversing timesteps from chats...`, progress: 90 };
+        await removeDomainTimestep(newDomainID, messageIdReverse);
                 
-                await reverseDomainAttribute(newDomainID, message.id);
-                await deleteMemoryFromMessageIfAny(newDomainID, message.id);
-                await removeDomainTimestep(newDomainID, message.id);
-                
-                messageCount++;
-            }
-        }
 
         for (let chatIndex = 0; chatIndex < chatsAfter.length; chatIndex++) {
             const chat = chatsAfter[chatIndex];
-            yield { humanReadable: `Deleting chat "${chat.entryTitle.slice(0, 50) + (chat.entryTitle.length > 50 ? '...' : '')}" from new branch...`, progress: 95 + (chatIndex / chatsAfter.length) * 5 };
+            yield { humanReadable: `Deleting chat "${chat.entryTitle.slice(0, 50) + (chat.entryTitle.length > 50 ? '...' : '')}" from new branch...`, progress: 90 + (chatIndex / chatsAfter.length) * 10 };
 
             await removeKey(`METADATA${chat.id}`);
             await removeKey(chat.id);

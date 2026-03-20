@@ -139,16 +139,19 @@ const ExperienceDomainPage: React.FC = () => {
             if (domainId && PLMsecureContext) {
                 PLMsecureContext.getSecureData(`METADATA${domainId}`).then((data) => {
                     if (data) {
-                        setCharacter(data as CharacterData);
+                        setCharacter(data as ChatMetadata);
                         console.log("load char")
-                        console.log(data)
-                        console.log(character.plmex.domain?.associatedDomainByBranch)
+                        // console.log(data)
+                        // console.log(character.plmex.domain?.associatedDomainByBranch)
 
                         localStorage.setItem("characterData", JSON.stringify(data));
                         if (!data.plmex.domain) {
                             PMNotify.error("Not a domain-enabled character. Returning to home.")
                             router.push('/')
                         }
+
+                        (data as ChatMetadata).lastUpdated = new Date().toISOString();
+                        PLMsecureContext.setSecureData(`METADATA${domainId}`, data);
                     } else {
                         PMNotify.error("Domain data not found. Returning to home.");
                         router.push('/');
@@ -226,6 +229,13 @@ const ExperienceDomainPage: React.FC = () => {
         PMNotify.success("Branch created successfully! Switch to it in the Branches dropdown.");
         setNewDMBranchCreating(false);
 
+        if (character.plmex.domain) {
+            character.plmex.domain.childrenBranches = [...(character.plmex.domain?.childrenBranches || []), `${domainId}_branch_${newDMBranchName}`];
+        }
+
+        sessionStorage.setItem("chatSelect", `${domainId}_branch_${newDMBranchName}`);
+        router.refresh();
+        // router.push(`/experience/domain?domainId=${domainId}_branch_${newDMBranchName}`); // doesnt actually do anything, just makes nextjs reload the page
     }
 
 
@@ -527,9 +537,9 @@ const ExperienceDomainPage: React.FC = () => {
             <Dialog open={showingDelete} onOpenChange={setShowingDelete}>
                 <DialogContent className="font-sans">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold mb-4">Delete domain</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold mb-4">Delete {character.plmex.domain?.associatedDomainByBranch ? "branch" : "domain"}</DialogTitle>
                     </DialogHeader>
-                    <p>Are you sure you want to delete this domain? All associated chats, attributes and memory will also be deleted!</p>
+                    <p>Are you sure you want to delete this {character.plmex.domain?.associatedDomainByBranch ? "branch" : "domain"}? All associated chats, attributes and memory will also be deleted!</p>
                     <Button variant="destructive" onClick={() => {
                         setShowingDelete(false);
                         setShowingDeleteVerification(true);
@@ -538,15 +548,36 @@ const ExperienceDomainPage: React.FC = () => {
             </Dialog>
 
             <AskForUnlockSecure open={showingDeleteVerification} onUnlock={() => {
-                setShowingDeleteVerification(false);
-                chatList.forEach((chat) => {
-                    if (chat.associatedDomain == domainId) {
-                        PLMsecureContext?.removeKey(chat.id)
-                        PLMsecureContext?.removeKey("METADATA" + chat.id)
+                (async () => {
+
+                    setShowingDeleteVerification(false);
+                    chatList.forEach((chat) => {
+                        if (chat.associatedDomain == domainId) {
+                            PLMsecureContext?.removeKey(chat.id)
+                            PLMsecureContext?.removeKey("METADATA" + chat.id)
+                        }
+                    })
+                    const originDomainIfAny = character.plmex.domain?.associatedDomainByBranch
+                    await PLMsecureContext?.removeKey("METADATA" + domainId)
+                    if (originDomainIfAny) {
+
+                        const originDomainData = await PLMsecureContext?.getSecureData("METADATA" + originDomainIfAny)
+
+                        if (originDomainData) {
+                            const parsedData = originDomainData as CharacterData;
+                            if (parsedData.plmex.domain) {
+                                parsedData.plmex.domain.childrenBranches = parsedData.plmex.domain?.childrenBranches?.filter((branch) => branch !== domainId) || [];
+                            }
+
+                            await PLMsecureContext?.setSecureData("METADATA" + originDomainIfAny, parsedData);
+                        }
+
+                        setDomainId(originDomainIfAny);
+                    } else {
+                        router.push("/")
                     }
-                })
-                PLMsecureContext?.removeKey("METADATA" + domainId)
-                router.push("/")
+
+                })();
             }} onCancel={() => setShowingDeleteVerification(false)} />
 
             <Dialog open={showDomainGuideEditor} onOpenChange={setShowDomainGuideEditor}>
