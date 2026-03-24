@@ -565,6 +565,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
           e.preventDefault();
         } catch {}
       if (!force && e?.key !== "Enter") return;
+      if (isThinking) return;
+      setIsThinking(true);
     }
 
     const messageId = existingMessage?.id || crypto.randomUUID();
@@ -646,7 +648,6 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         setNewMessage("");
         textareaRef.current?.focus();
       }
-      setIsThinking(true);
     } else {
       messagesList = checkAndTrimMessages([...messages]);
     }
