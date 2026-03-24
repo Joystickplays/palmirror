@@ -234,8 +234,8 @@ const PROVIDERS = {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const wrapper = await response.json();
-            const data = JSON.parse(wrapper.contents);
+            const data = await response.json();
+            // const data = JSON.parse(wrapper.contents);
         
             const imageUrl = "https://image.jannyai.com/bot-avatars/" + data.avatar;
             const imageBase64 = await getImageBase64(imageUrl);
