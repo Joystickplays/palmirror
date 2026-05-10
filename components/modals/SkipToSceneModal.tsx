@@ -52,7 +52,7 @@ const SkipToSceneModal: React.FC<SkipToSceneModalProps> = ({
         <p className="opacity-75 text-xs italic mb-2 max-w-[20rem] text-center">Skip to a specific scene/moment quickly.</p>
         <div className="flex flex-col gap-2 w-full">
           <Textarea value={requestedScene} onChange={(e) => {setRequestedScene(e.target.value)}} placeholder={"they hold hands"} />
-          <Button onClick={() => {if (requestedScene.length < 1) {return;} setModalState(false); skipToSceneCallback(requestedScene); setRequestedScene("")}}>Skip to</Button>
+          <Button onClick={() => {if (requestedScene.length < 1) {return;} setTimeout(() => { setModalState(false); }, 100); skipToSceneCallback(requestedScene); setRequestedScene("")}}>Skip to</Button>
         </div>
       </DrawerContent>
     </Drawer>

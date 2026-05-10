@@ -49,7 +49,7 @@ const MakeReplyModal: React.FC<MakeReplyModalProps> = ({
   }, [modalState]);
   // for EVERY modal.
   return (
-    <Drawer open={modalState} onOpenChange={setModalState} repositionInputs={false}>
+    <Drawer open={modalState} onOpenChange={setModalState} repositionInputs={true}>
       <DrawerContent className="flex flex-col gap-2 items-center px-6 pb-4 w-full font-sans">
         <div className="flex gap-3 items-center my-6 mb-3">
         <MessageSquareQuote className="w-6 h-6"/>
@@ -59,7 +59,7 @@ const MakeReplyModal: React.FC<MakeReplyModalProps> = ({
         <p className="opacity-50 text-[10px] sm:text-xs flex gap-1 sm:gap-6">Recommended to write in first person<span>·</span>Leave blank for freeform</p>
         <div className="flex flex-col gap-2 w-full">
           <Textarea ref={textareaRef} value={makeReply} onChange={(e) => {setMakeReply(e.target.value)}} placeholder={"i ask to hold hands"} />
-          <Button onClick={() => {setModalState(false); sessionStorage.setItem("arbitrarySuggestionInput", makeReply); MakeReplyCallback(makeReply);}}>Create reply</Button>
+          <Button onClick={() => {setTimeout(() => {setModalState(false);}, 100); sessionStorage.setItem("arbitrarySuggestionInput", makeReply); MakeReplyCallback(makeReply);}}>Create reply</Button>
         </div>
       </DrawerContent>
     </Drawer>
