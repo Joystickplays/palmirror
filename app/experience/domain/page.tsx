@@ -337,7 +337,21 @@ const ExperienceDomainPage: React.FC = () => {
                 </div>
 
 
-                <div className="flex-col gap-4 grow w-full justify-center items-start">
+                <motion.div 
+                initial={{
+                    opacity: 0,
+                    y: 10,
+                }}
+                animate={{
+                    opacity: 1,
+                    y: 0,
+                }}
+                transition={{
+                    mass: 1,
+                    stiffness: 160,
+                    damping: 18
+                }}
+                className="flex-col gap-4 grow w-full justify-center items-start">
                     {sortByLastUpdated(chatList).map((chat: ChatMetadata, idx: number) => {
                         if (chat.associatedDomain !== domainId) {
                             return null;
@@ -357,7 +371,7 @@ const ExperienceDomainPage: React.FC = () => {
                             />
                         )
                     })}
-                </div>
+                </motion.div>
             </motion.div>
 
             <Dialog open={showingChatDelete} onOpenChange={setShowingChatDelete}>

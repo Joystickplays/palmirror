@@ -51,6 +51,7 @@ import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService
 import { useChatSettingsScaleEffectStore } from "@/context/zustandStore/ChatSettingsScale";
 import { DeveloperLogsViewer } from "@/components/internal/DeveloperLogsViewer";
 import DeveloperBar from "@/components/chat/bars/DeveloperBar";
+import MakeReplyModal from "@/components/modals/MakeReplyModal";
 
 
 let openai: OpenAI;
@@ -195,6 +196,7 @@ const ChatPage = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [skipToSceneModalState, setSkipToSceneModalState] = useState(false);
+  const [makeReplyModalState, setMakeReplyModalState] = useState(false);
 
   const { scrollY } = useScroll({
     container: messageListRef
@@ -1415,7 +1417,7 @@ ${entryTitle}
       "",
       false,
       "suggest",
-      chip,
+      chip == "" ? "Freeform! Take control and create your own response based on the context right now." : chip,
       "input"
     );
     setUserPromptThinking(false);
@@ -2166,8 +2168,9 @@ ${entryTitle}
           </motion.div>
         )}
 
+        <MakeReplyModal modalState={makeReplyModalState} setModalState={setMakeReplyModalState} MakeReplyCallback={(s) => suggestReplyFromChip(s)} />
         <SkipToSceneModal modalState={skipToSceneModalState} setModalState={setSkipToSceneModalState} skipToSceneCallback={(b) => skipToScene(b)}/>
-              
+        
         <SteerBar
           activeSteers={activeSteers}
           addSteer={addSteer}
@@ -2204,7 +2207,7 @@ ${entryTitle}
           isThinking={isThinking}
           userPromptThinking={userPromptThinking}
           tokenHitStamps={tokenHitStamps}
-          suggestReply={() => suggestReply(false)}
+          suggestReply={() => {setMakeReplyModalState(true)}}
           rewriteMessage={rewriteMessage}
           showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
           showSteerModal={() => setManageSteerModal(true)}
