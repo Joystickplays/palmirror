@@ -1409,18 +1409,18 @@ ${entryTitle}
     setMessages((prevMessages) => {
       const updated = [...prevMessages];
       const msg = { ...updated[msgIndex] };
+      
+      let previousId = msg.id;
       if (msg.focusingOnIdx && msg.focusingOnIdx > 0) {
+        previousId = msg.extraContent?.[msg.focusingOnIdx - 1]?.id || msg.id;
         msg.focusingOnIdx -= 1;
       }
       updated[msgIndex] = msg;
 
       if (associatedDomain) {
-        const prevMsg = updated[msgIndex + 1];
-        if (prevMsg) {
-          reverseDomainMessage(prevMsg.id).catch((e) =>
-            console.warn("Failed to reverse domain changes:", e)
-          );
-        }
+        reverseDomainMessage(previousId).catch((e) =>
+          console.warn("Failed to reverse domain changes:", e)
+        );
 
         const selectedContent =
           msg.focusingOnIdx === 0
@@ -1457,20 +1457,20 @@ ${entryTitle}
     setMessages((prevMessages) => {
       const updated = [...prevMessages];
       const msg = { ...updated[msgIndex] };
-      if (typeof msg.focusingOnIdx === "number" && msg.extraContent) {
-        if (msg.focusingOnIdx < msg.extraContent.length) {
+      
+      let previousId = msg.id;
+      if (typeof msg.focusingOnIdx === "number") {
+        previousId = msg.focusingOnIdx === 0 ? msg.id : (msg.extraContent?.[msg.focusingOnIdx - 1]?.id || msg.id);
+        if (msg.extraContent && msg.focusingOnIdx < msg.extraContent.length) {
           msg.focusingOnIdx += 1;
         }
       }
       updated[msgIndex] = msg;
 
       if (associatedDomain) {
-        const prevMsg = updated[msgIndex - 1];
-        if (prevMsg) {
-          reverseDomainMessage(prevMsg.id).catch((e) =>
-            console.warn("Failed to reverse domain changes:", e)
-          );
-        }
+        reverseDomainMessage(previousId).catch((e) =>
+          console.warn("Failed to reverse domain changes:", e)
+        );
 
         const selectedContent =
           msg.focusingOnIdx === 0
