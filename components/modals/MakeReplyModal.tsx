@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -28,7 +30,7 @@ const MakeReplyModal: React.FC<MakeReplyModalProps> = ({
   setModalState,
   MakeReplyCallback,
 }) => {
-  const [makeReply, setMakeReply] = useState(sessionStorage.getItem("arbitrarySuggestionInput") || "");
+  const [makeReply, setMakeReply] = useState(typeof window !== "undefined" ? sessionStorage.getItem("arbitrarySuggestionInput") || "" : "");
 
   useEffect(() => {
     if (modalState) return;
