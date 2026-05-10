@@ -23,6 +23,7 @@ import {
   isPalMirrorSecureActivated,
   PLMSecureGeneralSettings,
 } from "@/utils/palMirrorSecureUtils";
+import { devLog } from "@/store/developerLogs";
 
 
 import { usePalRec } from "@/context/PLMRecSystemContext"
@@ -48,6 +49,8 @@ import { Label } from "@/components/ui/label";
 import CascadeAskToMove from "@/components/cascade/CascadeAskToMove";
 import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";
 import { useChatSettingsScaleEffectStore } from "@/context/zustandStore/ChatSettingsScale";
+import { DeveloperLogsViewer } from "@/components/internal/DeveloperLogsViewer";
+import DeveloperBar from "@/components/chat/bars/DeveloperBar";
 
 
 let openai: OpenAI;
@@ -97,6 +100,8 @@ const ChatPage = () => {
   const [configDomainChatCompressorOnlyUntil, setConfigDomainChatCompressorOnlyUntil] = useState(5);
   const [configCascadingApiProviders, setConfigCascadingApiProviders] = useState(false);
   const [configEnterSendsChat, setConfigEnterSendsChat] = useState(true);
+  
+  const [configDeveloperMode, setConfigDeveloperMode] = useState(false);
 
   useEffect(() => {
     setConfigHighend(!!PLMGC.get("highend"))
@@ -109,6 +114,7 @@ const ChatPage = () => {
     setConfigDomainChatCompressorOnlyUntil(PLMGC.get("domainChatCompressorDepth") ? Number(PLMGC.get("domainChatCompressorDepth")) : 5) 
     setConfigCascadingApiProviders(!!PLMGC.get("cascadingApiProviders"))
     setConfigEnterSendsChat(PLMGC.get("enterSendsChat") ?? true)
+    setConfigDeveloperMode(!!PLMGC.get("developerMode"))
   }, [])
 
   const PMNotify = usePMNotification();
@@ -559,6 +565,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     destination: "chat" | "suggest-bar" | "input" = "chat",
     existingMessage: Message | null = null,
   ) => {
+    devLog(`handleSendMessage initiated`, "info", { mode, force, regenerate, destination, optionalMessageLength: optionalMessage.length, rewriteBase, hasExistingMessage: !!existingMessage });
+
     if (mode === "send") {
       if (e?.key === "Enter" && !e.shiftKey && configEnterSendsChat)
         try {
@@ -572,11 +580,14 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     const messageId = existingMessage?.id || crypto.randomUUID();
 
     if (configCascadingApiProviders) {
+      devLog("Using cascading API providers", "info");
       const highestPriorityProfile = await getHighestPriorityProfile();
       if (highestPriorityProfile) {
+        devLog("Found API profile", "info", { profileId: highestPriorityProfile.profile.id, baseURL: highestPriorityProfile.profile.baseURL });
         const { profile, apiKey } = highestPriorityProfile;
         setBaseURL(profile.baseURL);
         setApiKey(apiKey);
+        setModelName(profile.modelName);
         setLastApiProfileId(highestPriorityProfile.profile.id);
 
         openai = new OpenAI({
@@ -620,6 +631,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
             : messagesList[messagesList.length - 1].extraContent?.[messagesList[messagesList.length - 1].focusingOnIdx - 1]?.id || messagesList[messagesList.length - 1].id;
 
           if (associatedDomain) {
+            devLog("Reversing domain message for regeneration", "info", { lastMessageId });
             try {
               reverseDomainMessage(lastMessageId);
             } catch (e) {
@@ -705,6 +717,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       }
     }
 
+    devLog("Fetching system message", "info", { characterDataName: characterData?.name, associatedDomain, entryTitle, modelInstructionsLength: modelInstructions.length, activeSteers: activeSteers.length });
     const systemPrompt = await getSystemMessage(
       characterData,
       userPersonality,
@@ -724,6 +737,8 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
         msg.content = msg.extraContent?.[msg.focusingOnIdx - 1]?.content || msg.content;
       }
     }
+
+    devLog("Constructing final messages for API call", "info", { mode, messagesApplyLength: messagesApply.length, systemPromptLength: systemPrompt.length });
 
 
     let finalMessages: ChatCompletionMessageParam[] = [];
@@ -909,12 +924,15 @@ ${entryTitle}
         ),
       ];
 
-      if (associatedDomain) {
+      devLog("Final messages constructed", "info", { finalMessagesCount: finalMessages.length });
 
+      if (associatedDomain) {
+        devLog("Processing domain specific attachments", "info", { associatedDomain });
 
         // flashcards
         let activeFC: DomainFlashcardEntry[] = [];
         const flashcards = await getDomainFlashcards(associatedDomain);
+        devLog("Retrieved domain flashcards", "info", { count: flashcards.length });
         if (flashcards.length > 0) {
           const msgCount = messagesList.filter(m => m.role !== 'system').length;
           activeFC = flashcards.filter(fc => {
@@ -928,6 +946,7 @@ ${entryTitle}
           });
         }
         if (activeFC.length > 0) {
+          devLog(`Got ${activeFC.length} active flashcards. Applying`, "info", { activeFCCount: activeFC.length });
           const groupedByDistance: Record<number, string[]> = {};
           activeFC.forEach(fc => {
             const d = fc.distance || 0;
@@ -951,6 +970,7 @@ ${entryTitle}
         }
 
         const assistantRecall = await buildAssistantRecall(associatedDomain)
+        devLog("Fetched assistant recall", "info", { recallLength: assistantRecall.length });
         if (assistantRecall !== "") {
           if (finalMessages.length < 7) {
             finalMessages.unshift({
@@ -970,6 +990,7 @@ ${entryTitle}
         
         // domain compressor (basically change the further chats into their timesteps)
         if (configDomainChatCompressor) {
+          devLog("Running domain chat compressor", "info", { compressorOnlyUntil: configDomainChatCompressorOnlyUntil, chatTimestepsCount: chatTimesteps.length, originalMessagesCount: finalMessages.length });
           let messageDepth = 0;
           const compressedMessages: ChatCompletionMessageParam[] = [];
 
@@ -1025,11 +1046,13 @@ ${entryTitle}
                 timestepContent,
             });
           }
+          devLog("Domain chat compression complete", "info", { newMessagesCount: compressedMessages.length });
           finalMessages = compressedMessages;
         }
 
         //regen options
         if (regenerate && mode === "send") {
+          devLog("Applying domain regen options if any", "info");
           let lastUserMessage = finalMessages[finalMessages.length - 1]?.role === "user"
             ? finalMessages[finalMessages.length - 1]
             : undefined;
@@ -1101,6 +1124,8 @@ ${entryTitle}
         content: m.content ?? "",
       }));
 
+      devLog("Sending chat completion request", "info", { model: modelName, destination, temperature: generationTemperature, messagesCount: filteredMessages.length, topMessageLength: filteredMessages[0]?.content.length, bottomMessageLength: filteredMessages[filteredMessages.length - 1]?.content.length });
+
       const comp = await openai.chat.completions.create(
         {
           model: modelName,
@@ -1124,9 +1149,13 @@ ${entryTitle}
 
 
       if (destination === "chat") {
+        devLog("Processing destination 'chat' response stream", "info");
         
         for await (const chunk of comp) {
-          if (abortController.current?.signal.aborted) break;
+          if (abortController.current?.signal.aborted) {
+            devLog("Request aborted during stream", "warn");
+            break;
+          }
           const c = chunk.choices?.[0]?.delta?.content || "";
           assistantMessage += c
             .replace(/[“”„‟]/g, '"')
@@ -1201,6 +1230,7 @@ ${entryTitle}
           regenerationOptions: assistantMessageObject.regenerationOptions,
           stillGenerating: false,
         });
+        devLog("Message generated successfully", "info", { tokenCount });
       } else if (destination === "suggest-bar") {
         for await (const chunk of comp) {
           if (abortController.current?.signal.aborted) break;
@@ -1230,6 +1260,7 @@ ${entryTitle}
       }
     } catch (err) {
       if (!abortController.current?.signal.aborted) {
+        devLog("Error in handleSendMessage", "error", { error: err instanceof Error ? err.message : String(err), stack: err instanceof Error ? err.stack : undefined });
         if (err instanceof Error && err.message.includes("reduce the length")) {
           return handleSendMessage(
             e,
@@ -2163,6 +2194,8 @@ ${entryTitle}
             </motion.div> )}
           </AnimatePresence>
         </AnimateChangeInHeight>
+
+        {configDeveloperMode && <DeveloperBar />}
         <MessageInput
           newMessage={newMessage}
           setNewMessage={setNewMessage}

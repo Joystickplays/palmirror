@@ -337,7 +337,7 @@ const ExperienceDomainPage: React.FC = () => {
                 </div>
 
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 grow w-full justify-center items-start">
+                <div className="flex-col gap-4 grow w-full justify-center items-start">
                     {sortByLastUpdated(chatList).map((chat: ChatMetadata, idx: number) => {
                         if (chat.associatedDomain !== domainId) {
                             return null;

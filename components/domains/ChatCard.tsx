@@ -52,25 +52,16 @@ const ChatCard = React.memo(({
 
     return (
         <motion.div
-            initial={
-                { scale: configHighend ? 0.8 : 1, opacity: 0 }
-            }
-            animate={{
-                opacity: 1,
-                scale: 1,
-            }}
             exit={{ opacity: 0, scale: 0.5 }}
             transition={{
                 type: "tween",
                 duration: 0.3,
                 ease: "easeOut",
-
-                delay: 0.05 * idx
             }}
-            className="flex flex-col gap-1.5 p-6 border rounded-xl h-full"
+            className="flex flex-col gap-1.5 p-6 border-b rounded-xl h-full"
             layout
         >
-            <h2 className={`font-bold ml-auto`}>{chat.entryTitle}</h2>
+            <h2 className={`font-bold`}>{chat.entryTitle}</h2>
             <p className="opacity-70 ml-auto text-xs">
                 {formatDateWithLocale(chat.lastUpdated)}
             </p>
