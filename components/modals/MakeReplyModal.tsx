@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Drawer,
@@ -31,9 +31,15 @@ const MakeReplyModal: React.FC<MakeReplyModalProps> = ({
   MakeReplyCallback,
 }) => {
   const [makeReply, setMakeReply] = useState(typeof window !== "undefined" ? sessionStorage.getItem("arbitrarySuggestionInput") || "" : "");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (modalState) return;
+    if (modalState) {
+      const timeout = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
     let attempts = 0;
     const id = setInterval(() => {
       document.body.style.pointerEvents = "auto";
@@ -50,10 +56,10 @@ const MakeReplyModal: React.FC<MakeReplyModalProps> = ({
           <DrawerTitle className="text-2xl">Reply from prompt</DrawerTitle>
         </div>
         <p className="opacity-75 text-xs italic mb-2 max-w-[20rem] text-center">Create a reply based on the prompt.</p>
-        <p className="opacity-50 text-xs flex gap-1 sm:gap-6">Recommended to write in first person<span>·</span>Leave blank for freeform</p>
+        <p className="opacity-50 text-[10px] sm:text-xs flex gap-1 sm:gap-6">Recommended to write in first person<span>·</span>Leave blank for freeform</p>
         <div className="flex flex-col gap-2 w-full">
-          <Textarea value={makeReply} onChange={(e) => {setMakeReply(e.target.value)}} placeholder={"i ask to hold hands"} />
-          <Button onClick={() => {setModalState(false); sessionStorage.setItem("arbitrarySuggestionInput", makeReply); MakeReplyCallback(makeReply); setMakeReply("")}}>Create reply</Button>
+          <Textarea ref={textareaRef} value={makeReply} onChange={(e) => {setMakeReply(e.target.value)}} placeholder={"i ask to hold hands"} />
+          <Button onClick={() => {setModalState(false); sessionStorage.setItem("arbitrarySuggestionInput", makeReply); MakeReplyCallback(makeReply);}}>Create reply</Button>
         </div>
       </DrawerContent>
     </Drawer>
