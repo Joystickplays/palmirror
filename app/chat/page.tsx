@@ -2007,7 +2007,7 @@ ${entryTitle}
           importMessages={openFilePicker}
           visible={scrollDirection === "up"}
         />
-        <div  ref={messageListRef} className="overflow-y-auto overflow-x-hidden max-w-160">
+        <div  ref={messageListRef} className="overflow-y-auto overflow-x-hidden max-w-160 mb-3">
           <div className="flex flex-col justify-end min-h-full">
             <div className="min-h-screen"></div>
             {characterData.name.length < 1 ? (
