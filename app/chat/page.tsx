@@ -1977,7 +1977,7 @@ ${entryTitle}
           restDelta: 0.00001,
           filter: { type: "spring", mass: 1, damping: 38, stiffness: 161 },
         }}
-        className="grid max-w-160 w-full h-dvh p-1 sm:p-0 font-sans grid-rows-[auto_1fr] gap-4 overflow-x-hidden mx-auto relative"
+        className="grid max-w-160 w-full h-dvh p-1 sm:p-0 font-sans grid-rows-[auto_1fr] overflow-x-hidden mx-auto relative"
       >
         <div className="fixed w-full h-40 z-1"
         >

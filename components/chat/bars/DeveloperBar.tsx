@@ -11,7 +11,7 @@ const DeveloperBar: React.FC<DeveloperBarProps> = ({ }) => {
     return (
         <>
             <div
-                className="flex gap-2 -mb-2 overflow-y-hidden items-center px-1">
+                className="flex gap-2 my-2 overflow-y-hidden items-center px-1">
                 {logs.slice(-1).map((log, index) => (
                     <>
                         <Code className={`opacity-50 ${log.level === 'error' ? 'text-red-400'
