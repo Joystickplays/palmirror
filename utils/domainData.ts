@@ -379,9 +379,16 @@ export async function structureDomainTimesteps(chatID: string): Promise<string> 
 
     const timestepRecall = PLMGlobalConfigServiceInstance.get("domains_timestep_recall")
     
-    timesteps.slice(-(timestepRecall ?? 20)).forEach((timestep, index) => {
-        structuredTimesteps += `Timestep ${index + 1}: ${timestep.entry}\n`;
+    const recallLimit = timestepRecall ?? 20;
+    const startIndex = Math.max(0, timesteps.length - recallLimit);
+    
+    timesteps.slice(-recallLimit).forEach((timestep, index) => {
+        structuredTimesteps += `Timestep ${startIndex + index + 1}: ${timestep.entry}\n`;
     });
+
+    if (timesteps.length > (timestepRecall ?? 20)) {
+        structuredTimesteps = `...${timesteps.length - (timestepRecall ?? 20)} timesteps truncated...\n` + structuredTimesteps;
+    }
     return structuredTimesteps;
 }
 
@@ -422,7 +429,9 @@ export async function totalChatsFromDomain(domainID: string) {
             })
         );
 
-        return chatEntries.filter((title): title is ChatHistoryTimed => Boolean(title));
+        const sortedChats = sortByLastUpdated(chatEntries.filter((entry): entry is ChatHistoryTimed => Boolean(entry)));
+
+        return sortedChats;
     } catch (err) {
         console.error("Failed to get total chats from domain:", err);
         return [];

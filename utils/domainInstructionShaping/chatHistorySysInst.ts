@@ -7,7 +7,11 @@ export function getTotalChatsSysInst(totalChats: ChatHistory[], entryTitle: stri
     return `CHAT HISTORY
 
 The character has had a total of **${totalChats.length}** chats with the user.
-${totalChats.map((chat) => `- ${chat.entryTitle}\nEVENTS IN THIS CHAT:\n${chat.timestampStructure}`).join("\n")}
+${totalChats.map((chat, index) => {
+    if (chat.entryTitle === entryTitle) { return ""; }
+    return `- ${chat.entryTitle}\nEVENTS IN THIS CHAT:\n${chat.timestampStructure}`
+}).join("\n")}
+
 [ The timesteps above reflect the important events that happened in each chat. ]
 [ Use these to understand the history and context of your relationship with the user. ]
 
