@@ -176,7 +176,7 @@ const FlashcardItem = ({ flashcard, onUpdate, onDelete }: FlashcardItemProps) =>
                 <div className="w-full flex flex-col items-center gap-2">
                     <div className="flex w-full items-start gap-2">
                         <span className="text-sm font-bold">
-                            {10 - localDistance} message{10 - localDistance !== 1 ? "s" : ""} away
+                            {localDistance} message{localDistance !== 1 ? "s" : ""} away
                         </span>
                         {/* <Button variant={"outline"} className="w-6 h-6 p-0"> <Info /> </Button> */}
                     </div>
@@ -184,12 +184,13 @@ const FlashcardItem = ({ flashcard, onUpdate, onDelete }: FlashcardItemProps) =>
                         min={0}
                         max={10}
                         step={1}
-                        value={[localDistance]}
+                        value={[10 - localDistance]}
                         className="w-full"
-                        onValueChange={(e) => setLocalDistance(Number(e[0]))}
+                        onValueChange={(e) => setLocalDistance(10 - Number(e[0]))}
                         onValueCommit={(e) => {
-                            if (localContent !== flashcard.content || localDistance !== flashcard.distance) {
-                                onUpdate({ ...flashcard, content: localContent, distance: Number(e[0]) });
+                            const newDistance = 10 - Number(e[0]);
+                            if (localContent !== flashcard.content || newDistance !== flashcard.distance) {
+                                onUpdate({ ...flashcard, content: localContent, distance: newDistance });
                             }
                         }}
                     />

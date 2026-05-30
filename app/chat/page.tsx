@@ -337,11 +337,6 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     if (associatedDomain) {
         const timestepsToSet: Array<DomainTimestepEntry> = [];
         for (const msg of chats) {
-          // const content = 
-          //   msg.focusingOnIdx === 0 || msg.focusingOnIdx === undefined
-          //     ? msg.content
-          //     : msg.extraContent?.[msg.focusingOnIdx - 1].content || ""
-
           const content =
             msg.focusingOnIdx > 0
               ? msg.extraContent?.[msg.focusingOnIdx - 1]?.content ?? ""
@@ -352,16 +347,15 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
           for (const ts of extracted) {
             timestepsToSet.push({
               key: Math.floor(Math.random() * 69420),
-              associatedMessage: msg.id,
+              associatedMessage: msg.focusingOnIdx > 0 ? (msg.extraContent?.[msg.focusingOnIdx - 1]?.id ?? msg.id) : msg.id,
               entry: ts,
             });
           }
         }
-        if (timestepsToSet.length > 0) {
-          setChatTimesteps(timestepsToSet);
-          if (notify) {
-            PMNotify.info(`Found timesteps from messages, imported ${timestepsToSet.length} timesteps`);
-          }
+        
+        setChatTimesteps(timestepsToSet);
+        if (notify) {
+          PMNotify.info(`Synchronized ${timestepsToSet.length} timesteps.`);
         }
       }
   }
@@ -959,15 +953,13 @@ ${entryTitle}
           const distances = Object.keys(groupedByDistance).map(Number).sort((a, b) => b - a);
           for (const dist of distances) {
             const content = `\n[ Context Reminders ]:\n${groupedByDistance[dist].map(c => `- ${c}`).join('\n')}\n`;
-            let index = finalMessages.length - dist;
+            let index = finalMessages.length - 1 - dist;
             if (index < 0) index = 0;
-            if (index > finalMessages.length) index = finalMessages.length;
+            if (index >= finalMessages.length) index = finalMessages.length - 1;
 
-            finalMessages.splice(index, 0, {
-              role: "user" as "user" | "assistant" | "system",
-              content: content,
-              name: "system"
-            });
+            if (finalMessages[index]) {
+              finalMessages[index].content += content;
+            }
           }
         }
 
@@ -2005,6 +1997,9 @@ ${entryTitle}
             encodeMessages(false);
           }}
           importMessages={openFilePicker}
+          syncTimesteps={() => {
+            saveTimesteps(messages, true);
+          }}
           visible={scrollDirection === "up"}
         />
         <div  ref={messageListRef} className="overflow-y-auto overflow-x-hidden max-w-160 mb-3">

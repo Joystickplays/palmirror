@@ -33,6 +33,8 @@ import { stat } from 'fs';
 interface ChatSettingsProps {
   getExportedMessages: () => void;
   importMessages: () => void;
+  syncTimesteps: () => void;
+  fromDomain?: boolean;
 }
 
 export interface ApiProfile {
@@ -47,7 +49,7 @@ export interface ApiProfile {
 }
 
 
-const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, importMessages }) => {
+const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, importMessages, syncTimesteps, fromDomain }) => {
   
   const setSettingsOpen = useChatSettingsScaleEffectStore(useCallback(state => state.setSettingsOpen, []));
 
@@ -616,6 +618,11 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({ getExportedMessages, import
               <Button onClick={getExportedMessages}>Export chat</Button>
               <Button onClick={handleImport}>Import chat</Button>
             </div>
+            {fromDomain && (
+              <div className="flex gap-2 pt-2">
+                <Button onClick={syncTimesteps} variant="secondary" className="w-full">Sync Timesteps</Button>
+              </div>
+            )}
             <Select onValueChange={setTheme}>
               <SelectTrigger className="w-full mt-5">
                 <SelectValue placeholder="Theme" />

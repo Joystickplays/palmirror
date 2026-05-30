@@ -18,10 +18,11 @@ interface ChatHeaderProps {
   fromDomain: boolean;
   getExportedMessages: () => void;
   importMessages: () => void;
+  syncTimesteps: () => void;
   visible: boolean;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getExportedMessages, importMessages, visible }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getExportedMessages, importMessages, syncTimesteps, visible }) => {
   const PLMGC = usePLMGlobalConfig();
   const [configHighend, setConfigHighend] = useState(false);
   useEffect(() => {
@@ -67,7 +68,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ characterData, fromDomain, getE
           <p className="text-xs font-bold opacity-50">On PalMirror {fromDomain && "Experience"}</p>
         </div>
 
-        <ChatSettings getExportedMessages={getExportedMessages} importMessages={importMessages} />
+        <ChatSettings getExportedMessages={getExportedMessages} importMessages={importMessages} syncTimesteps={syncTimesteps} fromDomain={fromDomain} />
 
       </CardContent>
     </motion.div>
