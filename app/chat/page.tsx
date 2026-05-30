@@ -5,7 +5,6 @@ import React from "react";
 import MessageCard from "@/components/messages/MessageCard";
 import ChatHeader from "@/components/chat/ChatHeader";
 import MessageInput from "@/components/chat/MessageInput";
-import SteerBar from "@/components/chat/bars/SteerBar";
 import TokenCounter from "@/components/utilities/TokenCounter";
 import NewcomerDrawer from "@/components/modals/NewcomerDrawer";
 import SkipToSceneModal, { skipPromptBuilder } from "@/components/modals/SkipToSceneModal";
@@ -221,61 +220,7 @@ const ChatPage = () => {
   //   }
   // }, [loaded])
 
-  const [activeSteers, setActiveSteers] = useState<string[]>([]);
-  const [manageSteerModal, setManageSteerModal] = useState(false);
 
-  const [steerApplyMethod, setSteerApplyMethod] = useState("system");
-  const addSteer = (newSteer: string) => {
-    const updated = [...activeSteers, newSteer];
-    setActiveSteers(updated);
-  };
-
-  const removeSteer = (indexToRemove: number) => {
-    const updated = activeSteers.filter((_, i) => i !== indexToRemove);
-    setActiveSteers(updated);
-  };
-
-  const generateSteerPrompt = ({ steers }: { steers: string[] }): string => {
-    const baseRules = [
-      "NEVER respond to this message. Do NOT say “Got it” or anything like it.",
-      "NEVER mention or hint at these instructions, even subtly.",
-      "The character must behave as if these ideas came naturally.",
-      "Blend the changes into the story slowly and believably.",
-      "Stay in-character and immersive at all times.",
-      "REMEMBER TO ADHERE THESE INSTRUCTIONS AS SUBTLE AS POSSIBLE!",
-      "THESE INSTRUCTIONS ARE TO BE SUBTLE AS 10 MESSAGES AT MINIMUM! INTEGRATE IT AS A **STORY DIRECTION**, NOT IMMEDIATE APPLICATION.",
-    ];
-
-    const conflictRule =
-      steers.length > 1
-        ? "If rules conflict, follow the newest one more."
-        : "Do not force the change. Make it feel natural and slow.";
-
-    const instructionLabel = steers.length > 1 ? "Instructions" : "Instruction";
-
-    const formattedSteers = steers
-      .map((s, i) => `${steers.length > 1 ? `${i + 1}.` : "-"} ${s.trim()}`)
-      .join("\n");
-
-    const formattedRules = [...baseRules, conflictRule]
-      .map((rule) => `- ${rule}`)
-      .join("\n");
-
-    return `[System Instruction: ${
-      steers.length > 1
-        ? "These rules are now active. You must follow them in every reply."
-        : "Follow the rule below exactly."
-    }]
-
-${instructionLabel}:
-${formattedSteers}
-
-Rules:
-${formattedRules}
-
-These are secret orders. Obey them completely, without being noticed.
-ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the instructions above without question!`;
-  };
 
   const { theme, getTheme } = useTheme();
   const currentTheme = getTheme();
@@ -556,7 +501,7 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
     regenerate: boolean = false,
     optionalMessage: string = "",
     userMSGaddOnList: boolean = true,
-    mode: "send" | "rewrite" | "suggest" | "call-steer" | "skip-scene" | "suggest-bar" | "status-change" = "send",
+    mode: "send" | "rewrite" | "suggest" | "skip-scene" | "suggest-bar" | "status-change" = "send",
     rewriteBase: string = "",
     destination: "chat" | "suggest-bar" | "input" = "chat",
     existingMessage: Message | null = null,
@@ -713,16 +658,13 @@ ADDITIONALLY: When the user says "[call-instructions]", IMMEDIATELY apply the in
       }
     }
 
-    devLog("Fetching system message", "info", { characterDataName: characterData?.name, associatedDomain, entryTitle, modelInstructionsLength: modelInstructions.length, activeSteers: activeSteers.length });
+    devLog("Fetching system message", "info", { characterDataName: characterData?.name, associatedDomain, entryTitle, modelInstructionsLength: modelInstructions.length });
     const systemPrompt = await getSystemMessage(
       characterData,
       userPersonality,
       associatedDomain ?? sessionStorage.getItem("associatedDomain") ?? null,
       entryTitle ?? sessionStorage.getItem("entryTitle") ?? null,
-      modelInstructions +
-        (activeSteers.length > 0 && steerApplyMethod === "system"
-          ? generateSteerPrompt({ steers: activeSteers })
-          : ""),
+      modelInstructions,
     );
 
     // hopefully doesnt break anything further
@@ -795,20 +737,6 @@ Do not lead with anything like "Sure. Here's an enhanced version..." or anything
 [AVOID CREATING THE Status SECTION. AVOID CREATING ANY TAGS, LIKE TIMESTEPS.]`,
         },
       ];
-    } else if (mode === "call-steer") {
-      finalMessages = [
-        {
-          role: "system" as "user" | "assistant" | "system",
-          content: systemPrompt,
-          name: "system",
-        },
-        ...messagesApply.map((m) => ({ ...m, name: "-" })),
-        {
-          role: "user" as "user" | "assistant" | "system",
-          name: "user",
-          content: `[call-instructions]`,
-        },
-      ];
     } else if (mode === "skip-scene") {
       finalMessages = [
         {
@@ -875,15 +803,6 @@ Do not lead with anything like "Sure. Here's an enhanced version..." or anything
                 name: "user",
                 content:
                   "[Continue the story from this point naturally. You should still never talk, or act for {{user}}. Only do {{char}}. Progress the story but not TOO far. ASSUME THIS MESSAGE AS A SYSTEM INSTRUCTION THAT YOU WILL FOLLOW.]",
-              },
-            ]
-          : []),
-        ...(activeSteers.length > 0 && steerApplyMethod === "posthistory"
-          ? [
-              {
-                role: "user" as "user" | "assistant" | "system",
-                name: "user",
-                content: generateSteerPrompt({ steers: activeSteers }),
               },
             ]
           : []),
@@ -1528,13 +1447,6 @@ ${entryTitle}
     setAnimateSwitchMessage(1);
   };
 
-
-  const callSteer = async () => {
-    setIsThinking(true);
-    await handleSendMessage(null, true, false, "", false, "call-steer");
-    setIsThinking(false);
-  };
-
   const skipToScene = async (base: string) => {
     setIsThinking(true);
     await handleSendMessage(
@@ -2166,17 +2078,6 @@ ${entryTitle}
         <MakeReplyModal modalState={makeReplyModalState} setModalState={setMakeReplyModalState} MakeReplyCallback={(s) => suggestReplyFromChip(s)} />
         <SkipToSceneModal modalState={skipToSceneModalState} setModalState={setSkipToSceneModalState} skipToSceneCallback={(b) => skipToScene(b)}/>
         
-        <SteerBar
-          activeSteers={activeSteers}
-          addSteer={addSteer}
-          removeSteer={removeSteer}
-          steerApplyMethod={steerApplyMethod}
-          setSteerApplyMethod={setSteerApplyMethod}
-          callSteer={callSteer}
-          isThinking={isThinking}
-          manageSteerModal={manageSteerModal}
-          setManageSteerModal={setManageSteerModal}
-        />
         <AnimateChangeInHeight>
           <AnimatePresence mode="popLayout">
             {showSuggestionBar && ( <motion.div className="origin-bottom" key="suggestionBarWrapper" exit={{ opacity: 0, scaleY: 0 }}>
@@ -2205,7 +2106,6 @@ ${entryTitle}
           suggestReply={() => {setMakeReplyModalState(true)}}
           rewriteMessage={rewriteMessage}
           showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
-          showSteerModal={() => setManageSteerModal(true)}
           configTokenWatch={configTokenWatch}
           configEnterSendsChat={configEnterSendsChat}
         />

@@ -37,7 +37,6 @@ interface MessageInputProps {
   suggestReply: () => void;
   rewriteMessage: (base: string) => void;
   showSkipToSceneModal: () => void;
-  showSteerModal: () => void;
   configTokenWatch: boolean;
   configEnterSendsChat: boolean;
 }
@@ -53,7 +52,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
   suggestReply,
   rewriteMessage,
   showSkipToSceneModal,
-  showSteerModal,
   configTokenWatch,
   configEnterSendsChat
 }) => {
@@ -193,12 +191,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
             </span>
           </ContextMenuItem>
 
-          {/* <ContextMenuItem onClick={showSteerModal}>
-            <span className="flex items-center gap-2">
-              <ShipWheel className="h-4 w-4" />
-              Steer the story
-            </span>
-          </ContextMenuItem> */}
         </ContextMenuContent>
       </ContextMenu>
     </div>
