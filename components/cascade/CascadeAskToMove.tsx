@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ApiProfile } from "../chat/ChatSettings";
+import { ApiProfile } from "@/types/ApiProfile";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 
