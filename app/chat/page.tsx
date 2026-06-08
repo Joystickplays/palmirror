@@ -43,7 +43,7 @@ import { LinearBlur } from "@/components/utilities/LinearBlur";
 import { ChevronLeft, ChevronRight, Info, ListCollapse, X } from "lucide-react";
 import { UserPersonality } from "@/types/UserPersonality";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
-import { ApiProfile } from "@/components/chat/ChatSettings";
+import { ApiProfile } from "@/types/ApiProfile";
 import { Label } from "@/components/ui/label";
 import CascadeAskToMove from "@/components/cascade/CascadeAskToMove";
 import { PLMGlobalConfigServiceInstance } from "@/context/PLMGlobalConfigService";

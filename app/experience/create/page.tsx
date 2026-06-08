@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
 import {
     Select,
     SelectContent,
@@ -42,6 +43,7 @@ import {
 
 import { CharacterData, defaultCharacterData, AlternateInitialMessage } from "@/types/CharacterData";
 import { DomainAttributeEntry } from "@/types/EEDomain"
+import Markdown from 'react-markdown';
 
 
 export default function Home() {
@@ -73,8 +75,28 @@ export default function Home() {
     const [tagsScratchNotes, setTagsScratchNotes] = useState("");
     const [pfsbIsGenerating, setPfsbIsGenerating] = useState(false);
     const [pfsbResult, setPfsbResult] = useState("");
+    const [pfsbShowResult, setPfsbShowResult] = useState(false);
+    const [pfsbProgress, setPfsbProgress] = useState(0);
+    const [pfsbReasoning, setPfsbReasoning] = useState("");
+    const [pfsbReasoningFinish, setPfsbReasoningFinish] = useState(false);
+    const [pfsbShowReasoning, setPfsbShowReasoning] = useState(true);
 
     const [pfsbSetupShow, setPfsbSetupShow] = useState(false);
+
+    const reasoningContainerRef = useRef<HTMLDivElement>(null);
+    const resultContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (reasoningContainerRef.current) {
+            reasoningContainerRef.current.scrollTop = reasoningContainerRef.current.scrollHeight;
+        }
+    }, [pfsbReasoning]);
+
+    useEffect(() => {
+        if (resultContainerRef.current) {
+            resultContainerRef.current.scrollTop = resultContainerRef.current.scrollHeight;
+        }
+    }, [pfsbResult]);
 
     const requiredFields = [characterData.name, characterData.personality, characterData.initialMessage];
 
@@ -116,6 +138,45 @@ export default function Home() {
         })();
     }, [])
 
+    useEffect(() => {
+        if (!pfsbIsGenerating) {
+            setPfsbProgress(100);
+            return;
+        }
+
+        const tags = tagsScratch.filter(tag => tag.tag.trim() !== "");
+
+        if (pfsbResult === "" && pfsbReasoning === "") {
+            setPfsbProgress(0);
+            const interval = setInterval(() => {
+                setPfsbProgress((prev) => {
+                    if (prev >= 10) {
+                        clearInterval(interval);
+                        return 10;
+                    }
+                    return prev + 0.2;
+                });
+            }, 100);
+            return () => clearInterval(interval);
+        } else {
+            if (tags.length === 0) {
+                const interval = setInterval(() => {
+                    setPfsbProgress((prev) => {
+                        if (prev >= 95) return 95;
+                        return prev + 1;
+                    });
+                }, 500);
+                return () => clearInterval(interval);
+            } else {
+                const lowerResult = pfsbResult.toLowerCase();
+                const detectedCount = tags.filter(t => lowerResult.includes(t.tag.trim().toLowerCase())).length;
+                const tagProgress = (detectedCount / tags.length) * 90;
+                const calculated = 10 + tagProgress;
+                setPfsbProgress((prev) => Math.min(100, Math.max(prev, calculated)));
+            }
+        }
+    }, [pfsbResult, pfsbReasoning, pfsbIsGenerating, tagsScratch]);
+
     const generatePersonalityBlock = () => {
         if (personalityFromScratchBlock.trim() === "") {
             toast.error("Please enter a description for your character.");
@@ -136,12 +197,15 @@ export default function Home() {
                     modelName = settingsParse.modelName
                 }
 
-                setPfsbResult("")
+                setPfsbResult("");
+                setPfsbReasoning("");
+                setPfsbShowResult(true);
                 setPfsbIsGenerating(true);
-                const block = await generateChatCompletion({
+                
+                const responseStream = generateChatCompletion({
                     model: modelName,
                     temperature: 0.7,
-                    stream: false,
+                    stream: true,
                     messages: [{
                         role: "system",
                         content: sysInst
@@ -149,17 +213,36 @@ export default function Home() {
                         role: "user",
                         content: personalityFromScratchBlock.trim()
                     }]
-                }).next()
+                });
 
-                setPfsbResult(block.value.choices[0].message.content)
+                let accumulatedText = "";
+                let accumulatedReasoning = "";
+                for await (const chunk of responseStream) {
+                    const content = chunk.choices?.[0]?.delta?.content || "";
+                    accumulatedText += content;
+                    if (accumulatedText !== "" && !pfsbReasoningFinish) {
+                        setPfsbReasoningFinish(true);
+                        setPfsbShowReasoning(false);
+                    }
+                    setPfsbResult(accumulatedText);
+
+                    let c_reason = chunk.choices?.[0]?.delta?.reasoning_content?.[0]?.thinking || "";
+                    if (c_reason === "") {
+                        c_reason = chunk.choices?.[0]?.delta?.reasoning_content || chunk.choices?.[0]?.delta?.reasoning || "";
+                    }
+                    if (c_reason) {
+                        accumulatedReasoning += c_reason;
+                        setPfsbReasoning(accumulatedReasoning);
+                    }
+                }
+                setPfsbIsGenerating(false);
             } catch (e) {
                 console.error("Error generating personality block:", e);
                 toast.error(`Failed to generate personality block. Please try again. (${e})`);
                 setPfsbIsGenerating(false);
-
+                setPfsbShowResult(false);
             }
         })();
-
     }
 
     const usePersonalityFromPFSB = () => {
@@ -172,6 +255,7 @@ export default function Home() {
 
         toast.success("Personality has been set!")
         setPfsbIsGenerating(false);
+        setPfsbShowResult(false);
         setPfsbSetupShow(false);
     }
 
@@ -282,7 +366,7 @@ export default function Home() {
                             <p className="opacity-50">Use your configured AI to generate a personality block for you. Creative, detailed, dense and SillyTavern-style.</p>
                             {pfsbSetupShow ? (
                                 <AnimatePresence mode="popLayout">
-                                    {pfsbIsGenerating ? (
+                                    {pfsbShowResult ? (
                                         <motion.div
                                             key="genert"
                                             initial={{ scale: 0.9, x: 100, opacity: 0 }}
@@ -290,8 +374,48 @@ export default function Home() {
                                             exit={{ scale: 0.9, x: 100, opacity: 0 }}
                                             transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 16 }}
                                             className="my-3 flex flex-col gap-2">
+                                            
+                                            {pfsbIsGenerating && (
+                                                <div className="flex flex-col gap-2 my-2 p-3 border border-white/10 rounded-xl">
+                                                    <div className="flex justify-between items-center text-sm font-medium px-1">
+                                                        <span className="animate-pulse palmirror-exc-text font-bold">Creating personality...</span>
+                                                        <span className="flex items-center gap-0.5 opacity-85">
+                                                            <NumberFlow value={Math.round(pfsbProgress)} />%
+                                                        </span>
+                                                    </div>
+                                                    <Progress value={pfsbProgress} className="h-1.5 bg-white/10" innerClassName="bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 transition-all duration-1000 ease-out" />
+                                                </div>
+                                            )}
+
+                                            {pfsbReasoning && (
+                                                <div className="border border-white/10 rounded-xl my-2 font-sans">
+                                                    <div className="p-3 px-5 flex flex-col gap-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="sm" 
+                                                                className="h-7 text-xs opacity-50 hover:opacity-100"
+                                                                onClick={() => setPfsbShowReasoning(!pfsbShowReasoning)}
+                                                            >
+                                                                {pfsbShowReasoning ? "Hide" : "Show"}
+                                                            </Button>
+                                                            <p className="italic font-bold text-sm opacity-25 text-end w-full tracking-wider">
+                                                                Thinking
+                                                            </p>
+                                                        </div>
+                                                        {pfsbShowReasoning && (
+                                                            <div ref={reasoningContainerRef} className="max-h-48 overflow-y-auto text-xs italic opacity-60 whitespace-pre-wrap pl-3 py-1">
+                                                                <Markdown>
+                                                                    {pfsbReasoning}
+                                                                </Markdown>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <AnimatePresence mode="popLayout">
-                                                {pfsbResult == "" ? (
+                                                {pfsbResult === "" ? (
                                                     <motion.div
                                                         key="placeholder"
                                                         exit={{ opacity: 0 }}
@@ -309,40 +433,20 @@ export default function Home() {
                                                         transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 16 }}
                                                         className="flex flex-col gap-2">
                                                         <p className="font-bold">Generated Personality:</p>
-                                                        <div className="border border-white/20 rounded-xl max-h-96 overflow-y-scroll p-4">
-                                                            {pfsbResult && (
-                                                                <p className="font-mono text-sm opacity-75 whitespace-pre-wrap">
-                                                                    {pfsbResult.split(/(\s+)/).map((token, idx) => {
-                                                                        if (token === "\n") {
-                                                                            return <br key={idx} />;
-                                                                        }
-
-
-                                                                        if (/^\s+$/.test(token)) {
-                                                                            return token;
-                                                                        }
-
-
-                                                                        return (
-                                                                            <motion.span
-                                                                                key={idx + token}
-                                                                                initial={{ opacity: 0}}
-                                                                                animate={{ opacity: 1}}
-                                                                                transition={{ delay: idx * 0.01, duration: 0.25 }}
-                                                                                style={{ display: "inline-block", marginRight: "0.25em" }}
-                                                                            >
-                                                                                {token}
-                                                                            </motion.span>
-                                                                        );
-                                                                    })}
-                                                                </p>
-
-                                                            )}
+                                                        <div ref={resultContainerRef} className="border border-white/20 rounded-xl max-h-96 overflow-y-scroll p-4">
+                                                            <p className="font-mono text-sm opacity-75 whitespace-pre-wrap">
+                                                                {pfsbResult}
+                                                            </p>
                                                         </div>
 
-                                                        <div className="flex gap-2">
-                                                            <Button className="w-full" onClick={usePersonalityFromPFSB}>Use this as personality</Button>
-                                                            <Button className="w-full" onClick={() => setPfsbIsGenerating(false)} variant="outline">Start over</Button>
+                                                        <div className="flex gap-2 mt-2">
+                                                            <Button className="w-full" onClick={usePersonalityFromPFSB} disabled={pfsbIsGenerating}>Use this as personality</Button>
+                                                            <Button className="w-full" onClick={() => {
+                                                                setPfsbShowResult(false);
+                                                                setPfsbIsGenerating(false);
+                                                                setPfsbResult("");
+                                                                setPfsbReasoning("");
+                                                            }} variant="outline" disabled={pfsbIsGenerating}>Start over</Button>
                                                         </div>
                                                     </motion.div>
                                                 )}

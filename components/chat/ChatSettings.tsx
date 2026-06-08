@@ -26,26 +26,14 @@ import { isPalMirrorSecureActivated, PLMSecureGeneralSettings } from '@/utils/pa
 import { PLMSecureContext } from '@/context/PLMSecureContext';
 import { pmPropSysInst } from '@/utils/palmirrorProprietarySysInst'
 import { useRouter } from 'next/navigation';
-import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
 import { useChatSettingsScaleEffectStore } from '@/context/zustandStore/ChatSettingsScale';
-import { stat } from 'fs';
+import { ApiProfile } from '@/types/ApiProfile';
 
 interface ChatSettingsProps {
   getExportedMessages: () => void;
   importMessages: () => void;
   syncTimesteps: () => void;
   fromDomain?: boolean;
-}
-
-export interface ApiProfile {
-  id: string;
-  name: string;
-  baseURL: string;
-  modelName: string;
-  cascade?: {
-    working: boolean;
-    priority: number;
-  }
 }
 
 
