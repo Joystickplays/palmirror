@@ -28,6 +28,7 @@ import { pmPropSysInst } from '@/utils/palmirrorProprietarySysInst'
 import { useRouter } from 'next/navigation';
 import { useChatSettingsScaleEffectStore } from '@/context/zustandStore/ChatSettingsScale';
 import { ApiProfile } from '@/types/ApiProfile';
+import { usePLMGlobalConfig } from '@/context/PLMGlobalConfig';
 
 interface ChatSettingsProps {
   getExportedMessages: () => void;
