@@ -35,12 +35,12 @@ export const setSecureData = async (
   passAsKey: boolean = false
 ) => {
     const db = await getDB();
-    
-    const { salt, iv } = await getSaltAndIv();
+    const { salt } = await getSaltAndIv(); 
+    const iv = window.crypto.getRandomValues(new Uint8Array(12)); 
     const { encryptedData } = await encryptData(
         JSON.stringify(data), password, salt, iv, passAsKey
     );
-    await db.put(storeName, { encryptedData }, key);
+    await db.put(storeName, { encryptedData, iv }, key);
 };
 
 export const getSecureData = async (
@@ -49,12 +49,34 @@ export const getSecureData = async (
     passAsKey: boolean = false
 ) => {
     const db = await getDB();
-    const { salt, iv } = await getSaltAndIv();
-    const storedData = await db.get(storeName, key);
-    if (!storedData) {
+    const { salt, legacyIv } = await getSaltAndIv();
+    
+    const storedObject = await db.get(storeName, key);
+    if (!storedObject) {
         throw new Error('No data found');
     }
-    const decryptedData = await decryptData(password, storedData, salt, iv, passAsKey);
+    
+    let decryptedData: string;
+    
+    if (storedObject.iv) {
+        decryptedData = await decryptData(password, storedObject, salt, storedObject.iv, passAsKey)
+    } 
+    else if (legacyIv) {
+        decryptedData = await decryptData(password, storedObject, salt, legacyIv, passAsKey)
+        
+        try {
+            console.warn("[Secure] Found encrypted data with legacy IV. Attempting a migration.")
+            const parsed = JSON.parse(decryptedData);
+            await setSecureData(key, parsed, password, passAsKey); 
+
+            console.log("[Secure] Migration successful. Re-encrypted data with new IV.");
+        } catch (e) {
+            console.error("Failed to auto-migrate old data format for key:", key, e);
+        }
+    } else {
+        throw new Error('Data is corrupted or missing initialization vector');
+    }
+    
     return JSON.parse(decryptedData);
 };
 
@@ -93,14 +115,13 @@ export const getSaltAndIv = async () => {
     const storedMetadata = await db.get(storeName, 'PLMSecureMetadata');
 
     if (storedMetadata) {
-        return { salt: storedMetadata.salt, iv: storedMetadata.iv };
+        return { salt: storedMetadata.salt, legacyIv: storedMetadata.iv };
     } else {
-        const { salt, iv } = generateSaltAndIv();
-        await db.put(storeName, { salt, iv }, 'PLMSecureMetadata');
-        return { salt, iv };
+        const salt = window.crypto.getRandomValues(new Uint8Array(16));
+        await db.put(storeName, { salt }, 'PLMSecureMetadata');
+        return { salt };
     }
 };
-
 
 
 // export const exportSecureData = async (password: string): Promise<Blob> => {
