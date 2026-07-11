@@ -31,6 +31,13 @@ export interface DomainTimestepEntry {
     entry: string;
 }
 
+export interface DomainWorldSummaryEntry {
+    id: string;
+    summary: string;
+    timestamp: number;
+    lastChat: string;
+}
+
 export interface EXDomain {
     active: boolean;
     memories: Array<DomainMemoryEntry>;
@@ -39,4 +46,6 @@ export interface EXDomain {
     associatedDomainByBranch?: string;
     guide?: string;
     flashcards?: Array<DomainFlashcardEntry>;
+    usedWorldSumId?: string;
+    worldSummary?: Array<DomainWorldSummaryEntry>;
 }

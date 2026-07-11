@@ -113,7 +113,13 @@ export default function SettingsPage() {
                     key: "enterSendsChat",
                     default: true,
                     label: "Enter sends chat message",
-                }
+                },
+                autoCloseFormatting: {
+                    type: 'boolean',
+                    key: 'autoCloseFormatting',
+                    default: false,
+                    label: "Automatically close formatting (italics, quotes)"
+                },
             }
         },
         domains: {
@@ -145,6 +151,17 @@ export default function SettingsPage() {
                 }
             },
         },
+        api: {
+            title: "API",
+            items: {
+                cascadingApiProviders: {
+                    type: "boolean",
+                    key: "cascadingApiProviders",
+                    default: false,
+                    label: "Cascading API providers (fallbacks)",
+                },
+            }
+        },
         effects: {
             title: "Effects",
             items: {
@@ -166,29 +183,29 @@ export default function SettingsPage() {
         experiments: {
             title: "Experiments",
             items: {
-                cascadingApiProviders: {
-                    type: "boolean",
-                    key: "cascadingApiProviders",
-                    default: false,
-                    label: "Cascading API providers (fallbacks)",
-                },
                 cardFlyIn: {
                     type: "boolean",
                     key: "cardFlyIn",
                     default: false,
                     label: "Home card fly in animation",
                 },
-                autoCloseFormatting: {
-                    type: 'boolean',
-                    key: 'autoCloseFormatting',
-                    default: false,
-                    label: "Automatically close formatting (italics, quotes)"
-                },
                 novelImageGeneration: {
                     type: 'boolean',
                     key: 'novelImageGeneration',
                     default: false,
                     label: "Generate visual novel-like images"
+                },
+                bestEffortSystemCache: {
+                    type: 'boolean',
+                    key: 'bestEffortSystemCache',
+                    default: false,
+                    label: "Best-effort prompt caching"
+                },
+                domainSummary: {
+                    type: 'boolean',
+                    key: 'domainSummary',
+                    default: false,
+                    label: "[Domains] World Summaries"
                 },
                 developerMode: {
                     type: 'boolean',

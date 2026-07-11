@@ -543,10 +543,36 @@ export async function setDomainGuide(domainID: string, guideText: string) {
     }
 }
 
+export async function getActiveDomainWorldSummary(domainID: string): Promise<string | null> {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) {
+        return null;
+    }
+    
+    try {
+        const data: CharacterData = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        if (data && data.plmex && data.plmex.domain && data.plmex.domain.worldSummary && data.plmex.domain.usedWorldSumId) {
+            const worldSummaries = data.plmex.domain.worldSummary;
+            const usedSummary = worldSummaries.find(summary => summary.id === data.plmex.domain?.usedWorldSumId);
+            if (usedSummary) {
+                return usedSummary.summary;
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error("Failed to get active domain world summary:", error);
+        return null;
+    }
+}
+
 export async function* branchDomain(domainID: string, branchName: string, fromChatID: string) {
     // this is gonna be a mess, isn't it
     // we clone the entire fucking domain and all its chats
-    // BUT chats AFTER fromChatID gets deleted and have their attributes & memory reversed
+    // BUT chats AFTER fromChatID gets deletegetTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)d and have their attributes & memory reversed
     
     // deletion and reversal is gonna be extremely slow but whatever
 
@@ -707,7 +733,11 @@ ${getTimestepSysInst()}
 ${getAttributesSysInst(await getDomainAttributes(domainID) as DomainAttributeEntry[])}
 ${getMemorySysInst(getTrueDomainMemories(await getDomainMemories(domainID)))}
 
-${getTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)}
+${
+    await getActiveDomainWorldSummary(domainID) ?
+        await getActiveDomainWorldSummary(domainID)
+    : getTotalChatsSysInst(await totalChatsFromDomain(domainID), entryTitle)
+}
 
 ${ !!(await getDomainGuide(domainID)) ? getDomainGuideSysInst(await getDomainGuide(domainID) as string) : ""}
 

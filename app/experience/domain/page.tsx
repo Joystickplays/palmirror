@@ -21,7 +21,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library, GitBranch, Plus, Loader2 } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library, GitBranch, Plus, Loader2, Earth } from 'lucide-react';
 
 import AttributeProgress from "@/components/domains/AttributeProgress";
 
@@ -35,9 +35,9 @@ import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
 import { CharacterData, ChatMetadata, defaultCharacterData } from "@/types/CharacterData";
-import { DomainAttributeEntry, DomainMemoryEntry, DomainFlashcardEntry } from "@/types/EEDomain"
+import { DomainAttributeEntry, DomainMemoryEntry, DomainFlashcardEntry, DomainWorldSummaryEntry } from "@/types/EEDomain"
 
-import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, reverseDomainAttribute, setDomainGuide, setDomainMemories, setDomainFlashcards, branchDomain } from "@/utils/domainData";
+import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, reverseDomainAttribute, setDomainGuide, setDomainMemories, setDomainFlashcards, branchDomain, totalChatsFromDomain } from "@/utils/domainData";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,6 +46,11 @@ import AskForUnlockSecure from "@/components/secure/AskForUnlockSecure";
 import { Progress } from "@/components/ui/progress";
 import { AnimateChangeInHeight } from "@/components/utilities/animate/AnimateHeight";
 import { AnimateChangeInSize } from "@/components/utilities/animate/AnimateSize";
+import SlideToConfirm from "@/components/utilities/SlideToConfirm";
+import { worldSummarizerSysInst } from "@/utils/domainInstructionShaping/worldSummarizerSysInst";
+import { getChatsOnlySysInst } from "@/utils/domainInstructionShaping/chatHistorySysInst";
+import { generateChatCompletion, independentInitOpenAI } from "@/utils/portableAi";
+import Markdown from "react-markdown";
 
 
 
@@ -65,9 +70,11 @@ const ExperienceDomainPage: React.FC = () => {
 
     const PLMGC = usePLMGlobalConfig();
     const [configHighend, setConfigHighend] = useState(false);
+    const [configWorldSummarizer, setConfigWorldSummarizer] = useState(false);
     
     useEffect(() => {
         setConfigHighend(!!PLMGC.get("highend"))
+        setConfigWorldSummarizer(!!PLMGC.get("domainSummary"))
     }, [])
 
     const PLMsecureContext = useContext(PLMSecureContext);
@@ -107,12 +114,26 @@ const ExperienceDomainPage: React.FC = () => {
     const [showDomainGuideEditor, setShowDomainGuideEditor] = useState(false);
     const [showingFlashcards, setShowingFlashcards] = useState(false);
 
+    const [showWorldSummary, setShowWorldSummary] = useState(false);
+    const [worldSummaryTokenCost, setWorldSummaryTokenCost] = useState(0);
+
+    const [localCharWorldSummaries, setLocalCharWorldSummaries] = useState<DomainWorldSummaryEntry[]>([]);
+
+    const [localGenWorldSumActive, setLocalGenWorldSumActive] = useState(false);
+    const [localGenWorldSum, setLocalGenWorldSum] = useState<string | null>(null);
+    const [localReasonGenWorldSum, setLocalReasonGenWorldSum] = useState<string | null>(null);
+    const [localReasonFinishGenWorldSum, setLocalReasonFinishGenWorldSum] = useState(false);
+    const [worldSumPage, setWorldSumPage] = useState(0);
+
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
 
 
     const newChatDialog = useRef<HTMLDivElement>(null);
     const newChatInput = useRef<HTMLInputElement>(null);
+    const thinkingScrollRef = useRef<HTMLDivElement>(null);
+    const summaryScrollRef = useRef<HTMLDivElement>(null);
+    const prevSumLen = useRef(localCharWorldSummaries.length);
 
 
     useEffect(() => {
@@ -209,7 +230,160 @@ const ExperienceDomainPage: React.FC = () => {
         if (character.plmex.domain?.guide) {
             setDomainGuideText(character.plmex.domain.guide)
         }
+
+        if (character.plmex.domain?.worldSummary) {
+            setLocalCharWorldSummaries(character.plmex.domain.worldSummary)
+        }
     }, [character])
+
+    useEffect(() => {
+        if (thinkingScrollRef.current) {
+            thinkingScrollRef.current.scrollTop = thinkingScrollRef.current.scrollHeight;
+        }
+    }, [localReasonGenWorldSum])
+
+    useEffect(() => {
+        if (summaryScrollRef.current) {
+            summaryScrollRef.current.scrollTop = summaryScrollRef.current.scrollHeight;
+        }
+    }, [localCharWorldSummaries[worldSumPage]?.summary])
+
+    useEffect(() => {
+        if (localCharWorldSummaries.length > prevSumLen.current) {
+            setWorldSumPage(localCharWorldSummaries.length - 1);
+        } else if (worldSumPage >= localCharWorldSummaries.length) {
+            setWorldSumPage(Math.max(0, localCharWorldSummaries.length - 1));
+        }
+        prevSumLen.current = localCharWorldSummaries.length;
+    }, [localCharWorldSummaries.length, worldSumPage])
+
+    useEffect(() => {
+        (async () => {
+            await independentInitOpenAI()
+        })();
+    }, [])
+
+    useEffect(() => {
+        if (showWorldSummary) {
+            const calculateTokenCost = async () => {
+                const baseSystemPrompt = worldSummarizerSysInst
+                const allChats = getChatsOnlySysInst(await totalChatsFromDomain(domainId))
+
+                const totalChars = baseSystemPrompt.length + allChats.length
+                const roughTokens = Math.ceil(totalChars / 5.0)
+                setWorldSummaryTokenCost(roughTokens);
+            }
+
+            calculateTokenCost();
+        }
+    }, [showWorldSummary])
+
+    const initiateWorldSummaryGeneration = async () => {
+        if (localGenWorldSumActive) { return }
+        setLocalGenWorldSumActive(true);
+
+
+        const worldSumAvailableIndex = localCharWorldSummaries.length
+        const id = crypto.randomUUID();
+
+        const lastChat = sortByLastUpdated(chatList)[0]?.entryTitle || "None"
+
+
+        let accuSum = "";
+        let accuReason = "";
+
+        try {
+            let modelName = "gpt-3.5-turbo"
+            const settings = localStorage.getItem("Proxy_settings");
+            if (settings) {
+                const settingsParse = JSON.parse(settings)
+                modelName = settingsParse.modelName
+            }
+
+            const allChats = getChatsOnlySysInst(await totalChatsFromDomain(domainId))
+
+
+            const stream = generateChatCompletion({
+                model: modelName,
+                temperature: 0.7,
+                stream: true,
+                messages: [{
+                    role: "system",
+                    content: worldSummarizerSysInst.trim()
+                }, {
+                    role: "user",
+                    content: allChats
+                }]
+            });
+
+            
+            setLocalGenWorldSum(null);
+            setLocalReasonGenWorldSum(null);
+            setLocalReasonFinishGenWorldSum(false);
+
+            
+
+            for await (const chunk of stream) {
+                const content = chunk.choices?.[0]?.delta?.content || "";
+                accuSum += content;
+
+                if (accuSum !== "") {
+                    const newWorldSummary: DomainWorldSummaryEntry = {
+                        id: id,
+                        summary: accuSum,
+                        timestamp: Math.floor(Date.now() / 1000),
+                        lastChat: lastChat,
+                    };
+
+                    const updatedSummaries = localCharWorldSummaries.slice(0, -1).concat(newWorldSummary);
+                    setLocalCharWorldSummaries(updatedSummaries);
+                }
+
+                if (accuSum !== "" && !localReasonFinishGenWorldSum) {
+                    setLocalReasonFinishGenWorldSum(true);
+                }
+                setLocalGenWorldSum(accuSum);
+
+                let c_reason = chunk.choices?.[0]?.delta?.reasoning_content?.[0]?.thinking || "";
+                if (c_reason === "") {
+                    c_reason = chunk.choices?.[0]?.delta?.reasoning_content || chunk.choices?.[0]?.delta?.reasoning || "";
+                }
+                if (c_reason) {
+                    accuReason += c_reason;
+                    setLocalReasonGenWorldSum(accuReason);
+                }
+            }
+        } catch (e) {
+            console.warn(e)
+            PMNotify.error("Error generating world summary. Please try again.")
+        }
+
+        setLocalGenWorldSumActive(false);
+        
+        const newWorldSummary: DomainWorldSummaryEntry = {
+            id: id,
+            summary: accuSum,
+            timestamp: Math.floor(Date.now() / 1000),
+            lastChat: lastChat,
+        };
+
+        const updated = {
+            ...character,
+            plmex: {
+                ...character.plmex,
+                domain: {
+                    ...character.plmex.domain,
+                    worldSummary: [
+                        ...(character.plmex.domain?.worldSummary || []),
+                        newWorldSummary
+                    ],
+                }
+            }
+        } as CharacterData;
+        setCharacter(updated);
+        await PLMsecureContext?.setSecureData(`METADATA${domainId}`, updated);
+
+    }
     
     const initiateBranchCreation = async () => {
         setShowingDMBranch(false);
@@ -329,6 +503,7 @@ const ExperienceDomainPage: React.FC = () => {
                         <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans p-4">
                             <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button>
                             <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowDomainGuideEditor(true)}><Book />Domain guide</Button>
+  {configWorldSummarizer && <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowWorldSummary(true)}><Earth />World summary</Button>}
                             <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowDomainIntro(true)}><Info />Help</Button>
                         </PopoverContent>
                     </Popover>
@@ -667,6 +842,128 @@ const ExperienceDomainPage: React.FC = () => {
                                 setDomainFlashcards(domainId, newFC);
                         }}><CirclePlus className="mr-2" /> Add Flashcard</Button>
                      </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showWorldSummary} onOpenChange={setShowWorldSummary}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
+                    <DialogHeader>
+                        <div className="flex items-center justify-between mb-4 relative">
+                            <DialogTitle className="text-2xl font-bold">World Summary</DialogTitle>
+                        </div>
+                    </DialogHeader>
+                    <p className="opacity-50 text-xs whitespace-pre-line">{`World summaries provide a high-level overview of the world and its context, helping you save more tokens and to maintain consistency and continuity across different chats.
+                    
+                    This is fundamentally similar to Domain Guides, however more automatic and designed to be a compressed overview, taking less tokens.`}</p>
+                    
+
+                    {
+                        localReasonGenWorldSum && !localReasonFinishGenWorldSum && (
+                            <motion.div 
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="border border-white/10 rounded-xl p-4 flex flex-col gap-2 w-full">
+                                <h2 className="font-bold opacity-50 italic tracking-widest text-sm w-full text-end">Thinking</h2>
+
+                                <div ref={thinkingScrollRef} className="max-h-48 text-xs opacity-50 overflow-y-auto">
+                                    <Markdown>
+                                        {localReasonGenWorldSum}
+                                    </Markdown>
+                                </div>
+                            </motion.div>
+                        )
+                    }
+                    <div className="min-h-48 border border-white/10 rounded-xl p-4 flex flex-col gap-3 justify-center items-stretch">
+                        
+                        {localCharWorldSummaries.length > 0 ? (
+                            <>
+                                <div className="border border-white/10 rounded-xl p-4 flex flex-col gap-1">
+                                    <p ref={summaryScrollRef} className="text-sm whitespace-pre-line max-h-48 overflow-y-auto">
+                                        <Markdown>{localCharWorldSummaries[worldSumPage].summary}</Markdown>
+                                    </p>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <p className="text-xs opacity-50">{new Date(localCharWorldSummaries[worldSumPage].timestamp).toLocaleString()}</p>
+                                        <Button 
+                                            variant={character.plmex.domain?.usedWorldSumId === localCharWorldSummaries[worldSumPage].id ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={async () => {
+                                                const updated = { ...character };
+                                                if (!updated.plmex.domain) return;
+                                                const currentId = character.plmex.domain?.usedWorldSumId;
+                                                const newId = currentId === localCharWorldSummaries[worldSumPage].id ? undefined : localCharWorldSummaries[worldSumPage].id;
+                                                updated.plmex.domain = { ...updated.plmex.domain, usedWorldSumId: newId };
+                                                setCharacter(updated);
+                                                await PLMsecureContext?.setSecureData(`METADATA${domainId}`, updated);
+                                            }}
+                                        >
+                                            {character.plmex.domain?.usedWorldSumId === localCharWorldSummaries[worldSumPage].id ? "Selected" : "Select"}
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        disabled={worldSumPage === 0}
+                                        onClick={() => setWorldSumPage(p => p - 1)}
+                                    >Previous</Button>
+                                    <p className="text-xs opacity-50">{worldSumPage + 1} / {localCharWorldSummaries.length}</p>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        disabled={worldSumPage >= localCharWorldSummaries.length - 1}
+                                        onClick={() => setWorldSumPage(p => p + 1)}
+                                    >Next</Button>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="opacity-10 text-sm mx-auto">something something boom..</p>
+                        )}
+                    </div>
+
+
+                        <div className="flex flex-col gap-1 p-4 border border-white/10 rounded-xl">
+                            {!character.plmex.domain?.worldSummary ? (
+                                <>
+                                    <h2 className="font-bold">No world summaries</h2>
+                                    <p className="text-sm opacity-75">This domain has no world summaries generated yet! Create the first one below.</p>
+                                </>
+                            ) : (
+                                <>
+                                    <h2 className="font-bold">Generate new world summary</h2>
+                                    <p className="text-sm opacity-75">This domain has {localCharWorldSummaries.length} world summaries generated. If the story has changed significantly, you should generate a new one below.</p>
+                                </>
+                            )}
+                            <hr className="my-2" />
+                            {localGenWorldSumActive ? (
+                                <>
+                                    <motion.div
+                                        className="ellipsis-loader mx-auto"
+                                        initial={{ opacity: 0, scale: 0 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        key="loading"
+                                    >
+                                        <div></div>
+                                        <div></div>
+                                        <div></div>
+                                        <div></div>
+                                    </motion.div>
+                                    <p className="text-center w-full opacity-50 italic text-xs mt-1">Generating world summary...</p>
+                                </>
+                                ) : (
+                                <>
+                                    <SlideToConfirm onSlid={initiateWorldSummaryGeneration}></SlideToConfirm>
+                                    <p className="text-center w-full opacity-50 italic text-xs mt-1">Roughly sending over {worldSummaryTokenCost ? worldSummaryTokenCost.toLocaleString() : '...'} tokens</p>
+                                </>
+                                )
+                            }
+                        </div>
+                    {/* <Textarea value={domainGuideText} onChange={(e) => setDomainGuideText(e.target.value)} rows={10}></Textarea>
+                    <Button className="w-full flex sm:hidden" variant="outline" size="sm" onClick={() => { setShowingFlashcards(true); }}><Library /> Flashcards</Button>
+                    <div className="flex gap-2 w-full">
+                        <Button className="w-full" variant="outline" onClick={() => setShowDomainGuideEditor(false)}>Discard</Button>
+                        <Button className="w-full" onClick={() => {setDomainGuide( domainId, domainGuideText ); setShowDomainGuideEditor(false)}}><Check /> Apply</Button>
+                    </div> */}
                 </DialogContent>
             </Dialog>
 

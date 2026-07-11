@@ -94,6 +94,7 @@ const ChatPage = () => {
   const [configTokenWatch, setConfigTokenWatch] = useState(true);
   const [configTyping, setConfigTyping] = useState(true);
   const [configAutoCloseFormatting, setConfigAutoCloseFormatting] = useState(false);
+  const [configBestEffortSystemCache, setConfigBestEffortSystemCache] = useState(false);
   const [configLimitChatRenders, setConfigLimitChatRenders] = useState(false);
   const [configLimitChatRendersCount, setConfigLimitChatRendersCount] = useState(3);
   const [configDomainChatCompressor, setConfigDomainChatCompressor] = useState(false);
@@ -108,6 +109,7 @@ const ChatPage = () => {
     setConfigTokenWatch(PLMGC.get("tokenCounter") ?? true)
     setConfigTyping(PLMGC.get("typing") ?? true)
     setConfigAutoCloseFormatting(!!PLMGC.get("autoCloseFormatting"))
+    setConfigBestEffortSystemCache(!!PLMGC.get("bestEffortSystemCache"))
     setConfigLimitChatRenders(!!PLMGC.get("limitChatRenders"))
     setConfigLimitChatRendersCount(PLMGC.get("limitChatRendersCount") ? Number(PLMGC.get("limitChatRendersCount")) : 3)
     setConfigDomainChatCompressor(!!PLMGC.get("domainChatCompressor"))
@@ -142,6 +144,8 @@ const ChatPage = () => {
   const [successfulNewMessage, setSuccessfulNewMessage] = useState<boolean | Message>(false);
   const [userPromptThinking, setUserPromptThinking] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
+
+  const [cachedSystemP, setCachedSystemP] = useState("");
 
   const [animateSwitchMessage, setAnimateSwitchMessage] = useState(0);
   
@@ -658,14 +662,21 @@ const ChatPage = () => {
       }
     }
 
-    devLog("Fetching system message", "info", { characterDataName: characterData?.name, associatedDomain, entryTitle, modelInstructionsLength: modelInstructions.length });
-    const systemPrompt = await getSystemMessage(
-      characterData,
-      userPersonality,
-      associatedDomain ?? sessionStorage.getItem("associatedDomain") ?? null,
-      entryTitle ?? sessionStorage.getItem("entryTitle") ?? null,
-      modelInstructions,
-    );
+
+    let systemPrompt = "";
+    if (configBestEffortSystemCache && cachedSystemP) {
+      devLog("Using cached system message", "info", { characterDataName: characterData?.name, associatedDomain, entryTitle, modelInstructionsLength: modelInstructions.length });
+      systemPrompt = cachedSystemP;
+    } else {
+      devLog("Fetching system message", "info", { characterDataName: characterData?.name, associatedDomain, entryTitle, modelInstructionsLength: modelInstructions.length });
+      systemPrompt = await getSystemMessage(
+        characterData,
+        userPersonality,
+        associatedDomain ?? sessionStorage.getItem("associatedDomain") ?? null,
+        entryTitle ?? sessionStorage.getItem("entryTitle") ?? null,
+        modelInstructions,
+      );
+    }
 
     // hopefully doesnt break anything further
     const messagesApply = [...messagesList];
