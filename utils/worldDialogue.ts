@@ -103,3 +103,64 @@ export function parseWorldDialogue(content: string, characterNames: string[]): A
 
     return segments;
 }
+
+const GENERIC_SPEAKER_STOPWORDS = new Set([
+    "he", "she", "they", "them", "him", "her", "it", "we", "you", "i", "me", "us",
+    "his", "hers", "its", "their", "theirs", "everyone", "somebody", "nobody",
+    "narrator", "announcer", "voice", "guard", "soldier", "man", "woman", "child",
+    "children", "stranger", "merchant", "servant", "king", "queen", "captain",
+    "warning", "attention", "note", "status", "aside", "whisper", "sigh", "laugh",
+    "cough", "murmur",
+]);
+
+function isLikelySpeakerName(name: string): boolean {
+    const trimmed = name.trim();
+    if (trimmed === "") return false;
+    if (trimmed.length > 40) return false;
+    if (/^\d+$/.test(trimmed)) return false;
+    if (!/[A-Za-z]/.test(trimmed)) return false;
+
+    const lower = trimmed.toLowerCase();
+    if (GENERIC_SPEAKER_STOPWORDS.has(lower)) return false;
+    if (/^(the|a|an)\s+/i.test(trimmed)) return false;
+    if (lower === trimmed) return false;
+
+    return true;
+}
+
+export interface UnknownSpeaker {
+    name: string;
+    line: string;
+}
+
+export function detectUnknownSpeakers(content: string, knownNames: string[]): Array<UnknownSpeaker> {
+    const { aliasToCanonical } = buildAliasMap(knownNames);
+
+    const nameChunk = "[^*\\n]{1,40}?";
+    const markerRegex = new RegExp(
+        `\\*\\*(${nameChunk}):\\*\\*\\s*(?:"([^"]*)"|([^\\n]*?(?=\\s*\\*\\*${nameChunk}:\\*\\*|$)))`,
+        "gi"
+    );
+
+    const results: Array<UnknownSpeaker> = [];
+    const seen = new Set<string>();
+    let match: RegExpExecArray | null;
+
+    while ((match = markerRegex.exec(content)) !== null) {
+        const rawName = match[1].trim();
+        if (aliasToCanonical.has(rawName.toLowerCase())) continue;
+
+        const normalized = rawName.toLowerCase();
+        if (seen.has(normalized)) continue;
+        if (!isLikelySpeakerName(rawName)) continue;
+
+        const quoted = match[2];
+        const unquoted = match[3]?.trim();
+        const line = (quoted ?? unquoted ?? "").trim().replace(/^"+|"+$/g, "");
+
+        seen.add(normalized);
+        results.push({ name: rawName, line });
+    }
+
+    return results;
+}

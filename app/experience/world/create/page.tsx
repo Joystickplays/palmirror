@@ -457,7 +457,7 @@ const WorldCreatePage: React.FC = () => {
             </div>
 
             <div className="w-full max-w-4xl mx-auto flex-1 flex flex-col">
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="popLayout">
                     <motion.div
                         key={step}
                         initial={{ opacity: 0, x: 60 }}
@@ -597,7 +597,7 @@ const WorldCreatePage: React.FC = () => {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <h1 className="text-3xl font-extrabold">The cast</h1>
-                                        <p className="text-sm opacity-70">Characters that live in this world. The narrator controls all of them. You can add more anytime.</p>
+                                        <p className="text-sm opacity-70">Characters that live in this world. The narrator controls all of them. You can add more anytime, or you can go along a chapter and find new characters.</p>
                                     </div>
                                     <Button variant="ghost" onClick={next}>Skip for now <ArrowRight /></Button>
                                 </div>
@@ -688,7 +688,7 @@ const WorldCreatePage: React.FC = () => {
                                     >
                                         <div className="flex flex-col gap-1 text-start">
                                             <span className="font-bold text-base">Reactive</span>
-                                            <span className="text-xs opacity-70">The narrator advances the scene but lets you set the pace. Classic roleplay feel.</span>
+                                            <span className="text-xs opacity-70 whitespace-normal break-words">The narrator advances the scene but lets you set the pace. Classic roleplay feel.</span>
                                         </div>
                                     </Button>
                                     <Button
@@ -698,7 +698,7 @@ const WorldCreatePage: React.FC = () => {
                                     >
                                         <div className="flex flex-col gap-1 text-start">
                                             <span className="font-bold text-base">Proactive</span>
-                                            <span className="text-xs opacity-70">The narrator drives the plot on its own — introducing complications and events without waiting. AI Dungeon-style.</span>
+                                            <span className="text-xs opacity-70 whitespace-normal break-words">The narrator drives the plot on its own — introducing complications and events without waiting. AI Dungeon-style.</span>
                                         </div>
                                     </Button>
                                 </div>

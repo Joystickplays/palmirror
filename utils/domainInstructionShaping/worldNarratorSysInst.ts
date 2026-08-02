@@ -25,16 +25,16 @@ export function getWorldNarratorSysInst(worldConfig: WorldConfig, cast?: Array<s
         : characters;
     const castNames = focusedChars.map(c => c.name);
 
-    const dialogueMarkers = focusedChars.length > 0 ? `
+    const dialogueMarkers = `
 ## Dialogue Markers
 Whenever a character speaks, ALWAYS mark their speech with an inline speaker label in this EXACT format:
 
 **CharacterName:** "their spoken words"
 
-- Replace CharacterName with the character's name as listed in the World Cast above, or a clear short form of it (such as their first name), e.g. **Kael Thorne:** "You came back." or **Kael:** "You came back."
+- Replace CharacterName with the character's name, or a clear short form of it (such as their first name), e.g. **Kael Thorne:** "You came back." or **Kael:** "You came back."
 - The closing ** must come AFTER the colon, then the quote. Do not put quotes around the name.
 - Place the marker on the same line as the speech it introduces. Keep narration and actions unmarked.
-- Mark every spoken line, including quick back-and-forth between characters. Do not use dialogue markers for the player.` : "";
+- Mark every spoken line, including quick back-and-forth between characters and people not yet listed in the cast. Do not use dialogue markers for the player.`;
 
     return `WORLD NARRATOR MODE
 
