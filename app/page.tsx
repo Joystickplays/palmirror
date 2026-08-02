@@ -277,7 +277,11 @@ function ChatCard({
             router.push(`/chat`);
           }}
         >
-          {chat.plmex.domain?.active ? "Enter" : "Continue"} <ArrowRight />
+          {chat.plmex.domain?.active
+            ? chat.plmex.domain?.worldType === "world"
+              ? "Enter World"
+              : "Enter"
+            : "Continue"} <ArrowRight />
         </Button>
       </div>
     </motion.div>
@@ -1096,6 +1100,22 @@ export default function Home() {
                 
                 </AnimatePresence>
               </div>
+              {chatList.length === 0 && (
+                <Button
+                  variant="palmirror"
+                  className={`w-full mt-4 h-auto p-6 justify-center sm:justify-start items-center flex-row gap-3 rounded-xl max-w-xl mx-auto sm:mx-0 ${
+                    PLMGlobalConfigServiceInstance.get("highend") ? "palmirror-exc" : "palmirror-exc--light"
+                  }`}
+                  onClick={() => router.push("/experience/world/create")}
+                >
+                  <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                    <Earth className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col items-start gap-1">
+                    <h2 className="font-bold palmirror-exc-text text-base">Create a Domain World</h2>
+                  </div>
+                </Button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

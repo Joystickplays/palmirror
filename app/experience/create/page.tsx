@@ -25,7 +25,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { useRouter } from 'next/navigation';
-import { CirclePlus, Trash2, BadgeInfo, Check, X } from 'lucide-react';
+import { CirclePlus, Trash2, BadgeInfo, Check, X, Earth } from 'lucide-react';
 
 import { AnimatePresence, motion } from "motion/react"
 import NumberFlow from '@number-flow/react'
@@ -345,6 +345,9 @@ export default function Home() {
                 {isPrefillButtonVisible && (
                     <Button variant="outline" onClick={loadCharacterData}>Pre-fill character data from previous save</Button>
                 )}
+                <Button variant="ghost" className="w-fit self-end" onClick={() => router.push("/experience/world/create")}>
+                    <Earth /> Building a world instead? Create a Domain World →
+                </Button>
                 <p className="text-sm text-red-500">* Fields marked with asterisks are required.</p>
                 <div className="flex flex-col gap-1">
                     <p>Character picture</p>
