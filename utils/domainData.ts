@@ -6,12 +6,13 @@ import { ChatHistory, getTotalChatsSysInst } from './domainInstructionShaping/ch
 import { getMemorySysInst } from './domainInstructionShaping/memorySysInst';
 
 import { CharacterData, defaultCharacterData } from '@/types/CharacterData';
-import { DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, DomainTimestepEntry, DomainFlashcardEntry } from "@/types/EEDomain"
+import { DomainAttributeEntry, DomainAttributeHistory, DomainMemoryEntry, DomainTimestepEntry, DomainFlashcardEntry, WorldCharacter, WorldObject, WorldConfig } from "@/types/EEDomain"
 import { getTimestepSysInst } from './domainInstructionShaping/timestepSysInst';
 import { getTaggingSysInst } from './domainInstructionShaping/taggingSysInst';
 import { getRecallSysInst } from './domainInstructionShaping/recallSysInst';
 import { PLMGlobalConfigServiceInstance } from '@/context/PLMGlobalConfigService';
 import { getDomainGuideSysInst } from './domainInstructionShaping/domainGuideSysInst';
+import { getWorldNarratorSysInst } from './domainInstructionShaping/worldNarratorSysInst';
 
 
 interface ChatMetadata {
@@ -569,6 +570,179 @@ export async function getActiveDomainWorldSummary(domainID: string): Promise<str
     }
 }
 
+export async function isWorldDomain(domainID: string): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) return false;
+
+    try {
+        const data: CharacterData = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        return data?.plmex?.domain?.worldType === "world";
+    } catch (error) {
+        console.error("Failed to check if domain is a world:", error);
+        return false;
+    }
+}
+
+export async function getWorldConfig(domainID: string): Promise<WorldConfig | null> {
+    if (typeof window === 'undefined') return null;
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) return null;
+
+    try {
+        const data: CharacterData = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        return data?.plmex?.domain?.worldConfig ?? null;
+    } catch (error) {
+        console.error("Failed to get world config:", error);
+        return null;
+    }
+}
+
+export async function setWorldConfig(domainID: string, worldConfig: WorldConfig) {
+    if (typeof window === 'undefined') return;
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) return;
+
+    try {
+        const data: CharacterData = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        if (data) {
+            if (!data.plmex.domain) {
+                data.plmex.domain = structuredClone(defaultCharacterData.plmex.domain!);
+            }
+            data.plmex.domain.worldType = "world";
+            data.plmex.domain.worldConfig = worldConfig;
+            await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+        }
+    } catch (error) {
+        console.error("Failed to set world config:", error);
+    }
+}
+
+export async function getWorldCharacters(domainID: string): Promise<WorldCharacter[]> {
+    const config = await getWorldConfig(domainID);
+    return config?.characters ?? [];
+}
+
+export async function setWorldCharacters(domainID: string, characters: WorldCharacter[]) {
+    const config = (await getWorldConfig(domainID)) ?? defaultCharacterData.plmex.domain!.worldConfig!;
+    await setWorldConfig(domainID, { ...config, characters });
+}
+
+export function setWorldUserCharacterExclusive(characters: WorldCharacter[], charID: string, isUser: boolean): WorldCharacter[] {
+    return characters.map(c => ({
+        ...c,
+        isUser: isUser ? c.id === charID : (c.id === charID ? false : c.isUser),
+    }));
+}
+
+export async function getWorldUserCharacter(domainID: string): Promise<WorldCharacter | null> {
+    const characters = await getWorldCharacters(domainID);
+    return characters.find(c => c.isUser) ?? null;
+}
+
+export async function addWorldCharacter(domainID: string, character: WorldCharacter) {
+    const config = (await getWorldConfig(domainID)) ?? defaultCharacterData.plmex.domain!.worldConfig!;
+    const characters = config.characters.filter(c => c.id !== character.id);
+    characters.push(character);
+    await setWorldConfig(domainID, { ...config, characters });
+}
+
+export async function getWorldObjects(domainID: string): Promise<WorldObject[]> {
+    const config = await getWorldConfig(domainID);
+    return config?.objects ?? [];
+}
+
+export async function setWorldObjects(domainID: string, objects: WorldObject[]) {
+    const config = (await getWorldConfig(domainID)) ?? defaultCharacterData.plmex.domain!.worldConfig!;
+    await setWorldConfig(domainID, { ...config, objects });
+}
+
+export async function setNarratorPersona(domainID: string, persona: string) {
+    const config = (await getWorldConfig(domainID)) ?? defaultCharacterData.plmex.domain!.worldConfig!;
+    await setWorldConfig(domainID, { ...config, narratorPersona: persona });
+}
+
+export async function getCharacterNameByID(domainID: string, charID: string): Promise<string | null> {
+    const characters = await getWorldCharacters(domainID);
+    const found = characters.find(c => c.id === charID);
+    return found?.name ?? null;
+}
+
+export async function getCharacterIDByName(domainID: string, name: string): Promise<string | null> {
+    const characters = await getWorldCharacters(domainID);
+    const found = characters.find(c => c.name.toLowerCase() === name.toLowerCase());
+    return found?.id ?? null;
+}
+
+export async function getWorldCharactersByNames(domainID: string): Promise<string[]> {
+    const characters = await getWorldCharacters(domainID);
+    return characters.map(c => c.name);
+}
+
+export function formatWorldCharacterAttributes(characters: WorldCharacter[]): string {
+    return characters.map((char) => {
+        const attrs = char.attributes.map((attr) => {
+            if (attr.target && attr.target !== "user") {
+                const targetName = attr.target;
+                return `${attr.attribute} (toward ${targetName}) ${attr.value}`;
+            }
+            if (attr.target === "user") {
+                return `${attr.attribute} (toward user) ${attr.value}`;
+            }
+            return `${attr.attribute} ${attr.value}`;
+        });
+        return `${char.name}: ${attrs.length > 0 ? attrs.join(" | ") : "no attributes"}`;
+    }).join("\n");
+}
+
+export async function applyDirectedAttributeChange(domainID: string, responsibleMessage: string, sourceName: string, targetName: string, attributeName: string, change: number) {
+    if (typeof window === 'undefined') return;
+
+    const sessionKey = getActivePLMSecureSession();
+    if (!sessionKey) return;
+
+    try {
+        const data: CharacterData = await getSecureData(`METADATA${domainID}`, sessionKey, true);
+        if (!data?.plmex?.domain?.worldConfig) return;
+
+        const target = targetName.toLowerCase() === "user" ? "user" : targetName;
+        const characters = data.plmex.domain.worldConfig.characters;
+        const sourceChar = characters.find(c => c.name.toLowerCase() === sourceName.toLowerCase());
+
+        if (!sourceChar) return;
+
+        if (!sourceChar.attributes) {
+            sourceChar.attributes = [];
+        }
+
+        const attributeToUpdate = sourceChar.attributes.find(attr => attr.attribute === attributeName && (attr.target ?? "user") === target);
+        if (attributeToUpdate) {
+            attributeToUpdate.value = Math.min(100, Math.max(0, attributeToUpdate.value + change));
+            if (!attributeToUpdate.history) attributeToUpdate.history = [];
+            attributeToUpdate.history.push({
+                associatedMessage: responsibleMessage,
+                change: change,
+            });
+        } else {
+            sourceChar.attributes.push({
+                key: Math.floor(Math.random() * 69420),
+                attribute: attributeName,
+                value: Math.min(100, Math.max(0, change)),
+                history: [{ associatedMessage: responsibleMessage, change }],
+                target: target === "user" ? undefined : target,
+            });
+        }
+
+        data.plmex.domain.worldConfig.characters = characters;
+        await setSecureData(`METADATA${domainID}`, data, sessionKey, true);
+    } catch (error) {
+        console.error("Failed to apply directed attribute change:", error);
+    }
+}
+
 export async function* branchDomain(domainID: string, branchName: string, fromChatID: string) {
     // this is gonna be a mess, isn't it
     // we clone the entire fucking domain and all its chats
@@ -727,10 +901,14 @@ export async function* branchDomain(domainID: string, branchName: string, fromCh
 
 
 
-export async function buildFullDomainInstruction(domainID: string, entryTitle: string) {
+export async function buildFullDomainInstruction(domainID: string, entryTitle: string, cast?: Array<string>, showDialogueFormat: boolean = true) {
+    const worldConfig = await getWorldConfig(domainID);
+    const isWorld = worldConfig !== null;
+
     return `
+${isWorld ? getWorldNarratorSysInst(worldConfig!, cast, showDialogueFormat) : ""}
 ${getTimestepSysInst()}
-${getAttributesSysInst(await getDomainAttributes(domainID) as DomainAttributeEntry[])}
+${isWorld ? "" : getAttributesSysInst(await getDomainAttributes(domainID) as DomainAttributeEntry[])}
 ${getMemorySysInst(getTrueDomainMemories(await getDomainMemories(domainID)))}
 
 ${
