@@ -1,9 +1,12 @@
 import { CharacterData } from '@/types/CharacterData';
-import { buildFullDomainInstruction } from '@/utils/domainData';
+import { buildFullDomainInstruction, getWorldUserCharacter, isWorldDomain } from '@/utils/domainData';
 
-export const getSystemMessage = async (characterData: CharacterData, userPersonality: { name: string, personality: string }, domainID: string | null, entryTitle: string | null, modelInstructions: string): Promise<string> => {
+export const getSystemMessage = async (characterData: CharacterData, userPersonality: { name: string, personality: string }, domainID: string | null, entryTitle: string | null, modelInstructions: string, cast?: Array<string>, showDialogueFormat: boolean = true): Promise<string> => {
   let userSystemMessage = ""
-  if (characterData.userName !== "" && characterData.userPersonality !== "") {
+  const isWorld = domainID ? await isWorldDomain(domainID) : false;
+  const worldPlayer = isWorld && domainID ? await getWorldUserCharacter(domainID) : null;
+  const worldDefinesUser = !!worldPlayer;
+  if (!worldDefinesUser && characterData.userName !== "" && characterData.userPersonality !== "") {
 
     userSystemMessage = `{{user}} is named ${userPersonality.name}
 
@@ -59,7 +62,7 @@ ${dynamicStatusSysMSG}
 
 ${invocationSysMSG}
 
-${domainID && entryTitle ? await buildFullDomainInstruction(domainID, entryTitle) : ""}
+${domainID && entryTitle ? await buildFullDomainInstruction(domainID, entryTitle, cast, showDialogueFormat) : ""}
 
 ${modelInstructions !== "" ? "[ADDITIONAL INSTRUCTIONS:]" : ""}
 ${modelInstructions}`;

@@ -15,7 +15,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/utils/systemMessageGeneration";
 import OpenAI from "openai";
 import { CharacterData, ChatMetadata, defaultCharacterData } from "@/types/CharacterData";
-import { DomainAttributeEntry, DomainMemoryEntry, DomainTimestepEntry, DomainFlashcardEntry } from "@/types/EEDomain"
+import { DomainAttributeEntry, DomainMemoryEntry, DomainTimestepEntry, DomainFlashcardEntry, WorldObject, WorldObjectAction } from "@/types/EEDomain"
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import {
@@ -31,7 +31,7 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall, getDomainFlashcards, getDomainGuide } from "@/utils/domainData";
+import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall, getDomainFlashcards, getDomainGuide, isWorldDomain, applyDirectedAttributeChange, getWorldConfig } from "@/utils/domainData";
 import { useAttributeNotification } from "@/components/notifications/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/notifications/MemoryNotificationProvider";
 import SuggestionBar from "@/components/chat/bars/SuggestionBar";
@@ -131,10 +131,16 @@ const ChatPage = () => {
   const [loaded, setLoaded] = useState(false);
 
   const [associatedDomain, setAssociatedDomain] = useState<string>("");
+  const [isWorldDomainFlag, setIsWorldDomainFlag] = useState(false);
   const [entryTitle, setEntryTitle] = useState<string>("");
+  const [parentChapterId, setParentChapterId] = useState<string>("");
+  const [chapterCast, setChapterCast] = useState<Array<string>>([]);
   const [chatTimesteps, setChatTimesteps] = useState<Array<DomainTimestepEntry>>([])
   const [domainGuide, setDomainGuide] = useState<string>("");
   const [domainFlashcards, setDomainFlashcards] = useState<Array<DomainFlashcardEntry>>([]);
+  const [worldCharacters, setWorldCharacters] = useState<Array<{ name: string; image?: string }>>([]);
+  const [worldObjects, setWorldObjects] = useState<WorldObject[]>([]);
+  const [pendingObjectAction, setPendingObjectAction] = useState<{ object: WorldObject; action: WorldObjectAction } | null>(null);
   const attributeNotification = useAttributeNotification();
   const memoryNotification = useMemoryNotification();
 
@@ -270,6 +276,28 @@ const ChatPage = () => {
     return matches;
   }
 
+  const extractDirectedAttributeTags = (message: string) => {
+    const atrRegex = /<ATR_CHANGE\s+([^>]+)>/i;
+    const match = message.match(atrRegex);
+
+    if (!match || !match[1]) return [];
+
+    const results: Array<{ source: string; target: string; attribute: string; change: number }> = [];
+    const changeRegex = /([A-Za-z\s'\-]+?)\s+([A-Za-z\s'\-]+?)\s+([A-Za-z\s'\-]+?)\s*([+-]?\d+)/g;
+    let changeMatch;
+
+    while ((changeMatch = changeRegex.exec(match[1])) !== null) {
+      results.push({
+        source: changeMatch[1].trim(),
+        target: changeMatch[2].trim(),
+        attribute: changeMatch[3].trim(),
+        change: parseInt(changeMatch[4], 10),
+      });
+    }
+
+    return results;
+  }
+
   const extractTimesteps = (text: string) => {
     const regex = /<TIMESTEP\s+([^>]+)>/g;
     const matches: string[] = [];
@@ -280,6 +308,14 @@ const ChatPage = () => {
     }
     
     return matches;
+  }
+
+  const applyActionPrefix = (content: string): string => {
+    if (!isWorldDomainFlag) return content;
+    const match = content.match(/^(DO|SAY|ASK|STORY)\s+(.+)/i);
+    if (!match) return content;
+    const [, prefix, rest] = match;
+    return `${prefix.toUpperCase()} ${rest.trim()}`;
   }
 
   const saveTimesteps = (chats: Message[], notify = false) => {
@@ -510,7 +546,9 @@ const ChatPage = () => {
     destination: "chat" | "suggest-bar" | "input" = "chat",
     existingMessage: Message | null = null,
   ) => {
-    devLog(`handleSendMessage initiated`, "info", { mode, force, regenerate, destination, optionalMessageLength: optionalMessage.length, rewriteBase, hasExistingMessage: !!existingMessage });
+    const objAct = mode === "send" && !regenerate && userMSGaddOnList ? pendingObjectAction : null;
+    if (objAct) setPendingObjectAction(null);
+    devLog(`handleSendMessage initiated`, "info", { mode, force, regenerate, destination, optionalMessageLength: optionalMessage.length, rewriteBase, hasExistingMessage: !!existingMessage, hasObjectAction: !!objAct });
 
     if (mode === "send") {
       if (e?.key === "Enter" && !e.shiftKey && configEnterSendsChat)
@@ -593,6 +631,11 @@ const ChatPage = () => {
         : optionalMessage !== ""
         ? optionalMessage.trim()
         : newMessage.trim();
+      if (objAct) {
+        const actionContent = `DO ${objAct.action.name.trim()}`;
+        const typed = userMessageContent.trim();
+        userMessageContent = typed !== "" ? `${actionContent}, ${typed}` : actionContent;
+      }
       if (userMessageContent && userMSGaddOnList) {
         messagesList.push({
           id: crypto.randomUUID(),
@@ -669,12 +712,17 @@ const ChatPage = () => {
       systemPrompt = cachedSystemP;
     } else {
       devLog("Fetching system message", "info", { characterDataName: characterData?.name, associatedDomain, entryTitle, modelInstructionsLength: modelInstructions.length });
+      const dialogueFormatTurns = 3;
+      const assistantTurnCount = messagesList.filter((m) => m.role === "assistant" && !m.stillGenerating).length;
+      const showDialogueFormat = assistantTurnCount < dialogueFormatTurns;
       systemPrompt = await getSystemMessage(
         characterData,
         userPersonality,
         associatedDomain ?? sessionStorage.getItem("associatedDomain") ?? null,
         entryTitle ?? sessionStorage.getItem("entryTitle") ?? null,
         modelInstructions,
+        chapterCast,
+        showDialogueFormat,
       );
     }
 
@@ -689,6 +737,8 @@ const ChatPage = () => {
 
     devLog("Constructing final messages for API call", "info", { mode, messagesApplyLength: messagesApply.length, systemPromptLength: systemPrompt.length });
 
+    const worldUserCharName = characterData.plmex?.domain?.worldConfig?.characters?.find(c => c.isUser)?.name ?? null;
+    const userExcludedForScene = !!worldUserCharName && chapterCast.length > 0 && !chapterCast.includes(worldUserCharName);
 
     let finalMessages: ChatCompletionMessageParam[] = [];
 
@@ -795,7 +845,7 @@ Do not lead with anything like "Sure. Here's an enhanced version..." or anything
               characterData.plmex.dynamicStatuses.length > 0
                 ? msg.content +
                   " [SYSTEM NOTE: Add {{char}}'s status at the very end of your message.]"
-                : msg.content,
+                : applyActionPrefix(msg.content),
           };
         }),
         ...(userMSGaddOnList || regenerate
@@ -803,7 +853,7 @@ Do not lead with anything like "Sure. Here's an enhanced version..." or anything
           : [
               {
                 role: "user" as "user" | "assistant" | "system",
-                content: userMessageContent,
+                content: applyActionPrefix(userMessageContent),
                 name: "-",
               },
             ]),
@@ -822,7 +872,36 @@ Do not lead with anything like "Sure. Here's an enhanced version..." or anything
             {
               role: "user" as "user" | "assistant" | "system",
               name: "user",
-              content:  `
+              content:  isWorldDomainFlag ? `
+You are generating the **opening scene** for the world provided. As the narrator, begin with a natural moment, event, or setting that draws the user in and encourages them to respond. It can feel like the user has just arrived in the world, or the world has just noticed them.
+
+Your goal is to:
+• Pull the user into an unfolding moment (e.g. a question, event, emotion, or dramatic situation)
+• Establish the setting and present characters naturally, showing their personalities immediately
+• Avoid exposition; make it feel like the scene is already in motion
+• Be immersive, with vivid wording
+• Write in THIRD PERSON, in your narrator persona
+• If possible, end with a close-ended question
+• Remember: never make choices, decisions, or dialogue for the player. Only narrate and control the world around them.
+
+It should be 3-5 lengthy (lengthy to paint a more detailed picture) paragraphs, but never robotic or generic.
+
+Do **not** mention AI, chats, or being a character — stay fully in-world.
+
+Only output the scene itself. No extra explanation.
+
+${entryTitle && "The user has given a title for you to make the opening scene around. Make sure to incorporate this, the best you can even if it's vague."}
+${entryTitle}
+${parentChapterId && chatTimesteps.length > 0 ? `
+This scene is a **continuation** of the previous chapter. Before the new moment begins, open by briefly recapping what last happened, drawing on these recorded events (weave them in naturally, as the world remembering what already occurred):
+${chatTimesteps.map(t => `- ${t.entry}`).join("\n")}
+
+Then transition into a new unfolding moment that builds on that continuity.` : ""}
+${chapterCast.length > 0 ? `
+This chapter focuses on these characters: ${chapterCast.join(", ")}. Open the scene around them; keep other characters off-stage unless the scene naturally requires them.` : ""}
+${userExcludedForScene ? `
+The user is not present in this chapter as a character. Open the scene around the world and its characters alone — do not pull the user in, do not address them, and do not end on a question directed at them.` : ""}
+` : `
 You are generating the **first greeting message** for the character provided — but instead of a simple "hi," this should feel like a **scene starter**. Begin with a natural moment, event, or setting that draws the user in and encourages them to respond. It can feel like they've just entered the character's world or the character has just noticed them.
 
 Your goal is to:
@@ -851,6 +930,13 @@ ${entryTitle}
       ];
 
       devLog("Final messages constructed", "info", { finalMessagesCount: finalMessages.length });
+
+      if (objAct && mode === "send") {
+        const lastUserMsg = [...finalMessages].reverse().find((m) => m.role === "user");
+        if (lastUserMsg) {
+          lastUserMsg.content = lastUserMsg.content + `\n\n[SYSTEM NOTE]: The player is performing the custom object action "${objAct.action.name}" on "${objAct.object.name}". Apply this defined effect exactly: "${objAct.action.instruction}". Do not acknowledge this note; narrate the effect in-world.`;
+        }
+      }
 
       if (associatedDomain) {
         devLog("Processing domain specific attachments", "info", { associatedDomain });
@@ -1345,6 +1431,15 @@ ${entryTitle}
     setUserPromptThinking(false);
   };
 
+  const handleAttachObjectAction = (object: WorldObject, action: WorldObjectAction) => {
+    if (!isWorldDomainFlag || !object || !action) return;
+    setPendingObjectAction({ object, action });
+  };
+
+  const handleClearObjectAction = () => {
+    setPendingObjectAction(null);
+  };
+
   const rewriteMessage = async (base: string) => {
     setUserPromptThinking(true);
     await handleSendMessage(
@@ -1618,7 +1713,7 @@ ${entryTitle}
 
     if (isDomainStartToken && !entryTitle) return;
 
-    if (messages.length === 0 && characterData.initialMessage) {
+    if (messages.length === 0 && (characterData.initialMessage || isDomainStartToken)) {
       const isDomainStart = isDomainStartToken;
 
       const statusData: StatusData = characterData.plmex.dynamicStatuses.map(
@@ -1710,6 +1805,8 @@ ${entryTitle}
     const domain = sessionStorage.getItem("chatAssociatedDomain");
     const entryName = sessionStorage.getItem("chatEntryName");
     const timesteps = sessionStorage.getItem("chatTimesteps");
+    const parentId = sessionStorage.getItem("chatParentChapterId");
+    const castRaw = sessionStorage.getItem("chatChapterCast");
 
     if (domain) {
       setAssociatedDomain(domain);
@@ -1726,8 +1823,39 @@ ${entryTitle}
       sessionStorage.removeItem("chatTimesteps");
     }
 
+    if (parentId) {
+      setParentChapterId(parentId);
+      sessionStorage.removeItem("chatParentChapterId");
+    }
+
+    if (castRaw) {
+      try {
+        const parsed = JSON.parse(castRaw);
+        if (Array.isArray(parsed)) {
+          setChapterCast(parsed);
+        }
+      } catch (e) { console.log("Failed to parse chapter cast", e); }
+      sessionStorage.removeItem("chatChapterCast");
+    }
+
   }, []);
 
+
+  useEffect(() => {
+    if (associatedDomain) {
+      isWorldDomain(associatedDomain).then((isWorld) => {
+        setIsWorldDomainFlag(isWorld);
+        if (isWorld) {
+          getWorldConfig(associatedDomain).then((config) => {
+            if (config) {
+              setWorldCharacters(config.characters.map((c) => ({ name: c.name, image: c.image })));
+              setWorldObjects(config.objects || []);
+            }
+          });
+        }
+      });
+    }
+  }, [associatedDomain]);
 
   // Save chat to chat ID if any (and if PalMirror Secure active)
   useEffect(() => {
@@ -1747,7 +1875,9 @@ ${entryTitle}
         lastUpdated: new Date().toISOString(),
         associatedDomain,
         entryTitle,
-        timesteps: chatTimesteps
+        timesteps: chatTimesteps,
+        ...(parentChapterId ? { parentChapterId } : {}),
+        ...(chapterCast.length > 0 ? { cast: chapterCast } : {}),
       };
 
       delete metadata.plmex?.domain;
@@ -1791,21 +1921,30 @@ ${entryTitle}
       const lastMessage = successfulNewMessage.content;
 
       (async () => {
+        const isWorld = await isWorldDomain(associatedDomain);
+
         // --- Attributes ---
-        const atrChanges = extractAttributeTags(lastMessage);
-        for (const { attribute, change } of atrChanges) {
-          await setDomainAttributes(associatedDomain, successfulNewMessage.id, attribute, change, true);
-        
-          const attributes = await getDomainAttributes(associatedDomain);
-          const attributeCurrent = attributes.find(
-            (attr: DomainAttributeEntry) => attr.attribute === attribute
-          );
-          if (attributeCurrent) {
-            attributeNotification.create({
-              attribute,
-              fromVal: attributeCurrent.value,
-              toVal: attributeCurrent.value + change
-            });
+        if (isWorld) {
+          const directedChanges = extractDirectedAttributeTags(lastMessage);
+          for (const { source, target, attribute, change } of directedChanges) {
+            await applyDirectedAttributeChange(associatedDomain, successfulNewMessage.id, source, target, attribute, change);
+          }
+        } else {
+          const atrChanges = extractAttributeTags(lastMessage);
+          for (const { attribute, change } of atrChanges) {
+            await setDomainAttributes(associatedDomain, successfulNewMessage.id, attribute, change, true);
+          
+            const attributes = await getDomainAttributes(associatedDomain);
+            const attributeCurrent = attributes.find(
+              (attr: DomainAttributeEntry) => attr.attribute === attribute
+            );
+            if (attributeCurrent) {
+              attributeNotification.create({
+                attribute,
+                fromVal: attributeCurrent.value,
+                toVal: attributeCurrent.value + change
+              });
+            }
           }
         }
 
@@ -1998,6 +2137,7 @@ ${entryTitle}
                           isGreetingMessage={index === 0}
                           isLastMessage={index === messages.length - 1}
                           characterData={characterData}
+                          worldCharacters={worldCharacters}
                           editMessage={editMessage}
                           rewindTo={rewindTo}
                           changeStatus={changeStatus}
@@ -2119,6 +2259,11 @@ ${entryTitle}
           showSkipToSceneModal={() => {setSkipToSceneModalState(true)}}
           configTokenWatch={configTokenWatch}
           configEnterSendsChat={configEnterSendsChat}
+          isWorldDomain={isWorldDomainFlag}
+          worldObjects={worldObjects}
+          pendingObjectAction={pendingObjectAction}
+          onAttachObjectAction={handleAttachObjectAction}
+          onClearObjectAction={handleClearObjectAction}
         />
       </motion.div>
       <TokenCounter tokenCount={tokenCount} />
