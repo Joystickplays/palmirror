@@ -23,6 +23,7 @@ export interface DomainAttributeEntry {
     attribute: string;
     value: number;
     history: DomainAttributeHistory[]
+    target?: string;
 }
 
 export interface DomainTimestepEntry {
@@ -38,6 +39,37 @@ export interface DomainWorldSummaryEntry {
     lastChat: string;
 }
 
+export interface WorldCharacter {
+    id: string;
+    name: string;
+    personality: string;
+    image?: string;
+    isUser?: boolean;
+    attributes: Array<DomainAttributeEntry>;
+}
+
+export interface WorldObjectAction {
+    id: string;
+    name: string;
+    instruction: string;
+}
+
+export interface WorldObject {
+    id: string;
+    name: string;
+    description: string;
+    image?: string;
+    actions: Array<WorldObjectAction>;
+}
+
+export interface WorldConfig {
+    narratorPersona: string;
+    narrativeMode: "reactive" | "proactive";
+    characters: Array<WorldCharacter>;
+    objects: Array<WorldObject>;
+    skipUserCharacterWarning?: boolean;
+}
+
 export interface EXDomain {
     active: boolean;
     memories: Array<DomainMemoryEntry>;
@@ -48,4 +80,6 @@ export interface EXDomain {
     flashcards?: Array<DomainFlashcardEntry>;
     usedWorldSumId?: string;
     worldSummary?: Array<DomainWorldSummaryEntry>;
+    worldType?: "domain" | "world";
+    worldConfig?: WorldConfig;
 }

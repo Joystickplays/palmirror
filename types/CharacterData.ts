@@ -44,6 +44,8 @@ export interface ChatMetadata extends CharacterData {
     associatedDomain?: string;
     entryTitle?: string;
     timesteps?: Array<DomainTimestepEntry>;
+    parentChapterId?: string;
+    cast?: Array<string>;
 }
 
 
@@ -66,6 +68,13 @@ export const defaultCharacterData: CharacterData = {
       associatedDomainByBranch: undefined,
       flashcards: [],
       guide: "",
+      worldType: "domain",
+      worldConfig: {
+        narratorPersona: "",
+        narrativeMode: "reactive",
+        characters: [],
+        objects: [],
+      },
     },
     dynamicStatuses: [],
     invocations: [], 
