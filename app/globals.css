@@ -209,6 +209,15 @@
   font-weight: 500;
 }
 
+.markdown-content.dialogue-markdown em {
+  opacity: 1;
+  font-weight: 500;
+}
+
+.markdown-content.dialogue-markdown em::after {
+  content: "";
+}
+
 @keyframes gradientShift {
   0% {
     background-position: 0% 50%;

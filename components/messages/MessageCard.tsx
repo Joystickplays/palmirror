@@ -1,8 +1,11 @@
 // components/MessageCard.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { parseActionMessage, formatActionForDisplay } from '@/utils/worldActions';
+import { parseWorldDialogue, WorldDialogueSegment } from '@/utils/worldDialogue';
+import { useCharacterColor } from '@/utils/characterColor';
 import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
-import { Pencil, Rewind, Check, MessagesSquare, RotateCw, ChevronDown, MailQuestion, ArrowUp, X, Book  } from 'lucide-react';
+import { Pencil, Rewind, Check, MessagesSquare, RotateCw, ChevronDown, MailQuestion, ArrowUp, X, Book, Swords, MessageSquareQuote, HelpCircle, Wand2, PersonStanding } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox"
@@ -50,6 +53,36 @@ const MarkdownView = React.memo(
 );
 
 MarkdownView.displayName = "MarkdownView";
+
+const DialogueBlock = React.memo(
+  ({ name, image, text }: { name: string; image?: string; text: string }) => {
+    const accent = useCharacterColor(name, image);
+    return (
+      <div
+        className="flex items-start gap-3 rounded-r-xl rounded-l-sm border-l-4 bg-white/5 py-2 pl-3 pr-3 my-1.5"
+        style={{ borderLeftColor: accent }}
+      >
+        {image ? (
+          <img src={image} alt={name} className="size-7 rounded-full object-cover shrink-0" />
+        ) : (
+          <div
+            className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold uppercase shrink-0"
+            style={{ backgroundColor: accent, color: "#000" }}
+          >
+            {(name || "?").slice(0, 2)}
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-wider opacity-80" style={{ color: accent }}>
+            {name}
+          </p>
+          <MarkdownView className="markdown-content dialogue-markdown text-sm select-none" content={text} />
+        </div>
+      </div>
+    );
+  }
+);
+DialogueBlock.displayName = "DialogueBlock";
 
 
 function fixEmphasisStyling(): void {
@@ -118,6 +151,7 @@ interface MessageCardProps {
   isGreetingMessage: boolean;
   isLastMessage: boolean;
   characterData: CharacterData;
+  worldCharacters?: Array<{ name: string; image?: string }>;
   editMessage: (index: number, content: string, extContIdx?: number) => void;
   rewindTo: (index: number) => void;
   changeStatus: (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => void;
@@ -168,6 +202,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   isLastMessage,
   isGreetingMessage,
   characterData,
+  worldCharacters,
   editMessage,
   rewindTo,
   changeStatus,
@@ -246,7 +281,36 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [typewrittenContent, setTypewrittenContent] = useState("");
   const messageTyped = useTypewriter(typewrittenContent, { speed: 5, inBatchesOf: 5 })
 
+  const actionMessage = useMemo(
+    () => role === "user" && !isEditing ? parseActionMessage(content) : null,
+    [role, content, isEditing]
+  )
+
+  const worldCharactersFallback = characterData.plmex?.domain?.worldConfig?.characters ?? [];
+  const activeWorldCharacters = worldCharacters && worldCharacters.length > 0
+    ? worldCharacters
+    : worldCharactersFallback.map((c) => ({ name: c.name, image: c.image }));
+
+  const isWorldAssistant = useMemo(
+    () => activeWorldCharacters.length > 0 && role === "assistant",
+    [activeWorldCharacters, role]
+  )
+
+  const characterByName = useMemo(() => {
+    const map = new Map<string, { name: string; image?: string }>();
+    activeWorldCharacters.forEach((c) => map.set(c.name, c));
+    return map;
+  }, [activeWorldCharacters])
+
   const [presentableText, setPresentableText] = useState("");
+
+  const dialogueSegments = useMemo<Array<WorldDialogueSegment> | null>(() => {
+    if (!isWorldAssistant || isEditing) return null;
+    const names = activeWorldCharacters.map((c) => c.name);
+    const segments = parseWorldDialogue(configTyping ? messageTyped : presentableText, names);
+    const hasSpeech = segments.some((s) => s.type === "speech");
+    return hasSpeech ? segments : null;
+  }, [isWorldAssistant, isEditing, activeWorldCharacters, presentableText, messageTyped, configTyping])
 
   const triggerRegenerate = useCallback((options?: any) => {
     regenerateFunction(options);
@@ -678,14 +742,49 @@ const MessageCard: React.FC<MessageCardProps> = ({
               </AnimateChangeInHeight>
             )}
 
-            <MarkdownView
-              className={`${stillGenerating ? "shimmer-content-wrapper" : ""} select-none opacity-95 markdown-content`}
-              content={
-                configAutoCloseFormatting ? 
-                closeStars(closeQuotes(configTyping ? messageTyped : presentableText))
-                : configTyping ? messageTyped : presentableText
-              }
-            />
+            {actionMessage ? (
+              <div className="flex items-start bg-transparent gap-2 rounded-xl p-3 px-4">
+                <div className="mt-0.5 flex items-center justify-center">
+                  {actionMessage.prefix === "DO" && <PersonStanding className="h-4 w-4 text-purple-400" />}
+                  {actionMessage.prefix === "SAY" && <MessageSquareQuote className="h-4 w-4 text-sky-400" />}
+                  {actionMessage.prefix === "ASK" && <HelpCircle className="h-4 w-4 text-amber-400" />}
+                  {actionMessage.prefix === "STORY" && <Book className="h-4 w-4 text-emerald-400" />}
+                </div>
+                <div className="text-sm opacity-90 select-none">
+                  {formatActionForDisplay(actionMessage)}
+                </div>
+              </div>
+            ) : (
+              dialogueSegments ? (
+                <div className="flex flex-col">
+                  {dialogueSegments.map((seg, i) => (
+                    seg.type === "speech" ? (
+                      <DialogueBlock
+                        key={i}
+                        name={seg.name!}
+                        image={characterByName.get(seg.name!)?.image}
+                        text={configAutoCloseFormatting ? closeStars(closeQuotes(seg.text)) : seg.text}
+                      />
+                    ) : (
+                      <MarkdownView
+                        key={i}
+                        className={`${stillGenerating ? "shimmer-content-wrapper" : ""} select-none opacity-95 markdown-content`}
+                        content={configAutoCloseFormatting ? closeStars(closeQuotes(seg.text)) : seg.text}
+                      />
+                    )
+                  ))}
+                </div>
+              ) : (
+                <MarkdownView
+                  className={`${stillGenerating ? "shimmer-content-wrapper" : ""} select-none opacity-95 markdown-content`}
+                  content={
+                    configAutoCloseFormatting ? 
+                    closeStars(closeQuotes(configTyping ? messageTyped : presentableText))
+                    : configTyping ? messageTyped : presentableText
+                  }
+                />
+              )
+            )}
 
             {content === "" && !stillGenerating && (
               <div className="border border-white/10 rounded-xl p-2 px-4 text-white/50 text-sm">
