@@ -820,6 +820,7 @@ export default function Home() {
                                                 plmex: {
                                                 ...plmex,
                                                 domain: {
+                                                    ...(plmex.domain ?? defaultCharacterData.plmex.domain!),
                                                     active: !!checked,
                                                     memories: plmex.domain?.memories ?? defaultCharacterData.plmex.domain!.memories,
                                                     attributes: plmex.domain?.attributes ?? defaultCharacterData.plmex.domain!.attributes,
