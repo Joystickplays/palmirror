@@ -21,13 +21,17 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library, GitBranch, Plus, Loader2, Earth } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library, GitBranch, Plus, Loader2, Earth, Users, Package, BookOpen } from 'lucide-react';
 
 import AttributeProgress from "@/components/domains/AttributeProgress";
 
 import { ToastContainer } from "react-toastify";
 import FlashcardItem from "@/components/domains/FlashcardItem";
 import ChatCard from "@/components/domains/ChatCard";
+import ChapterCard from "@/components/domains/ChapterCard";
+import WorldCharacterItem from "@/components/domains/WorldCharacterItem";
+import WorldObjectItem from "@/components/domains/WorldObjectItem";
+import CharacterCastPicker from "@/components/domains/CharacterCastPicker";
 
 
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
@@ -35,9 +39,9 @@ import { PLMSecureContext } from "@/context/PLMSecureContext";
 // import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 
 import { CharacterData, ChatMetadata, defaultCharacterData } from "@/types/CharacterData";
-import { DomainAttributeEntry, DomainMemoryEntry, DomainFlashcardEntry, DomainWorldSummaryEntry } from "@/types/EEDomain"
+import { DomainAttributeEntry, DomainMemoryEntry, DomainFlashcardEntry, DomainWorldSummaryEntry, WorldCharacter, WorldObject } from "@/types/EEDomain"
 
-import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, reverseDomainAttribute, setDomainGuide, setDomainMemories, setDomainFlashcards, branchDomain, totalChatsFromDomain } from "@/utils/domainData";
+import { deleteMemoryFromMessageIfAny, getDomainGuide, removeDomainTimestep, reverseDomainAttribute, setDomainGuide, setDomainMemories, setDomainFlashcards, branchDomain, totalChatsFromDomain, getWorldConfig, setWorldConfig, setWorldCharacters as persistWorldCharacters, setWorldObjects as persistWorldObjects, getWorldCharacters, getWorldObjects, isWorldDomain, setWorldUserCharacterExclusive } from "@/utils/domainData";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,6 +89,7 @@ const ExperienceDomainPage: React.FC = () => {
 
     const [showingNewChat, setShowingNewChat] = useState(false);
     const [newChatName, setNewChatName] = useState("");
+    const [newChatCast, setNewChatCast] = useState<Array<string>>([]);
 
     const [showingMemoryManager, setShowingMemoryManager] = useState(false);
 
@@ -127,6 +132,21 @@ const ExperienceDomainPage: React.FC = () => {
 
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
+
+    const [isWorld, setIsWorld] = useState(false);
+    const [worldCharacters, setWorldCharacters] = useState<WorldCharacter[]>([]);
+    const [worldObjects, setWorldObjects] = useState<WorldObject[]>([]);
+    const [narratorPersona, setNarratorPersona] = useState("");
+    const [narrativeMode, setNarrativeMode] = useState<"reactive" | "proactive">("reactive");
+    const [showWorldCharacters, setShowWorldCharacters] = useState(false);
+    const [showWorldObjects, setShowWorldObjects] = useState(false);
+    const [showNarratorEditor, setShowNarratorEditor] = useState(false);
+    const [showAddFromDomain, setShowAddFromDomain] = useState(false);
+    const [allDomainChars, setAllDomainChars] = useState<Array<CharacterData & { id: string }>>([]);
+
+    const [showingUserCharWarning, setShowingUserCharWarning] = useState(false);
+    const [skipUserCharacterWarning, setSkipUserCharacterWarning] = useState(false);
+    const pendingUserWarningAction = useRef<(() => void) | null>(null);
 
 
     const newChatDialog = useRef<HTMLDivElement>(null);
@@ -185,6 +205,25 @@ const ExperienceDomainPage: React.FC = () => {
     useEffect(() => {
         reloadCharacter()
     }, [domainId]);
+
+    useEffect(() => {
+        if (domainId) {
+            (async () => {
+                const world = await isWorldDomain(domainId);
+                setIsWorld(world);
+                if (world) {
+                    const config = await getWorldConfig(domainId);
+                    if (config) {
+                        setWorldCharacters(config.characters || []);
+                        setWorldObjects(config.objects || []);
+                        setNarratorPersona(config.narratorPersona || "");
+                        setNarrativeMode(config.narrativeMode || "reactive");
+                        setSkipUserCharacterWarning(!!config.skipUserCharacterWarning);
+                    }
+                }
+            })();
+        }
+    }, [domainId, character.plmex.domain?.worldType]);
 
     useEffect(() => {
         const refreshChatList = async () => {
@@ -412,6 +451,84 @@ const ExperienceDomainPage: React.FC = () => {
         // router.push(`/experience/domain?domainId=${domainId}_branch_${newDMBranchName}`); // doesnt actually do anything, just makes nextjs reload the page
     }
 
+    const loadAllDomainChars = async () => {
+        const keys = await PLMsecureContext?.getAllKeys();
+        if (!keys) return;
+        const domainKeys = keys.filter((key: string) => key.startsWith("METADATA"));
+        const chars: Array<CharacterData & { id: string }> = [];
+        for (const key of domainKeys) {
+            if (key === `METADATA${domainId}`) continue;
+            const data = await PLMsecureContext?.getSecureData(key);
+            if (data && data.plmex && data.plmex.domain && data.plmex.domain.active && data.plmex.domain.worldType !== "world") {
+                chars.push({ ...data, id: key.replace("METADATA", "") });
+            }
+        }
+        setAllDomainChars(chars);
+    };
+
+    const addCharacterFromDomain = async (source: CharacterData & { id: string }) => {
+        const newChar: WorldCharacter = {
+            id: crypto.randomUUID(),
+            name: source.name,
+            personality: source.personality,
+            image: source.image || undefined,
+            attributes: (source.plmex.domain?.attributes || []).map(attr => ({
+                ...attr,
+                target: attr.target === "user" ? undefined : attr.target,
+            })),
+        };
+        const updated = [...worldCharacters, newChar];
+        setWorldCharacters(updated);
+        await persistWorldCharacters(domainId, updated);
+        PMNotify.success(`${source.name} added to the world!`);
+        setShowAddFromDomain(false);
+    };
+
+    const openNewChapter = () => {
+        const userChar = worldCharacters.find(c => c.isUser);
+        setNewChatCast(userChar ? [userChar.name] : []);
+        setShowingNewChat(true);
+    };
+
+    const startNewChapter = () => {
+        setShowingNewChat(false);
+        if (newChatName.trim() === "") {
+            return;
+        }
+
+        sessionStorage.setItem("chatSelect", "");
+        sessionStorage.setItem("chatAssociatedDomain", domainId);
+        sessionStorage.setItem("chatEntryName", newChatName.trim());
+        sessionStorage.setItem("chatChapterCast", JSON.stringify(newChatCast));
+        sessionStorage.setItem("chatFromNewDomain", "1");
+        router.push(`/chat`);
+    };
+
+    const requireUserCharacter = (proceed: () => void) => {
+        const userChar = worldCharacters.find(c => c.isUser);
+        if (!userChar && !skipUserCharacterWarning) {
+            pendingUserWarningAction.current = proceed;
+            setShowingUserCharWarning(true);
+            return false;
+        }
+        return true;
+    };
+
+    const handleUserCharWarningOpenCharacters = () => {
+        setShowingUserCharWarning(false);
+        pendingUserWarningAction.current = null;
+        setShowWorldCharacters(true);
+    };
+
+    const handleUserCharWarningContinue = async () => {
+        const config = (await getWorldConfig(domainId)) ?? defaultCharacterData.plmex.domain!.worldConfig!;
+        await setWorldConfig(domainId, { ...config, skipUserCharacterWarning: true });
+        setSkipUserCharacterWarning(true);
+        setShowingUserCharWarning(false);
+        pendingUserWarningAction.current?.();
+        pendingUserWarningAction.current = null;
+    };
+
 
     return (
         <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-sans">
@@ -446,10 +563,10 @@ const ExperienceDomainPage: React.FC = () => {
                         ease: "easeInOut",
                     }}
                 />
-                <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text md:min-w-[16rem]">{character.name}</h1>
+                <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text md:min-w-[16rem]">{isWorld ? `The ${character.name}` : character.name}</h1>
                 <div className=""></div>
                 <div className="flex overflow-x-scroll max-w-full md:max-w-lg pb-2 mt-4 md:pb-0 md:my-0 md:grid md:grid-cols-3 md:grid-rows-2 md:grid-flow-col md:auto-cols-max gap-4">
-                    {character.plmex.domain?.attributes.map(attr => (
+                    {!isWorld && character.plmex.domain?.attributes.map(attr => (
                         <AttributeProgress key={attr.key} attr={attr} />
                     ))}
                 </div>
@@ -460,7 +577,7 @@ const ExperienceDomainPage: React.FC = () => {
                 transition={{ duration: 0.2 }}
                 className="flex flex-col gap-4 h-full">
                 
-                <Button className="fixed bottom-4 right-4 p-8 px-6 rounded-full bg-background! backdrop-blur-xs z-1" variant="palmirror" onClick={() => setShowingNewChat(true)}><CirclePlus className="scale-150" /></Button>
+                <Button className="fixed bottom-4 right-4 p-8 px-6 rounded-full bg-background! backdrop-blur-xs z-1" variant="palmirror" onClick={openNewChapter}><CirclePlus className="scale-150" /></Button>
 
                 <div className="flex gap-2 h-12 overflow-x-scroll -mt-4">
                     <Button variant="outline" onClick={() => router.push("/")}><ArrowLeft /></Button>
@@ -501,6 +618,13 @@ const ExperienceDomainPage: React.FC = () => {
                             <Button className="p-1 px-3" variant="outline"><EllipsisVertical /></Button>
                         </PopoverTrigger>
                         <PopoverContent className="flex flex-col gap-2 rounded-xl font-sans p-4">
+                            {isWorld && (
+                                <>
+                                    <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowWorldCharacters(true)}><Users />Characters</Button>
+                                    <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowWorldObjects(true)}><Package />Objects</Button>
+                                    <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowNarratorEditor(true)}><BookOpen />Narrator persona</Button>
+                                </>
+                            )}
                             <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button>
                             <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowDomainGuideEditor(true)}><Book />Domain guide</Button>
   {configWorldSummarizer && <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowWorldSummary(true)}><Earth />World summary</Button>}
@@ -527,14 +651,41 @@ const ExperienceDomainPage: React.FC = () => {
                     damping: 18
                 }}
                 className="flex-col gap-4 grow w-full justify-center items-start">
-                    {sortByLastUpdated(chatList).map((chat: ChatMetadata, idx: number) => {
-                        if (chat.associatedDomain !== domainId) {
-                            return null;
+                    {(() => {
+                        const domainChats = chatList
+                            .filter((chat) => chat.associatedDomain === domainId)
+                            .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+
+                        if (isWorld) {
+                            const chatIds = new Set(domainChats.map((c) => c.id));
+                            const roots = domainChats.filter((c) => !c.parentChapterId || !chatIds.has(c.parentChapterId));
+                            return roots.map((chat, idx) => {
+                                const subchats = domainChats
+                                    .filter((c) => c.parentChapterId === chat.id)
+                                    .sort((a, b) => new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime());
+                                return (
+                                    <ChapterCard
+                                        key={chat.id}
+                                        chat={chat}
+                                        idx={idx}
+                                        configHighend={configHighend}
+                                        domainId={domainId}
+                                        worldCharacters={worldCharacters}
+                                        subchats={subchats}
+                                        setChatAboutToDelete={setChatAboutToDelete}
+                                        setShowingChatDelete={setShowingChatDelete}
+                                        setSelectedChat={setSelectedChat}
+                                        setShowingChatTimesteps={setShowingChatTimesteps}
+                                        skipUserCharacterWarning={skipUserCharacterWarning}
+                                        onUserCharacterWarning={(proceed) => requireUserCharacter(proceed)}
+                                    />
+                                );
+                            });
                         }
 
-                        return (
-                            <ChatCard 
-                                key={chat.lastUpdated}
+                        return domainChats.map((chat, idx) => (
+                            <ChatCard
+                                key={chat.id}
                                 chat={chat}
                                 idx={idx}
                                 configHighend={configHighend}
@@ -544,8 +695,8 @@ const ExperienceDomainPage: React.FC = () => {
                                 setSelectedChat={setSelectedChat}
                                 setShowingChatTimesteps={setShowingChatTimesteps}
                             />
-                        )
-                    })}
+                        ));
+                    })()}
                 </motion.div>
             </motion.div>
 
@@ -622,23 +773,41 @@ const ExperienceDomainPage: React.FC = () => {
             <Dialog open={showingNewChat} onOpenChange={setShowingNewChat}>
                 <DialogContent ref={newChatDialog} className="max-h-[90vh] overflow-y-auto font-sans">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold mb-4">Start a new chat</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold mb-4">{isWorld ? "Start a new chapter" : "Start a new chat"}</DialogTitle>
                     </DialogHeader>
-                    <Label htmlFor="chat-name">Entry name</Label>
-                    <Input ref={newChatInput} autoComplete="off" value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
-                    <p className="text-xs opacity-50">{`A good entry name should the reflect the moment you're capturing in this new chat. For example, "First Encounter", "Moving Day", "Evening Complication", etc.`}<br /><br />{`PalMirror will look through your past chat entries and let your AI know how far you and this character has progressed together.`}</p>
-                    <Button onClick={() => {
-                        setShowingNewChat(false)
-                        if (newChatName.trim() === "") {
-                            return;
-                        }
+                    <Label htmlFor="chat-name">{isWorld ? "Chapter name" : "Entry name"}</Label>
+                    <Input ref={newChatInput} autoComplete="off" value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder={isWorld ? "Enter chapter name" : "Enter chat entry name"} />
+                    <p className="text-xs opacity-50">{`A good ${isWorld ? "chapter" : "entry"} name should the reflect the moment you're capturing in this new ${isWorld ? "chapter" : "chat"}. For example, "First Encounter", "Moving Day", "Evening Complication", etc.`}<br /><br />{`PalMirror will look through your past ${isWorld ? "chapters" : "chat entries"} and let your AI know how far you and this character has progressed together.`}</p>
+                    {isWorld && (
+                        <div className="my-2">
+                            <CharacterCastPicker
+                                characters={worldCharacters}
+                                selected={newChatCast}
+                                onToggle={(name) => setNewChatCast((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name])}
+                            />
+                        </div>
+                    )}
+                        <Button onClick={() => {
+                            if (newChatName.trim() === "") {
+                                return;
+                            }
+                            if (!requireUserCharacter(startNewChapter)) {
+                                setShowingNewChat(false);
+                            }
+                        }}>Start</Button>
+                </DialogContent>
+            </Dialog>
 
-                        sessionStorage.setItem("chatSelect", "");
-                        sessionStorage.setItem("chatAssociatedDomain", domainId);
-                        sessionStorage.setItem("chatEntryName", newChatName.trim());
-                        sessionStorage.setItem("chatFromNewDomain", "1");
-                        router.push(`/chat`);
-                    }}>Start</Button>
+            <Dialog open={showingUserCharWarning} onOpenChange={setShowingUserCharWarning}>
+                <DialogContent className="font-sans">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Who are you?</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm opacity-80">You don't have a character set as you in this world yet. This chapter will use the user personality set in your settings instead of a world character.</p>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                        <Button variant="outline" onClick={handleUserCharWarningOpenCharacters}>Open character editor</Button>
+                        <Button onClick={handleUserCharWarningContinue}>Continue anyway</Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 
@@ -1072,6 +1241,163 @@ const ExperienceDomainPage: React.FC = () => {
                 </DialogContent>
             </Dialog>
 
+            <Dialog open={showWorldCharacters} onOpenChange={setShowWorldCharacters}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
+                    <DialogHeader>
+                        <div className="flex items-center justify-between mb-4 relative">
+                            <DialogTitle className="text-2xl font-bold">Characters</DialogTitle>
+                        </div>
+                    </DialogHeader>
+                    <p className="opacity-50 text-xs whitespace-pre-line">{`Characters live inside this world. The narrator controls all of them. Each character carries its own attributes and relationships toward you or other characters.`}</p>
+
+                    <div className="flex flex-col gap-4">
+                        <AnimatePresence mode="popLayout">
+                            {worldCharacters.map((wc, idx) => (
+                                <WorldCharacterItem
+                                    key={wc.id}
+                                    character={wc}
+                                    characterNames={worldCharacters.map((c) => c.name)}
+                                    onUpdate={(updated) => {
+                                        const newChars = setWorldUserCharacterExclusive(
+                                            worldCharacters.map((c, i) => (i === idx ? updated : c)),
+                                            updated.id,
+                                            !!updated.isUser,
+                                        );
+                                        setWorldCharacters(newChars);
+                                        persistWorldCharacters(domainId, newChars);
+                                    }}
+                                    onDelete={() => {
+                                        const newChars = worldCharacters.filter((_, i) => i !== idx);
+                                        setWorldCharacters(newChars);
+                                        persistWorldCharacters(domainId, newChars);
+                                    }}
+                                />
+                            ))}
+                        </AnimatePresence>
+                        <Button className="w-full flex sm:hidden" variant="outline" size="sm" onClick={() => {
+                            loadAllDomainChars();
+                            setShowAddFromDomain(true);
+                        }}><Library /> Add from Domain...</Button>
+                        <Button className="w-full" variant="outline" onClick={() => {
+                            const newChar: WorldCharacter = {
+                                id: crypto.randomUUID(),
+                                name: "",
+                                personality: "",
+                                attributes: [],
+                            };
+                            const newChars = [...worldCharacters, newChar];
+                            setWorldCharacters(newChars);
+                            persistWorldCharacters(domainId, newChars);
+                        }}><CirclePlus className="mr-2" /> Add Character</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showAddFromDomain} onOpenChange={setShowAddFromDomain}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Add character from an existing domain</DialogTitle>
+                    </DialogHeader>
+                    <p className="opacity-50 text-xs mb-2">Pick a domain-enabled character to bring into this world. Their identity and attributes are copied over; the original domain stays untouched.</p>
+                    <div className="flex flex-col gap-2">
+                        {allDomainChars.length === 0 ? (
+                            <p className="opacity-60 text-sm">No other domain-enabled characters found.</p>
+                        ) : allDomainChars.map((dc, idx) => (
+                            <motion.div
+                                key={dc.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 12, delay: idx * 0.05 }}
+                                className="border-b border-white/10 p-2 flex items-center gap-3"
+                            >
+                                {dc.image && <img src={dc.image} alt={dc.name} className="size-10 rounded-lg object-cover" />}
+                                <div className="flex-1">
+                                    <p className="text-sm font-bold">{dc.name}</p>
+                                    <p className="text-xs opacity-60">{dc.plmex.domain?.attributes?.length || 0} attributes</p>
+                                </div>
+                                <Button variant="outline" size="sm" onClick={() => addCharacterFromDomain(dc)}><Check /> Add</Button>
+                            </motion.div>
+                        ))}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showWorldObjects} onOpenChange={setShowWorldObjects}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Objects</DialogTitle>
+                    </DialogHeader>
+                    <p className="opacity-50 text-xs whitespace-pre-line">{`Objects are things that exist in this world. Give them a description and an optional visual the AI can see. Custom actions let you attach defined effects when your character interacts with the object in chat.`}</p>
+
+                    <div className="flex flex-col gap-4">
+                        <AnimatePresence mode="popLayout">
+                            {worldObjects.map((wo, idx) => (
+                                <WorldObjectItem
+                                    key={wo.id}
+                                    object={wo}
+                                    onUpdate={(updated) => {
+                                        const newObjects = [...worldObjects];
+                                        newObjects[idx] = updated;
+                                        setWorldObjects(newObjects);
+                                        persistWorldObjects(domainId, newObjects);
+                                    }}
+                                    onDelete={() => {
+                                        const newObjects = worldObjects.filter((_, i) => i !== idx);
+                                        setWorldObjects(newObjects);
+                                        persistWorldObjects(domainId, newObjects);
+                                    }}
+                                />
+                            ))}
+                        </AnimatePresence>
+                        <Button className="w-full" variant="outline" onClick={() => {
+                            const newObj: WorldObject = {
+                                id: crypto.randomUUID(),
+                                name: "",
+                                description: "",
+                                actions: [],
+                            };
+                            const newObjects = [...worldObjects, newObj];
+                            setWorldObjects(newObjects);
+                            persistWorldObjects(domainId, newObjects);
+                        }}><CirclePlus className="mr-2" /> Add Object</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showNarratorEditor} onOpenChange={setShowNarratorEditor}>
+                <DialogContent className="font-sans">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Narrator persona</DialogTitle>
+                    </DialogHeader>
+                    <p className="opacity-50 text-xs whitespace-pre-line">{`Describe how the narrator should tell the story: tone, pacing, voice. For example "A dry, third-person storyteller with a darkly comic edge." This shapes all narrative prose in this world.`}</p>
+                    <Textarea value={narratorPersona} onChange={(e) => setNarratorPersona(e.target.value)} rows={6} placeholder="e.g. A cinematic, atmospheric narrator that lingers on sensory detail..." />
+                    <div className="flex items-center gap-2">
+                        <Label htmlFor="narrativeMode">Story drive:</Label>
+                        <div className="flex gap-2">
+                            <Button
+                                variant={narrativeMode === "reactive" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setNarrativeMode("reactive")}
+                            >Reactive</Button>
+                            <Button
+                                variant={narrativeMode === "proactive" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setNarrativeMode("proactive")}
+                            >Proactive</Button>
+                        </div>
+                    </div>
+                    <div className="flex gap-2 w-full">
+                        <Button className="w-full" variant="outline" onClick={() => setShowNarratorEditor(false)}>Discard</Button>
+                        <Button className="w-full" onClick={async () => {
+                            const config = await getWorldConfig(domainId) ?? defaultCharacterData.plmex.domain!.worldConfig!;
+                            await setWorldConfig(domainId, { ...config, narratorPersona, narrativeMode });
+                            setShowNarratorEditor(false);
+                            PMNotify.success("Narrator persona saved.");
+                        }}><Check /> Apply</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <Drawer open={showDomainIntro} onOpenChange={setShowDomainIntro}>
                 <DrawerContent className="font-sans p-6 pt-0">
                     <DrawerHeader>
@@ -1082,7 +1408,7 @@ const ExperienceDomainPage: React.FC = () => {
                         <p className="opacity-80 text-sm">{`Domains is your platform for multiple different isolated chats. PalMirror will automatically cross-reference your chat's moments across each other to create continuity.`}</p>
                         <p className="opacity-80 text-sm">{`Watch the attribute bars change in realtime as you chat to see how your choices affect the character. See and forget memories to shape what they remember about your relationship.`}</p>
                         <p className="opacity-80 text-sm">{`Start new chat entries to explore different scenarios and see how the character adapts. Enjoy building deeper connections with your character!`}</p>
-                        <Button onClick={() => { localStorage.setItem("domainIntroNewcomer", "1"); setShowDomainIntro(false); setShowingNewChat(true); }}>Start a new chat</Button>
+                        <Button onClick={() => { localStorage.setItem("domainIntroNewcomer", "1"); setShowDomainIntro(false); openNewChapter(); }}>Start a new chat</Button>
                     </div>
                 </DrawerContent>
             </Drawer>
