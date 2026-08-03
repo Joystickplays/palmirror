@@ -63,13 +63,16 @@ const WorldCharacterItem = ({ character, onUpdate, onDelete, characterNames = []
             layout={"position"}
             className="relative border border-white/10 rounded-xl p-4 flex flex-col gap-3"
         >
-            <div className="flex items-start gap-3">
+            <div className="flex flex-col md:flex-row items-start gap-3">
                 {character.isUser && (
                     <span className="absolute -top-2 left-4 text-[10px] font-bold uppercase tracking-wider palmirror-exc-text">You</span>
                 )}
                 {character.image ? (
-                    <div className="relative">
-                        <img src={character.image} alt={character.name} className="size-16 rounded-xl object-cover" />
+                    <div className="relative w-full md:w-auto overflow-hidden">
+                        <img src={character.image} alt={character.name} className="md:size-16! max-h-32 w-full rounded-xl object-cover object-[center_35%]" />
+                        
+                        <h1 className="absolute bottom-2 left-2 text-4xl font-black mix-blend-color-dodge text-gray-400 md:hidden w-999">{character.name}</h1>
+                        
                         <Button variant="outline" size="icon" className="absolute -top-2 -right-2 w-6 h-6 p-0"
                             onClick={() => {
                                 if (fileInputRef.current) fileInputRef.current.value = "";
@@ -79,26 +82,28 @@ const WorldCharacterItem = ({ character, onUpdate, onDelete, characterNames = []
                         </Button>
                     </div>
                 ) : (
-                    <Button variant="outline" className="size-16" onClick={() => fileInputRef.current?.click()}>
+                    <Button variant="outline" className="md:size-16! h-32 w-full" onClick={() => fileInputRef.current?.click()}>
                         <ImagePlus />
                     </Button>
                 )}
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                <div className="flex flex-col gap-2 flex-1">
-                    <div className="flex gap-2">
-                        <Input placeholder="Character name" value={localName} onChange={(e) => setLocalName(e.target.value)} onBlur={() => { if (localName !== character.name) onUpdate({ ...character, name: localName }); }} />
-                        <Button
-                            variant={character.isUser ? "default" : "outline"}
-                            className="shrink-0 w-fit ml-auto"
-                            onClick={() => onUpdate({ ...character, isUser: !character.isUser })}
-                            title="Mark this character as the one you play"
-                        >
-                            <UserCheck className="w-4 h-4" /> {character.isUser ? "You" : "This is me"}
-                        </Button>
+                <div className="flex items-start gap-3">
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    <div className="flex flex-col gap-2 flex-1">
+                        <div className="flex gap-2">
+                            <Input placeholder="Character name" value={localName} onChange={(e) => setLocalName(e.target.value)} onBlur={() => { if (localName !== character.name) onUpdate({ ...character, name: localName }); }} />
+                            <Button
+                                variant={character.isUser ? "default" : "outline"}
+                                className="shrink-0 w-fit ml-auto"
+                                onClick={() => onUpdate({ ...character, isUser: !character.isUser })}
+                                title="Mark this character as the one you play"
+                            >
+                                <UserCheck className="w-4 h-4" /> {character.isUser ? "You" : "This is me"}
+                            </Button>
+                        </div>
+                        <Textarea placeholder="Personality, mannerisms, goals..." value={localPersonality} onChange={(e) => setLocalPersonality(e.target.value)} onBlur={() => { if (localPersonality !== character.personality) onUpdate({ ...character, personality: localPersonality }); }} className="text-sm" />
                     </div>
-                    <Textarea placeholder="Personality, mannerisms, goals..." value={localPersonality} onChange={(e) => setLocalPersonality(e.target.value)} onBlur={() => { if (localPersonality !== character.personality) onUpdate({ ...character, personality: localPersonality }); }} className="text-sm" />
+                    <Button variant="destructive" onClick={onDelete}><Trash2 /></Button>
                 </div>
-                <Button variant="destructive" onClick={onDelete}><Trash2 /></Button>
             </div>
 
 
@@ -109,7 +114,7 @@ const WorldCharacterItem = ({ character, onUpdate, onDelete, characterNames = []
                     const otherNames = characterNames.filter((n) => n.trim() !== "" && n !== character.name);
                     const targetOptions = Array.from(new Set(["user", ...otherNames, currentTarget]));
                     return (
-                        <div key={attr.key} className="flex items-center gap-2">
+                        <div key={attr.key} className="flex flex-col md:flex-row border border-white/10 md:border-0 rounded-xl p-4 md:p-0 items-end md:items-center gap-2">
                             <Input placeholder="Attribute" className="flex-1" value={attr.attribute} onChange={(e) => updateAttribute(idx, { attribute: e.target.value })} />
                             <Select
                                 value={currentTarget}
@@ -126,8 +131,11 @@ const WorldCharacterItem = ({ character, onUpdate, onDelete, characterNames = []
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Input type="number" min={0} max={100} className="w-20" value={attr.value} onChange={(e) => updateAttribute(idx, { value: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} />
-                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => removeAttribute(idx)}><Trash2 className="w-4 h-4" /></Button>
+                            <div className="flex items-center gap-3 w-full md:w-auto">
+                                <Input type="number" min={0} max={100} className="w-full" value={attr.value} onChange={(e) => updateAttribute(idx, { value: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} />
+                                <span className="text-lg font-bold">%</span>
+                            </div>
+                            <Button variant="outline" size="icon" className="w-8 h-8 md:ml-3" onClick={() => removeAttribute(idx)}><Trash2 className="w-4 h-4" /></Button>
                         </div>
                     );
                 })}

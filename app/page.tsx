@@ -1094,13 +1094,13 @@ export default function Home() {
                     <p className="opacity-50 text-sm">
                       {chatsLoading
                         ? "Loading your chats..."
-                        : "No chats found. Try the Discover page!"}
+                        : "No chats found. Try out PalMirror Experience or import a character to start chatting!"}
                     </p>
                   )}
                 
                 </AnimatePresence>
               </div>
-              {chatList.length === 0 && (
+              {chatList.length === 0 && !chatsLoading && (
                 <Button
                   variant="palmirror"
                   className={`w-full mt-4 h-auto p-6 justify-center sm:justify-start items-center flex-row gap-3 rounded-xl max-w-xl mx-auto sm:mx-0 ${
