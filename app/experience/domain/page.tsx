@@ -21,7 +21,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library, GitBranch, Plus, Loader2, Earth, Users, Package, BookOpen } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library, GitBranch, Plus, Loader2, Earth, Users, Package, BookOpen, Activity } from 'lucide-react';
 
 import AttributeProgress from "@/components/domains/AttributeProgress";
 
@@ -147,6 +147,10 @@ const ExperienceDomainPage: React.FC = () => {
     const [showingUserCharWarning, setShowingUserCharWarning] = useState(false);
     const [skipUserCharacterWarning, setSkipUserCharacterWarning] = useState(false);
     const pendingUserWarningAction = useRef<(() => void) | null>(null);
+
+    const [showingStatusEditor, setShowingStatusEditor] = useState(false);
+    const [statusTargetChat, setStatusTargetChat] = useState<ChatMetadata | null>(null);
+    const [statusRows, setStatusRows] = useState<Array<{ key: string; value: string }>>([]);
 
 
     const newChatDialog = useRef<HTMLDivElement>(null);
@@ -529,6 +533,98 @@ const ExperienceDomainPage: React.FC = () => {
         pendingUserWarningAction.current = null;
     };
 
+    const encodeThread = (messages: Array<any>): string => {
+        const json = JSON.stringify(messages);
+        const encoder = new TextEncoder();
+        const encodedArray = encoder.encode(json);
+        let binary = "";
+        const chunkSize = 0x8000;
+        for (let i = 0; i < encodedArray.length; i += chunkSize) {
+            const chunk = encodedArray.subarray(i, i + chunkSize);
+            binary += String.fromCharCode.apply(null, chunk as any);
+        }
+        return btoa(binary);
+    };
+
+    const decodeThread = async (chatId: string): Promise<Array<any> | null> => {
+        const file = await PLMsecureContext?.getSecureData(chatId) ?? "";
+        if (!file) return null;
+        try {
+            const decodedString = atob(file);
+            const decodedArray = new Uint8Array(decodedString.split("").map((char) => char.charCodeAt(0)));
+            const decoder = new TextDecoder();
+            const json = decoder.decode(decodedArray);
+            return JSON.parse(json);
+        } catch (e) {
+            console.warn("Failed to decode chat thread", e);
+            return null;
+        }
+    };
+
+    const extractStatusData = (input: string): Array<{ key: string; value: string }> => {
+        const statusRegex = /---\s*STATUS:\s*((?:.+?\s*[=:]\s*.+(?:\n|$))*)/i;
+        const match = input.match(statusRegex);
+        if (match && match[1]) {
+            return match[1]
+                .trim()
+                .split("\n")
+                .filter((line) => line.includes("=") || line.includes(":"))
+                .map((pair) => {
+                    const [key, ...valueParts] = pair.split(/[:=]/);
+                    return { key: key.trim(), value: valueParts.join("=").trim() };
+                });
+        }
+        return [];
+    };
+
+    const removeStatusSection = (input: string): string => {
+        return input.replace(/---\s*STATUS:\s*((?:.+?\s*[=:]\s*.+(?:\n|$))*)/i, "").trim();
+    };
+
+    const buildStatusSection = (data: Array<{ key: string; value: string }>): string => {
+        if (!data || data.length === 0) return "";
+        return `\n\n---\nSTATUS:\n${data.map(({ key, value }) => `${key}=${value}`).join("\n")}`;
+    };
+
+    const openStatusEditor = async () => {
+        const domainChats = chatList
+            .filter((chat) => chat.associatedDomain === domainId)
+            .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+        const latest = domainChats[0];
+        if (!latest) {
+            PMNotify.info("No chapters yet. Start a chapter first.");
+            return;
+        }
+        const msgs = await decodeThread(latest.id);
+        const rows: Array<{ key: string; value: string }> = [];
+        if (msgs) {
+            const lastAssistant = [...msgs].reverse().find((m) => m.role === "assistant");
+            if (lastAssistant) rows.push(...extractStatusData(lastAssistant.content ?? ""));
+        }
+        setStatusTargetChat(latest);
+        setStatusRows(rows);
+        setShowingStatusEditor(true);
+    };
+
+    const saveStatusRows = async () => {
+        if (!statusTargetChat) return;
+        const msgs = await decodeThread(statusTargetChat.id);
+        if (!msgs) return;
+        const lastAssistantIndex = [...msgs].reverse().findIndex((m) => m.role === "assistant");
+        if (lastAssistantIndex === -1) {
+            PMNotify.error("No assistant messages to attach statuses to.");
+            return;
+        }
+        const actualIndex = msgs.length - 1 - lastAssistantIndex;
+        const target = { ...msgs[actualIndex] };
+        const cleanedRows = statusRows.filter((r) => r.key.trim() !== "");
+        target.content = removeStatusSection(target.content ?? "") + buildStatusSection(cleanedRows);
+        msgs[actualIndex] = target;
+        await PLMsecureContext?.setSecureData(statusTargetChat.id, encodeThread(msgs));
+        PMNotify.success(`Dynamic statuses saved to "${statusTargetChat.entryTitle}".`);
+        setShowingStatusEditor(false);
+    };
+
 
     return (
         <div className="flex flex-col gap-6 min-h-screen lg:px-56 pb-20 md:p-8 p-2 sm:p-10 font-sans">
@@ -623,6 +719,7 @@ const ExperienceDomainPage: React.FC = () => {
                                     <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowWorldCharacters(true)}><Users />Characters</Button>
                                     <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowWorldObjects(true)}><Package />Objects</Button>
                                     <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowNarratorEditor(true)}><BookOpen />Narrator persona</Button>
+                                    <Button className="p-1 px-3 justify-start!" variant="outline" onClick={openStatusEditor}><Activity />Dynamic statuses</Button>
                                 </>
                             )}
                             <Button className="p-1 px-3 justify-start!" variant="outline" onClick={() => setShowingMemoryManager(true)}><BrainCircuit />Manage memories</Button>
@@ -1394,6 +1491,34 @@ const ExperienceDomainPage: React.FC = () => {
                             setShowNarratorEditor(false);
                             PMNotify.success("Narrator persona saved.");
                         }}><Check /> Apply</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showingStatusEditor} onOpenChange={setShowingStatusEditor}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold mb-4">Dynamic statuses</DialogTitle>
+                    </DialogHeader>
+                    <p className="opacity-50 text-xs whitespace-pre-line">{`Dynamic statuses are key/value "live" facts about the current story state (like moods, wounds, or the time of day) that ride on the latest chapter message. Edit them here and they update in that chapter.`}</p>
+                    {statusTargetChat && (
+                        <p className="text-xs opacity-70">Editing chapter: <span className="font-bold">{statusTargetChat.entryTitle}</span></p>
+                    )}
+                    <div className="flex flex-col gap-2">
+                        <AnimatePresence mode="popLayout">
+                            {statusRows.map((row, idx) => (
+                                <motion.div key={idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex gap-2 items-center">
+                                    <Input value={row.key} onChange={(e) => { const next = [...statusRows]; next[idx] = { ...next[idx], key: e.target.value }; setStatusRows(next); }} placeholder="Key" className="flex-1" />
+                                    <Input value={row.value} onChange={(e) => { const next = [...statusRows]; next[idx] = { ...next[idx], value: e.target.value }; setStatusRows(next); }} placeholder="Value" className="flex-1" />
+                                    <Button size="icon" variant="ghost" onClick={() => { setStatusRows(statusRows.filter((_, i) => i !== idx)); }}><Trash2 /></Button>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                        <Button variant="outline" onClick={() => setStatusRows([...statusRows, { key: "", value: "" }])}><CirclePlus className="mr-2" /> Add status</Button>
+                    </div>
+                    <div className="flex gap-2 w-full">
+                        <Button className="w-full" variant="outline" onClick={() => setShowingStatusEditor(false)}>Discard</Button>
+                        <Button className="w-full" onClick={saveStatusRows}><Check /> Apply</Button>
                     </div>
                 </DialogContent>
             </Dialog>

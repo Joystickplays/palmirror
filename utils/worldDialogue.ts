@@ -2,6 +2,57 @@ export interface WorldDialogueSegment {
     type: "narration" | "speech";
     name?: string;
     text: string;
+    isKnown?: boolean;
+}
+
+const NAME_CHUNK = "[^*\\n]{1,40}?";
+
+interface Marker {
+    rawName: string;
+    index: number;
+    afterIndex: number;
+}
+
+function scanMarkers(content: string): Array<Marker> {
+    const markerRegex = new RegExp(`\\*\\*(${NAME_CHUNK})(?::\\*\\*|\\*\\*:)`, "gi");
+    const markers: Array<Marker> = [];
+    let match: RegExpExecArray | null;
+    while ((match = markerRegex.exec(content)) !== null) {
+        markers.push({ rawName: match[1].trim(), index: match.index, afterIndex: markerRegex.lastIndex });
+    }
+    return markers;
+}
+
+function splitQuotedFragments(text: string): Array<{ kind: "speech" | "narration"; text: string }> {
+    const parts: Array<{ kind: "speech" | "narration"; text: string }> = [];
+    const quoteRegex = /"([^"]*)"/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = quoteRegex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+            const before = text.slice(lastIndex, match.index).trim();
+            if (before) parts.push({ kind: "narration", text: before });
+        }
+        const inner = match[1].trim();
+        if (inner) parts.push({ kind: "speech", text: inner });
+        lastIndex = quoteRegex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+        const after = text.slice(lastIndex).trim();
+        if (after) parts.push({ kind: "narration", text: after });
+    }
+    return parts;
+}
+
+function analyzeMarkerContent(text: string): { count: number; trailingNarration: boolean } {
+    const trimmed = text.trim();
+    if (trimmed === "") return { count: 0, trailingNarration: false };
+    const matches = [...trimmed.matchAll(/"[^"]*"/g)];
+    if (matches.length === 0) return { count: 1, trailingNarration: false };
+    const lastMatch = matches[matches.length - 1];
+    const lastEnd = lastMatch.index! + lastMatch[0].length;
+    const trailing = trimmed.slice(lastEnd).trim();
+    return { count: matches.length, trailingNarration: trailing !== "" };
 }
 
 function escapeRegex(s: string): string {
@@ -57,45 +108,63 @@ export function parseWorldDialogue(content: string, characterNames: string[]): A
 
     if (validNames.length === 0) return [{ type: "narration", text: content }];
 
-    const { aliasPattern, aliasToCanonical } = buildAliasMap(validNames);
+    const { aliasToCanonical } = buildAliasMap(validNames);
 
-    const markerRegex = new RegExp(
-        `\\*\\*(${aliasPattern}):\\*\\*\\s*(?:"([^"]*)"|([^\\n]*?(?=\\s*\\*\\*(?:${aliasPattern}):\\*\\*|$)))`,
-        "gi"
-    );
+    const markers = scanMarkers(content);
+    if (markers.length === 0) return [{ type: "narration", text: content }];
 
     const segments: Array<WorldDialogueSegment> = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
+    let cursor = 0;
 
-    while ((match = markerRegex.exec(content)) !== null) {
-        const rawName = match[1].trim();
-        const name = aliasToCanonical.get(rawName.toLowerCase()) ?? rawName;
-        const quoted = match[2];
-        const unquoted = match[3]?.trim();
+    for (let i = 0; i < markers.length; i++) {
+        const m = markers[i];
+        const canonical = aliasToCanonical.get(m.rawName.toLowerCase());
 
-        const speech = (quoted ?? unquoted ?? "").trim();
+        if (!canonical && !isLikelySpeakerName(m.rawName)) continue;
 
-        if (match.index > lastIndex) {
+        const name = canonical ?? m.rawName;
+        const isKnown = canonical !== undefined;
+
+        const nextIndex = i + 1 < markers.length ? markers[i + 1].index : content.length;
+        const remainder = content.slice(m.afterIndex, nextIndex).trim();
+        const hasQuote = /"/.test(remainder);
+
+        if (m.index > cursor) {
             segments.push({
                 type: "narration",
-                text: content.slice(lastIndex, match.index),
+                text: content.slice(cursor, m.index),
             });
         }
 
-        segments.push({
-            type: "speech",
-            name,
-            text: quoted !== undefined ? quoted : speech.replace(/^"+|"+$/g, ""),
-        });
+        if (!hasQuote) {
+            if (remainder !== "") {
+                segments.push({ type: "speech", name, text: remainder, isKnown });
+            }
+        } else {
+            const parts = splitQuotedFragments(remainder);
+            const hasSpeechPart = parts.some((p) => p.kind === "speech");
+            if (!hasSpeechPart) {
+                if (remainder !== "") {
+                    segments.push({ type: "speech", name, text: remainder, isKnown });
+                }
+            } else {
+                for (const part of parts) {
+                    if (part.kind === "speech") {
+                        segments.push({ type: "speech", name, text: part.text, isKnown });
+                    } else {
+                        segments.push({ type: "narration", text: part.text });
+                    }
+                }
+            }
+        }
 
-        lastIndex = markerRegex.lastIndex;
+        cursor = nextIndex;
     }
 
-    if (lastIndex < content.length) {
+    if (cursor < content.length) {
         segments.push({
             type: "narration",
-            text: content.slice(lastIndex),
+            text: content.slice(cursor),
         });
     }
 
@@ -131,35 +200,63 @@ function isLikelySpeakerName(name: string): boolean {
 export interface UnknownSpeaker {
     name: string;
     line: string;
+    count: number;
 }
 
 export function detectUnknownSpeakers(content: string, knownNames: string[]): Array<UnknownSpeaker> {
     const { aliasToCanonical } = buildAliasMap(knownNames);
+    const markers = scanMarkers(content);
 
-    const nameChunk = "[^*\\n]{1,40}?";
-    const markerRegex = new RegExp(
-        `\\*\\*(${nameChunk}):\\*\\*\\s*(?:"([^"]*)"|([^\\n]*?(?=\\s*\\*\\*${nameChunk}:\\*\\*|$)))`,
-        "gi"
-    );
+    const maxRuns = new Map<string, number>();
+    const sampleLines = new Map<string, string>();
+    const originalNames = new Map<string, string>();
+
+    let prevKey: string | null = null;
+    let prevTrailingNarration = false;
+    let currentRun = 0;
+
+    for (let i = 0; i < markers.length; i++) {
+        const m = markers[i];
+        const rawName = m.rawName.trim();
+        const nextIndex = i + 1 < markers.length ? markers[i + 1].index : content.length;
+        const markerContent = content.slice(m.afterIndex, nextIndex);
+
+        const { count, trailingNarration } = analyzeMarkerContent(markerContent);
+
+        if (aliasToCanonical.has(rawName.toLowerCase()) || !isLikelySpeakerName(rawName) || count === 0) {
+            prevKey = null;
+            prevTrailingNarration = false;
+            currentRun = 0;
+            continue;
+        }
+
+        const key = rawName.toLowerCase();
+        if (prevKey !== null && prevKey !== key || prevKey !== null && prevTrailingNarration) {
+            currentRun = count;
+        } else if (prevKey === key) {
+            currentRun += count;
+        } else {
+            currentRun = count;
+        }
+        prevKey = key;
+        prevTrailingNarration = trailingNarration;
+
+        maxRuns.set(key, Math.max(maxRuns.get(key) ?? 0, currentRun));
+        if (!originalNames.has(key)) originalNames.set(key, rawName);
+        if (!sampleLines.has(key)) {
+            const parts = splitQuotedFragments(markerContent);
+            const firstSpeech = parts.find((p) => p.kind === "speech");
+            sampleLines.set(key, firstSpeech?.text ?? markerContent.trim());
+        }
+    }
 
     const results: Array<UnknownSpeaker> = [];
-    const seen = new Set<string>();
-    let match: RegExpExecArray | null;
-
-    while ((match = markerRegex.exec(content)) !== null) {
-        const rawName = match[1].trim();
-        if (aliasToCanonical.has(rawName.toLowerCase())) continue;
-
-        const normalized = rawName.toLowerCase();
-        if (seen.has(normalized)) continue;
-        if (!isLikelySpeakerName(rawName)) continue;
-
-        const quoted = match[2];
-        const unquoted = match[3]?.trim();
-        const line = (quoted ?? unquoted ?? "").trim().replace(/^"+|"+$/g, "");
-
-        seen.add(normalized);
-        results.push({ name: rawName, line });
+    for (const [key, count] of maxRuns) {
+        results.push({
+            name: originalNames.get(key)!,
+            line: sampleLines.get(key) ?? "",
+            count,
+        });
     }
 
     return results;

@@ -55,7 +55,7 @@ const MarkdownView = React.memo(
 MarkdownView.displayName = "MarkdownView";
 
 const DialogueBlock = React.memo(
-  ({ name, image, text }: { name: string; image?: string; text: string }) => {
+  ({ name, image, text, isKnown }: { name: string; image?: string; text: string; isKnown?: boolean }) => {
     const accent = useCharacterColor(name, image);
     return (
       <div
@@ -72,10 +72,17 @@ const DialogueBlock = React.memo(
             {(name || "?").slice(0, 2)}
           </div>
         )}
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-wider opacity-80" style={{ color: accent }}>
-            {name}
-          </p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider opacity-80 truncate" style={{ color: accent }}>
+              {name}
+            </p>
+            {isKnown === false && (
+              <span className="shrink-0 rounded-full border border-white/15 bg-white/5 px-1.5 py-px text-[8px] font-bold uppercase tracking-wider opacity-60">
+                Not added
+              </span>
+            )}
+          </div>
           <MarkdownView className="markdown-content dialogue-markdown text-sm select-none" content={text} />
         </div>
       </div>
@@ -763,6 +770,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                         key={i}
                         name={seg.name!}
                         image={characterByName.get(seg.name!)?.image}
+                        isKnown={seg.isKnown}
                         text={configAutoCloseFormatting ? closeStars(closeQuotes(seg.text)) : seg.text}
                       />
                     ) : (

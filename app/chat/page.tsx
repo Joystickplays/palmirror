@@ -156,6 +156,7 @@ const ChatPage = () => {
   const [discoveries, setDiscoveries] = useState<Array<DiscoveryEntry>>([]);
   const discoveryExtracting = useRef(false);
   const lastDiscoveryMessageId = useRef<string>("");
+  const DISCOVERY_THRESHOLD = 3;
 
   const discoveriesStorageKey = (domain: string) => `worldDiscoveries${domain}`;
 
@@ -2027,7 +2028,9 @@ ${entryTitle}
     lastDiscoveryMessageId.current = successfulNewMessage.id;
 
     const knownNames = worldCharacters.map((c) => c.name);
-    const unknown = detectUnknownSpeakers(successfulNewMessage.content, knownNames);
+    const unknown = detectUnknownSpeakers(successfulNewMessage.content, knownNames).filter(
+      (u) => u.count >= DISCOVERY_THRESHOLD
+    );
     if (unknown.length === 0) return;
 
     setDiscoveries((prev) => {
@@ -2038,11 +2041,11 @@ ${entryTitle}
         if (idx >= 0) {
           next[idx] = {
             ...next[idx],
-            count: next[idx].count + 1,
-            lines: next[idx].lines.length < 3 ? [...next[idx].lines, u.line] : next[idx].lines,
+            count: u.count,
+            lines: next[idx].lines.length > 0 ? next[idx].lines : [u.line],
           };
         } else {
-          next.push({ id: crypto.randomUUID(), name: u.name, count: 1, lines: [u.line], personality: null });
+          next.push({ id: crypto.randomUUID(), name: u.name, count: u.count, lines: [u.line], personality: null });
         }
       }
       saveDiscoveries(associatedDomain, next);
@@ -2054,7 +2057,7 @@ ${entryTitle}
   useEffect(() => {
     if (!associatedDomain || !isWorldDomainFlag) return;
     if (discoveryExtracting.current) return;
-    const pending = discoveries.filter((e) => e.count >= 2 && e.personality === null);
+    const pending = discoveries.filter((e) => e.count >= DISCOVERY_THRESHOLD && e.personality === null);
     if (pending.length === 0) return;
 
     (async () => {
@@ -2415,20 +2418,20 @@ ${entryTitle}
 
         {configDeveloperMode && <DeveloperBar />}
 
-        {isWorldDomainFlag && discoveries.some((e) => e.count >= 2) && (
+        {isWorldDomainFlag && discoveries.some((e) => e.count >= DISCOVERY_THRESHOLD) && (
           <AnimatePresence mode="popLayout">
-            {discoveries.filter((e) => e.count >= 2).map((entry) => (
+            {discoveries.filter((e) => e.count >= DISCOVERY_THRESHOLD).map((entry) => (
               <motion.div
                 key={entry.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="mb-1 flex items-start gap-3 rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2"
+                className="mb-1 flex max-w-full flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-amber-400/20 bg-amber-400/5 px-2.5 py-2"
               >
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-1 text-xs font-bold text-amber-300">
-                    <Sparkles className="h-3 w-3" />
-                    Discovered: {entry.name}
+                    <Sparkles className="h-3 w-3 shrink-0" />
+                    <span className="truncate">Discovered: {entry.name}</span>
                   </p>
                   {entry.personality ? (
                     <p className="text-xs opacity-70 italic">{entry.personality}</p>
