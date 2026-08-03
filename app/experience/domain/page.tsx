@@ -143,6 +143,7 @@ const ExperienceDomainPage: React.FC = () => {
     const [showNarratorEditor, setShowNarratorEditor] = useState(false);
     const [showAddFromDomain, setShowAddFromDomain] = useState(false);
     const [allDomainChars, setAllDomainChars] = useState<Array<CharacterData & { id: string }>>([]);
+    const [loadingDomainChars, setLoadingDomainChars] = useState(false);
 
     const [showingUserCharWarning, setShowingUserCharWarning] = useState(false);
     const [skipUserCharacterWarning, setSkipUserCharacterWarning] = useState(false);
@@ -455,18 +456,24 @@ const ExperienceDomainPage: React.FC = () => {
     }
 
     const loadAllDomainChars = async () => {
-        const keys = await PLMsecureContext?.getAllKeys();
-        if (!keys) return;
-        const domainKeys = keys.filter((key: string) => key.startsWith("METADATA"));
-        const chars: Array<CharacterData & { id: string }> = [];
-        for (const key of domainKeys) {
-            if (key === `METADATA${domainId}`) continue;
-            const data = await PLMsecureContext?.getSecureData(key);
-            if (data && data.plmex && data.plmex.domain && data.plmex.domain.active && data.plmex.domain.worldType !== "world") {
-                chars.push({ ...data, id: key.replace("METADATA", "") });
+        setLoadingDomainChars(true);
+        setAllDomainChars([]);
+        try {
+            const keys = await PLMsecureContext?.getAllKeys();
+            if (!keys) return;
+            const domainKeys = keys.filter((key: string) => key.startsWith("METADATA"));
+            const chars: Array<CharacterData & { id: string }> = [];
+            for (const key of domainKeys) {
+                if (key === `METADATA${domainId}`) continue;
+                const data = await PLMsecureContext?.getSecureData(key);
+                if (data && data.plmex && data.plmex.domain && data.plmex.domain.active && data.plmex.domain.worldType !== "world") {
+                    chars.push({ ...data, id: key.replace("METADATA", "") });
+                }
             }
+            setAllDomainChars(chars);
+        } finally {
+            setLoadingDomainChars(false);
         }
-        setAllDomainChars(chars);
     };
 
     const addCharacterFromDomain = async (source: CharacterData & { id: string }) => {
@@ -1324,7 +1331,12 @@ const ExperienceDomainPage: React.FC = () => {
                     </DialogHeader>
                     <p className="opacity-50 text-xs mb-2">Pick a domain-enabled character to bring into this world. Their identity and attributes are copied over; the original domain stays untouched.</p>
                     <div className="flex flex-col gap-2">
-                        {allDomainChars.length === 0 ? (
+                        {loadingDomainChars ? (
+                            <div className="flex items-center justify-center gap-2 py-6 opacity-70">
+                                <Loader2 className="animate-spin h-4 w-4" />
+                                <p className="text-sm">Loading domain characters…</p>
+                            </div>
+                        ) : allDomainChars.length === 0 ? (
                             <p className="opacity-60 text-sm">No other domain-enabled characters found.</p>
                         ) : allDomainChars.map((dc, idx) => (
                             <motion.div
