@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import { ToastContainer } from "react-toastify";
-import { ArrowLeft, ArrowRight, Check, Loader2, Sparkles, Earth, Users, Package, BookOpen, Wand2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2, Sparkles, Earth, Users, Package, BookOpen, Wand2, Activity, Trash2, CirclePlus } from 'lucide-react';
 
 import { PLMSecureContext } from "@/context/PLMSecureContext";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
@@ -141,6 +141,7 @@ const STEPS = [
     { label: "Objects", icon: Package },
     { label: "Story drive", icon: Sparkles },
     { label: "Narrator", icon: Sparkles },
+    { label: "Statuses", icon: Activity },
     { label: "Review", icon: Check },
 ] as const;
 
@@ -175,6 +176,8 @@ const WorldCreatePage: React.FC = () => {
     const [narratorReasoningFinish, setNarratorReasoningFinish] = useState(false);
     const [showNarratorResult, setShowNarratorResult] = useState(false);
     const [showNarratorReasoning, setShowNarratorReasoning] = useState(true);
+
+    const [worldStatuses, setWorldStatuses] = useState<Array<{ key: number; name: string; defaultValue: string }>>([]);
 
     const [creating, setCreating] = useState(false);
     const [expandedGenre, setExpandedGenre] = useState<string | null>(null);
@@ -397,7 +400,7 @@ const WorldCreatePage: React.FC = () => {
                             objects: worldObjects,
                         },
                     },
-                    dynamicStatuses: [],
+                    dynamicStatuses: worldStatuses.filter((s) => s.name.trim() !== ""),
                     invocations: [],
                 },
             };
@@ -426,6 +429,7 @@ const WorldCreatePage: React.FC = () => {
             case 4: return true;
             case 5: return true;
             case 6: return narratorPersona.trim() !== "";
+            case 7: return true;
             default: return true;
         }
     };
@@ -742,11 +746,47 @@ const WorldCreatePage: React.FC = () => {
 
                         {step === 7 && (
                             <div className="flex flex-col gap-6 flex-1 justify-center">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h1 className="text-3xl font-extrabold">Dynamic statuses</h1>
+                                        <p className="text-sm opacity-70">What this world will track on every chapter. The narrator attaches their current values to the end of each new message. You can change these anytime on the domain screen.</p>
+                                    </div>
+                                    <Button variant="ghost" onClick={next}>Skip for now <ArrowRight /></Button>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <p className="opacity-50 text-xs">Suggestions</p>
+                                    <div className="flex flex-wrap gap-2 pb-1">
+                                        {["Mood", "Energy", "Time of day", "Weather", "Danger", "Trust"].map((suggestion) => (
+                                            <Button key={suggestion} size="sm" variant="outline" onClick={() => {
+                                                if (worldStatuses.findIndex((s) => s.name.toLowerCase() === suggestion.toLowerCase()) === -1) {
+                                                    setWorldStatuses([...worldStatuses, { key: Math.floor(Math.random() * 69420), name: suggestion, defaultValue: "0" }]);
+                                                }
+                                            }}>{suggestion}</Button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <AnimatePresence mode="popLayout">
+                                        {worldStatuses.map((stat, idx) => (
+                                            <motion.div key={stat.key} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex gap-2 items-center">
+                                                <Input value={stat.name} onChange={(e) => { const next = [...worldStatuses]; next[idx] = { ...next[idx], name: e.target.value }; setWorldStatuses(next); }} placeholder="Status Name" className="flex-1" />
+                                                <Input value={stat.defaultValue} onChange={(e) => { const next = [...worldStatuses]; next[idx] = { ...next[idx], defaultValue: e.target.value }; setWorldStatuses(next); }} placeholder="Default Value" className="flex-1" />
+                                                <Button size="icon" variant="ghost" onClick={() => { setWorldStatuses(worldStatuses.filter((_, i) => i !== idx)); }}><Trash2 /></Button>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                    <Button variant="outline" onClick={() => setWorldStatuses([...worldStatuses, { key: Math.floor(Math.random() * 69420), name: "", defaultValue: "" }])}><CirclePlus className="mr-2" /> Add status</Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 8 && (
+                            <div className="flex flex-col gap-6 flex-1 justify-center">
                                 <h1 className="text-3xl font-extrabold">Review your world</h1>
                                 <div className="flex flex-col gap-3">
                                     <div className="border border-white/10 rounded-xl p-4 flex flex-col gap-1">
                                         <h2 className="font-bold text-lg flex items-center gap-2">{worldName}</h2>
-                                        <p className="text-xs opacity-50">{worldCharacters.length} character{worldCharacters.length !== 1 ? "s" : ""} · {worldObjects.length} object{worldObjects.length !== 1 ? "s" : ""} · {narrativeMode} narration</p>
+                                        <p className="text-xs opacity-50">{worldCharacters.length} character{worldCharacters.length !== 1 ? "s" : ""} · {worldObjects.length} object{worldObjects.length !== 1 ? "s" : ""} · {worldStatuses.length} status{worldStatuses.length !== 1 ? "es" : ""} · {narrativeMode} narration</p>
                                     </div>
                                     <div className="border border-white/10 rounded-xl p-4 flex flex-col gap-1">
                                         <h2 className="font-bold text-sm opacity-70">Premise</h2>
