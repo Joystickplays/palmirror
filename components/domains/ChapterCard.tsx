@@ -128,11 +128,11 @@ const ChapterCard = React.memo(({
                 </p>
             </div>
             <div className="flex justify-end gap-2">
-                <Button variant={"outline"} onClick={openChapter}>
-                    Open <Play />
-                </Button>
                 <Button variant={"outline"} onClick={openContinueDialog}>
                     Continue <BookPlus />
+                </Button>
+                <Button variant={"outline"} onClick={openChapter}>
+                    Open <Play />
                 </Button>
                 <Popover>
                     <PopoverTrigger asChild>

@@ -93,7 +93,7 @@ const WorldCharacterItem = ({ character, onUpdate, onDelete, characterNames = []
                             <Input placeholder="Character name" value={localName} onChange={(e) => setLocalName(e.target.value)} onBlur={() => { if (localName !== character.name) onUpdate({ ...character, name: localName }); }} />
                             <Button
                                 variant={character.isUser ? "default" : "outline"}
-                                className="shrink-0 w-fit ml-auto"
+                                className="hidden md:flex shrink-0 w-fit ml-auto"
                                 onClick={() => onUpdate({ ...character, isUser: !character.isUser })}
                                 title="Mark this character as the one you play"
                             >
@@ -101,8 +101,19 @@ const WorldCharacterItem = ({ character, onUpdate, onDelete, characterNames = []
                             </Button>
                         </div>
                         <Textarea placeholder="Personality, mannerisms, goals..." value={localPersonality} onChange={(e) => setLocalPersonality(e.target.value)} onBlur={() => { if (localPersonality !== character.personality) onUpdate({ ...character, personality: localPersonality }); }} className="text-sm" />
+                        <div className="flex gap-2 md:hidden">
+                            <Button
+                                variant={character.isUser ? "default" : "outline"}
+                                className="flex-1"
+                                onClick={() => onUpdate({ ...character, isUser: !character.isUser })}
+                                title="Mark this character as the one you play"
+                            >
+                                <UserCheck className="w-4 h-4" /> {character.isUser ? "You" : "This is me"}
+                            </Button>
+                            <Button variant="destructive" onClick={onDelete}><Trash2 /></Button>
+                        </div>
                     </div>
-                    <Button variant="destructive" onClick={onDelete}><Trash2 /></Button>
+                    <Button variant="destructive" className="hidden md:flex" onClick={onDelete}><Trash2 /></Button>
                 </div>
             </div>
 
