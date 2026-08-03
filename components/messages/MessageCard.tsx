@@ -5,7 +5,7 @@ import { parseWorldDialogue, WorldDialogueSegment } from '@/utils/worldDialogue'
 import { useCharacterColor } from '@/utils/characterColor';
 import { Card, CardContent } from "@/components/ui/card";
 import ReactMarkdown from 'react-markdown';
-import { Pencil, Rewind, Check, MessagesSquare, RotateCw, ChevronDown, MailQuestion, ArrowUp, X, Book, Swords, MessageSquareQuote, HelpCircle, Wand2, PersonStanding } from 'lucide-react';
+import { Pencil, Rewind, Check, MessagesSquare, RotateCw, ChevronDown, MailQuestion, ArrowUp, X, Book, Swords, MessageSquareQuote, HelpCircle, Wand2, PersonStanding, UserPlus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox"
@@ -55,7 +55,7 @@ const MarkdownView = React.memo(
 MarkdownView.displayName = "MarkdownView";
 
 const DialogueBlock = React.memo(
-  ({ name, image, text, isKnown }: { name: string; image?: string; text: string; isKnown?: boolean }) => {
+  ({ name, image, text, isKnown, onAdd, scene }: { name: string; image?: string; text: string; isKnown?: boolean; onAdd?: (name: string, text: string, scene: string) => void; scene?: string }) => {
     const accent = useCharacterColor(name, image);
     return (
       <div
@@ -78,8 +78,23 @@ const DialogueBlock = React.memo(
               {name}
             </p>
             {isKnown === false && (
-              <span className="shrink-0 rounded-full border border-white/15 bg-white/5 px-1.5 py-px text-[8px] font-bold uppercase tracking-wider opacity-60">
-                Not added
+              <span className="flex shrink-0 items-center gap-1.5 ml-auto mb-1">
+                <span className="rounded-full border border-white/15 bg-white/5 px-1.5 py-px text-[8px] font-bold uppercase tracking-wider opacity-60">
+                  Unknown
+                </span>
+                {onAdd && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAdd(name, text, scene && scene.trim() ? scene : text);
+                    }}
+                    className="flex items-center gap-0.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1.5 py-px text-[8px] font-bold uppercase tracking-wider text-emerald-300 transition-colors hover:bg-emerald-400/20"
+                    title={`Add ${name} to the world`}
+                  >
+                    <UserPlus className="h-2.5 w-2.5" />
+                    Add
+                  </button>
+                )}
               </span>
             )}
           </div>
@@ -158,7 +173,9 @@ interface MessageCardProps {
   isGreetingMessage: boolean;
   isLastMessage: boolean;
   characterData: CharacterData;
+  isWorld?: boolean;
   worldCharacters?: Array<{ name: string; image?: string }>;
+  onAddWorldCharacter?: (name: string, line: string, scene: string) => void;
   editMessage: (index: number, content: string, extContIdx?: number) => void;
   rewindTo: (index: number) => void;
   changeStatus: (changingStatus: string, changingStatusValue: string, changingStatusCharReacts: boolean, changingStatusReason: string) => void;
@@ -209,7 +226,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
   isLastMessage,
   isGreetingMessage,
   characterData,
+  isWorld,
   worldCharacters,
+  onAddWorldCharacter,
   editMessage,
   rewindTo,
   changeStatus,
@@ -299,8 +318,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
     : worldCharactersFallback.map((c) => ({ name: c.name, image: c.image }));
 
   const isWorldAssistant = useMemo(
-    () => activeWorldCharacters.length > 0 && role === "assistant",
-    [activeWorldCharacters, role]
+    () => (isWorld || !!characterData.plmex?.domain?.worldConfig) && role === "assistant",
+    [isWorld, characterData, role]
   )
 
   const characterByName = useMemo(() => {
@@ -771,6 +790,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
                         name={seg.name!}
                         image={characterByName.get(seg.name!)?.image}
                         isKnown={seg.isKnown}
+                        onAdd={onAddWorldCharacter}
+                        scene={configTyping ? messageTyped : presentableText}
                         text={configAutoCloseFormatting ? closeStars(closeQuotes(seg.text)) : seg.text}
                       />
                     ) : (

@@ -100,6 +100,6 @@ export function formatActionForDisplay(parsed: ParsedActionMessage): string {
         case "ASK":
             return `You ask, "${parsed.text}"`;
         case "STORY":
-            return `You steer the story: ${parsed.text}`;
+            return `Then, ${parsed.text}`;
     }
 }

@@ -31,10 +31,8 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/
 import { useRouter } from "next/navigation";
 import { encodingForModel } from "js-tiktoken";
 
-import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall, getDomainFlashcards, getDomainGuide, isWorldDomain, applyDirectedAttributeChange, getWorldConfig, addWorldCharacter } from "@/utils/domainData";
-import { detectUnknownSpeakers } from "@/utils/worldDialogue";
-import { independentInitOpenAI, generateChatCompletion } from "@/utils/portableAi";
-import { getWorldCharacterDiscoverySysInst } from "@/utils/domainInstructionShaping/worldCharacterDiscoverySysInst";
+import { addDomainMemory, addDomainTimestep, deleteMemoryFromMessageIfAny, getDomainAttributes, getDomainMemories, removeDomainTimestep, reverseDomainAttribute, setDomainAttributes, setDomainTimesteps, buildAssistantRecall, getDomainFlashcards, getDomainGuide, isWorldDomain, applyDirectedAttributeChange, getWorldConfig } from "@/utils/domainData";
+import AddWorldSpeakerDialog from "@/components/chat/AddWorldSpeakerDialog";
 import { useAttributeNotification } from "@/components/notifications/AttributeNotificationProvider";
 import { useMemoryNotification } from "@/components/notifications/MemoryNotificationProvider";
 import SuggestionBar from "@/components/chat/bars/SuggestionBar";
@@ -43,7 +41,7 @@ import { suggestionBarSysInst } from "@/utils/suggestionBarSysInst";
 import { usePLMGlobalConfig } from "@/context/PLMGlobalConfig";
 import { MessagePreview } from "@/components/MessagePreview";
 import { LinearBlur } from "@/components/utilities/LinearBlur";
-import { ChevronLeft, ChevronRight, Info, ListCollapse, Sparkles, UserPlus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, ListCollapse, X } from "lucide-react";
 import { UserPersonality } from "@/types/UserPersonality";
 import { usePMNotification } from "@/components/notifications/PalMirrorNotification";
 import { ApiProfile } from "@/types/ApiProfile";
@@ -146,37 +144,8 @@ const ChatPage = () => {
   const [worldObjects, setWorldObjects] = useState<WorldObject[]>([]);
   const [pendingObjectAction, setPendingObjectAction] = useState<{ object: WorldObject; action: WorldObjectAction } | null>(null);
 
-  interface DiscoveryEntry {
-    id: string;
-    name: string;
-    count: number;
-    lines: Array<string>;
-    personality: string | null;
-  }
-  const [discoveries, setDiscoveries] = useState<Array<DiscoveryEntry>>([]);
-  const discoveryExtracting = useRef(false);
-  const lastDiscoveryMessageId = useRef<string>("");
-  const DISCOVERY_THRESHOLD = 3;
+  const [addSpeakerTarget, setAddSpeakerTarget] = useState<{ name: string; line: string; scene: string } | null>(null);
 
-  const discoveriesStorageKey = (domain: string) => `worldDiscoveries${domain}`;
-
-  const loadDiscoveries = (domain: string): Array<DiscoveryEntry> => {
-    try {
-      const raw = sessionStorage.getItem(discoveriesStorageKey(domain));
-      if (raw) return JSON.parse(raw);
-    } catch (e) {
-      console.warn("Failed to parse discoveries", e);
-    }
-    return [];
-  };
-
-  const saveDiscoveries = (domain: string, entries: Array<DiscoveryEntry>) => {
-    try {
-      sessionStorage.setItem(discoveriesStorageKey(domain), JSON.stringify(entries));
-    } catch (e) {
-      console.warn("Failed to save discoveries", e);
-    }
-  };
   const attributeNotification = useAttributeNotification();
   const memoryNotification = useMemoryNotification();
 
@@ -2012,141 +1981,6 @@ ${entryTitle}
     }
   }, [successfulNewMessage]);
 
-  // Character discovery: load per-domain pending discoveries
-  useEffect(() => {
-    if (isWorldDomainFlag && associatedDomain) {
-      setDiscoveries(loadDiscoveries(associatedDomain));
-    } else {
-      setDiscoveries([]);
-    }
-  }, [associatedDomain, isWorldDomainFlag]);
-
-  // Character discovery: detect unknown speakers from completed assistant messages
-  useEffect(() => {
-    if (!successfulNewMessage || typeof successfulNewMessage === "boolean" || !associatedDomain || !isWorldDomainFlag) return;
-    if (successfulNewMessage.id === lastDiscoveryMessageId.current) return;
-    lastDiscoveryMessageId.current = successfulNewMessage.id;
-
-    const knownNames = worldCharacters.map((c) => c.name);
-    const unknown = detectUnknownSpeakers(successfulNewMessage.content, knownNames).filter(
-      (u) => u.count >= DISCOVERY_THRESHOLD
-    );
-    if (unknown.length === 0) return;
-
-    setDiscoveries((prev) => {
-      const next = [...prev];
-      for (const u of unknown) {
-        const key = u.name.toLowerCase();
-        const idx = next.findIndex((e) => e.name.toLowerCase() === key);
-        if (idx >= 0) {
-          next[idx] = {
-            ...next[idx],
-            count: u.count,
-            lines: next[idx].lines.length > 0 ? next[idx].lines : [u.line],
-          };
-        } else {
-          next.push({ id: crypto.randomUUID(), name: u.name, count: u.count, lines: [u.line], personality: null });
-        }
-      }
-      saveDiscoveries(associatedDomain, next);
-      return next;
-    });
-  }, [successfulNewMessage, associatedDomain, isWorldDomainFlag, worldCharacters]);
-
-  // Character discovery: generate personalities for threshold-met candidates
-  useEffect(() => {
-    if (!associatedDomain || !isWorldDomainFlag) return;
-    if (discoveryExtracting.current) return;
-    const pending = discoveries.filter((e) => e.count >= DISCOVERY_THRESHOLD && e.personality === null);
-    if (pending.length === 0) return;
-
-    (async () => {
-      discoveryExtracting.current = true;
-      try {
-        await independentInitOpenAI();
-        let modelName = "gpt-3.5-turbo";
-        const settings = localStorage.getItem("Proxy_settings");
-        if (settings) {
-          try {
-            const parsed = JSON.parse(settings);
-            modelName = parsed.modelName || "gpt-3.5-turbo";
-          } catch {}
-        }
-        const sysInst = getWorldCharacterDiscoverySysInst(pending.map((e) => ({ name: e.name, lines: e.lines })));
-        const stream = generateChatCompletion({
-          model: modelName,
-          temperature: 0.4,
-          stream: false,
-          messages: [
-            { role: "system", content: sysInst.trim() },
-            { role: "user", content: "Generate the personality profiles now." },
-          ],
-        });
-
-        let output = "";
-        for await (const chunk of stream) {
-          output += chunk.choices?.[0]?.message?.content || "";
-        }
-
-        const parsed = new Map<string, string>();
-        for (const rawLine of output.split("\n")) {
-          const line = rawLine.trim();
-          const sep = line.indexOf("|");
-          if (sep <= 0) continue;
-          const name = line.slice(0, sep).trim();
-          const personality = line.slice(sep + 1).trim();
-          if (name && personality) parsed.set(name.toLowerCase(), personality);
-        }
-
-        setDiscoveries((prev) => {
-          const next = prev.map((e) =>
-            e.personality === null && parsed.has(e.name.toLowerCase())
-              ? { ...e, personality: parsed.get(e.name.toLowerCase())! }
-              : e
-          );
-          saveDiscoveries(associatedDomain, next);
-          return next;
-        });
-      } catch (e) {
-        console.warn("Character discovery extraction failed", e);
-      } finally {
-        discoveryExtracting.current = false;
-      }
-    })();
-  }, [discoveries, associatedDomain, isWorldDomainFlag]);
-
-  const acceptDiscovery = async (entry: DiscoveryEntry) => {
-    if (!associatedDomain || !isWorldDomainFlag) return;
-    await addWorldCharacter(associatedDomain, {
-      id: entry.id,
-      name: entry.name,
-      personality: entry.personality ?? "",
-      attributes: [],
-    });
-    setWorldCharacters((prev) => {
-      const next = [...prev];
-      if (!next.some((c) => c.name.toLowerCase() === entry.name.toLowerCase())) {
-        next.push({ name: entry.name });
-      }
-      return next;
-    });
-    setDiscoveries((prev) => {
-      const next = prev.filter((e) => e.id !== entry.id);
-      saveDiscoveries(associatedDomain, next);
-      return next;
-    });
-    PMNotify.success(`${entry.name} added to the world's characters.`);
-  };
-
-  const dismissDiscovery = (entry: DiscoveryEntry) => {
-    if (!associatedDomain) return;
-    setDiscoveries((prev) => {
-      const next = prev.filter((e) => e.id !== entry.id);
-      saveDiscoveries(associatedDomain, next);
-      return next;
-    });
-  };
-
   // Token counting (this was way too laggy so scrapped)
 
   // const tokenizer = encodingForModel('gpt-3.5-turbo');
@@ -2308,7 +2142,9 @@ ${entryTitle}
                           isGreetingMessage={index === 0}
                           isLastMessage={index === messages.length - 1}
                           characterData={characterData}
+                          isWorld={isWorldDomainFlag}
                           worldCharacters={worldCharacters}
+                          onAddWorldCharacter={(name, line, scene) => setAddSpeakerTarget({ name, line, scene })}
                           editMessage={editMessage}
                           rewindTo={rewindTo}
                           changeStatus={changeStatus}
@@ -2418,44 +2254,6 @@ ${entryTitle}
 
         {configDeveloperMode && <DeveloperBar />}
 
-        {isWorldDomainFlag && discoveries.some((e) => e.count >= DISCOVERY_THRESHOLD) && (
-          <AnimatePresence mode="popLayout">
-            {discoveries.filter((e) => e.count >= DISCOVERY_THRESHOLD).map((entry) => (
-              <motion.div
-                key={entry.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="mb-1 flex max-w-full flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-amber-400/20 bg-amber-400/5 px-2.5 py-2"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1 text-xs font-bold text-amber-300">
-                    <Sparkles className="h-3 w-3 shrink-0" />
-                    <span className="truncate">Discovered: {entry.name}</span>
-                  </p>
-                  {entry.personality ? (
-                    <p className="text-xs opacity-70 italic">{entry.personality}</p>
-                  ) : (
-                    <p className="text-xs italic opacity-40">personality pending…</p>
-                  )}
-                  {entry.lines[0] && (
-                    <p className="mt-0.5 truncate text-[10px] opacity-40">"{entry.lines[0]}"</p>
-                  )}
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => dismissDiscovery(entry)}>
-                    Dismiss
-                  </Button>
-                  <Button size="sm" className="h-7 px-2 text-xs" onClick={() => acceptDiscovery(entry)}>
-                    <UserPlus className="mr-1 h-3 w-3" />
-                    Add
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
-
         <MessageInput
           newMessage={newMessage}
           setNewMessage={setNewMessage}
@@ -2478,6 +2276,31 @@ ${entryTitle}
       </motion.div>
       <TokenCounter tokenCount={tokenCount} />
 
+      <AddWorldSpeakerDialog
+        open={!!addSpeakerTarget}
+        onOpenChange={(o) => { if (!o) setAddSpeakerTarget(null); }}
+        name={addSpeakerTarget?.name ?? ""}
+        line={addSpeakerTarget?.line ?? ""}
+        scene={addSpeakerTarget?.scene ?? ""}
+        domainId={associatedDomain}
+        worldContext={{
+          worldName: characterData.name,
+          premise: characterData.scenario,
+          narratorPersona: characterData.plmex?.domain?.worldConfig?.narratorPersona ?? "",
+          narrativeMode: characterData.plmex?.domain?.worldConfig?.narrativeMode ?? "",
+          knownCharacters: worldCharacters.map((c) => c.name),
+        }}
+        onAdded={(addedName) => {
+          setWorldCharacters((prev) => {
+            const next = [...prev];
+            if (!next.some((c) => c.name.toLowerCase() === addedName.toLowerCase())) {
+              next.push({ name: addedName });
+            }
+            return next;
+          });
+          PMNotify.success(`${addedName} added to the world's characters.`);
+        }}
+      />
       <MessagePreview 
         open={openMessagePreview}
         setOpen={setOpenMessagePreview}

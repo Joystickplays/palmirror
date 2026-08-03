@@ -44,17 +44,6 @@ function splitQuotedFragments(text: string): Array<{ kind: "speech" | "narration
     return parts;
 }
 
-function analyzeMarkerContent(text: string): { count: number; trailingNarration: boolean } {
-    const trimmed = text.trim();
-    if (trimmed === "") return { count: 0, trailingNarration: false };
-    const matches = [...trimmed.matchAll(/"[^"]*"/g)];
-    if (matches.length === 0) return { count: 1, trailingNarration: false };
-    const lastMatch = matches[matches.length - 1];
-    const lastEnd = lastMatch.index! + lastMatch[0].length;
-    const trailing = trimmed.slice(lastEnd).trim();
-    return { count: matches.length, trailingNarration: trailing !== "" };
-}
-
 function escapeRegex(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -105,8 +94,6 @@ export function parseWorldDialogue(content: string, characterNames: string[]): A
     const validNames = characterNames
         .map((n) => n.trim())
         .filter((n) => n !== "");
-
-    if (validNames.length === 0) return [{ type: "narration", text: content }];
 
     const { aliasToCanonical } = buildAliasMap(validNames);
 
@@ -179,7 +166,7 @@ const GENERIC_SPEAKER_STOPWORDS = new Set([
     "narrator", "announcer", "voice", "guard", "soldier", "man", "woman", "child",
     "children", "stranger", "merchant", "servant", "king", "queen", "captain",
     "warning", "attention", "note", "status", "aside", "whisper", "sigh", "laugh",
-    "cough", "murmur",
+    "cough", "murmur", "???", "?"
 ]);
 
 function isLikelySpeakerName(name: string): boolean {
@@ -195,69 +182,4 @@ function isLikelySpeakerName(name: string): boolean {
     if (lower === trimmed) return false;
 
     return true;
-}
-
-export interface UnknownSpeaker {
-    name: string;
-    line: string;
-    count: number;
-}
-
-export function detectUnknownSpeakers(content: string, knownNames: string[]): Array<UnknownSpeaker> {
-    const { aliasToCanonical } = buildAliasMap(knownNames);
-    const markers = scanMarkers(content);
-
-    const maxRuns = new Map<string, number>();
-    const sampleLines = new Map<string, string>();
-    const originalNames = new Map<string, string>();
-
-    let prevKey: string | null = null;
-    let prevTrailingNarration = false;
-    let currentRun = 0;
-
-    for (let i = 0; i < markers.length; i++) {
-        const m = markers[i];
-        const rawName = m.rawName.trim();
-        const nextIndex = i + 1 < markers.length ? markers[i + 1].index : content.length;
-        const markerContent = content.slice(m.afterIndex, nextIndex);
-
-        const { count, trailingNarration } = analyzeMarkerContent(markerContent);
-
-        if (aliasToCanonical.has(rawName.toLowerCase()) || !isLikelySpeakerName(rawName) || count === 0) {
-            prevKey = null;
-            prevTrailingNarration = false;
-            currentRun = 0;
-            continue;
-        }
-
-        const key = rawName.toLowerCase();
-        if (prevKey !== null && prevKey !== key || prevKey !== null && prevTrailingNarration) {
-            currentRun = count;
-        } else if (prevKey === key) {
-            currentRun += count;
-        } else {
-            currentRun = count;
-        }
-        prevKey = key;
-        prevTrailingNarration = trailingNarration;
-
-        maxRuns.set(key, Math.max(maxRuns.get(key) ?? 0, currentRun));
-        if (!originalNames.has(key)) originalNames.set(key, rawName);
-        if (!sampleLines.has(key)) {
-            const parts = splitQuotedFragments(markerContent);
-            const firstSpeech = parts.find((p) => p.kind === "speech");
-            sampleLines.set(key, firstSpeech?.text ?? markerContent.trim());
-        }
-    }
-
-    const results: Array<UnknownSpeaker> = [];
-    for (const [key, count] of maxRuns) {
-        results.push({
-            name: originalNames.get(key)!,
-            line: sampleLines.get(key) ?? "",
-            count,
-        });
-    }
-
-    return results;
 }
