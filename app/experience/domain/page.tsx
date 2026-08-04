@@ -1343,7 +1343,7 @@ const ExperienceDomainPage: React.FC = () => {
                                 />
                             ))}
                         </AnimatePresence>
-                        <Button className="w-full flex sm:hidden" variant="palmirror" size="sm" onClick={() => {
+                        <Button className="w-full flex" variant="palmirror" size="sm" onClick={() => {
                             loadAllDomainChars();
                             setShowAddFromDomain(true);
                         }}><Library /> Add from Domain...</Button>
