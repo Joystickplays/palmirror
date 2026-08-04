@@ -1343,7 +1343,7 @@ const ExperienceDomainPage: React.FC = () => {
                                 />
                             ))}
                         </AnimatePresence>
-                        <Button className="w-full flex sm:hidden" variant="outline" size="sm" onClick={() => {
+                        <Button className="w-full flex sm:hidden" variant="palmirror" size="sm" onClick={() => {
                             loadAllDomainChars();
                             setShowAddFromDomain(true);
                         }}><Library /> Add from Domain...</Button>
@@ -1396,12 +1396,13 @@ const ExperienceDomainPage: React.FC = () => {
                                     .sort((a, b) => a.rootName.localeCompare(b.rootName));
                                 return groups.map((group) => (
                                     <div key={group.rootId} className="flex flex-col gap-1">
+                                        {group.items.length > 1 ? 
                                         <p className="text-[11px] font-bold uppercase tracking-wider opacity-50 flex items-center gap-2">
                                             {group.rootName}
-                                            <span className="rounded-full border border-white/15 bg-white/5 px-1.5 py-px text-[8px] font-bold opacity-60">
+                                            <span className="ml-auto px-1.5 py-px text-[8px] font-bold opacity-60">
                                                 {group.items.length} {group.items.length === 1 ? "version" : "versions"}
                                             </span>
-                                        </p>
+                                        </p> : null}
                                         {group.items.map((dc, idx) => (
                                             <motion.div
                                                 key={dc.id}
@@ -1410,11 +1411,12 @@ const ExperienceDomainPage: React.FC = () => {
                                                 transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 12, delay: idx * 0.05 }}
                                                 className="border-b border-white/10 p-2 flex items-center gap-3"
                                             >
-                                                {dc.image && <img src={dc.image} alt={dc.name} className="size-10 rounded-lg object-cover" />}
+                                                {dc.image && !dc.isBranch && <img src={dc.image} alt={dc.name} className="size-10 rounded-lg object-cover" />}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-bold flex items-center gap-1.5">
-                                                        <span className="truncate">{dc.name}</span>
-                                                        {dc.isBranch ? (
+                                                    <p className="text-sm font-bold flex flex-col mb-2">
+                                                        {dc.isBranch ? <span className="tracking-wider font-bold text-[8px] opacity-60 uppercase">Branch</span> : null}
+                                                        <span className={`truncate max-w-48 ${dc.isBranch && "opacity-70 text-xs"}`}>{dc.isBranch ? dc.branchName : dc.name}</span>
+                                                        {/* {dc.isBranch ? (
                                                             <span className="shrink-0 rounded-full border border-sky-400/30 bg-sky-400/10 px-1.5 py-px text-[8px] font-bold uppercase tracking-wider text-sky-300">
                                                                 Branch · {dc.branchName}
                                                             </span>
@@ -1422,11 +1424,11 @@ const ExperienceDomainPage: React.FC = () => {
                                                             <span className="shrink-0 rounded-full border border-white/15 bg-white/5 px-1.5 py-px text-[8px] font-bold uppercase tracking-wider opacity-60">
                                                                 Base
                                                             </span>
-                                                        )}
+                                                        )} */}
                                                     </p>
                                                     <p className="text-xs opacity-60">{dc.plmex.domain?.attributes?.length || 0} attributes</p>
                                                 </div>
-                                                <Button variant="outline" size="sm" onClick={() => addCharacterFromDomain(dc)}><Check /> Add</Button>
+                                                <Button variant="outline" size="sm" onClick={() => addCharacterFromDomain(dc)}><ArrowRight /></Button>
                                             </motion.div>
                                         ))}
                                     </div>
