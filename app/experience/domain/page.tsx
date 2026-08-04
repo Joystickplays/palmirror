@@ -66,9 +66,15 @@ interface Message {
     stillGenerating: boolean;
 }
 
+interface AddableDomainChar extends CharacterData {
+    id: string;
+    isBranch: boolean;
+    branchName?: string;
+    rootId: string;
+    rootName: string;
+}
 
 const ExperienceDomainPage: React.FC = () => {
-
 
     const PMNotify = usePMNotification();
 
@@ -142,7 +148,7 @@ const ExperienceDomainPage: React.FC = () => {
     const [showWorldObjects, setShowWorldObjects] = useState(false);
     const [showNarratorEditor, setShowNarratorEditor] = useState(false);
     const [showAddFromDomain, setShowAddFromDomain] = useState(false);
-    const [allDomainChars, setAllDomainChars] = useState<Array<CharacterData & { id: string }>>([]);
+    const [allDomainChars, setAllDomainChars] = useState<Array<AddableDomainChar>>([]);
     const [loadingDomainChars, setLoadingDomainChars] = useState(false);
 
     const [showingUserCharWarning, setShowingUserCharWarning] = useState(false);
@@ -462,13 +468,45 @@ const ExperienceDomainPage: React.FC = () => {
             const keys = await PLMsecureContext?.getAllKeys();
             if (!keys) return;
             const domainKeys = keys.filter((key: string) => key.startsWith("METADATA"));
-            const chars: Array<CharacterData & { id: string }> = [];
+            const byId = new Map<string, CharacterData>();
             for (const key of domainKeys) {
                 if (key === `METADATA${domainId}`) continue;
                 const data = await PLMsecureContext?.getSecureData(key);
                 if (data && data.plmex && data.plmex.domain && data.plmex.domain.active && data.plmex.domain.worldType !== "world") {
-                    chars.push({ ...data, id: key.replace("METADATA", "") });
+                    byId.set(key.replace("METADATA", ""), data);
                 }
+            }
+
+            const currentEntry = character.plmex?.domain ? character : null;
+            const resolveRoot = (id: string): string => {
+                let current = id;
+                const visited = new Set<string>();
+                while (true) {
+                    if (visited.has(current)) break;
+                    visited.add(current);
+                    const entry = byId.get(current) ?? (current === domainId ? currentEntry : null);
+                    const parentId = entry?.plmex?.domain?.associatedDomainByBranch;
+                    if (!parentId) break;
+                    current = parentId;
+                }
+                return current;
+            };
+
+            const chars: Array<AddableDomainChar> = [];
+            const branchMarker = "_branch_";
+            for (const [id, data] of byId) {
+                const isBranch = !!data.plmex?.domain?.associatedDomainByBranch;
+                const rootId = resolveRoot(id);
+                const rootData = rootId === domainId ? currentEntry : byId.get(rootId);
+                const markerIdx = id.lastIndexOf(branchMarker);
+                chars.push({
+                    ...data,
+                    id,
+                    isBranch,
+                    branchName: isBranch && markerIdx >= 0 ? id.slice(markerIdx + branchMarker.length) : undefined,
+                    rootId,
+                    rootName: rootData?.name ?? data.name,
+                });
             }
             setAllDomainChars(chars);
         } finally {
@@ -476,7 +514,7 @@ const ExperienceDomainPage: React.FC = () => {
         }
     };
 
-    const addCharacterFromDomain = async (source: CharacterData & { id: string }) => {
+    const addCharacterFromDomain = async (source: AddableDomainChar) => {
         const newChar: WorldCharacter = {
             id: crypto.randomUUID(),
             name: source.name,
@@ -1338,22 +1376,63 @@ const ExperienceDomainPage: React.FC = () => {
                             </div>
                         ) : allDomainChars.length === 0 ? (
                             <p className="opacity-60 text-sm">No other domain-enabled characters found.</p>
-                        ) : allDomainChars.map((dc, idx) => (
-                            <motion.div
-                                key={dc.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 12, delay: idx * 0.05 }}
-                                className="border-b border-white/10 p-2 flex items-center gap-3"
-                            >
-                                {dc.image && <img src={dc.image} alt={dc.name} className="size-10 rounded-lg object-cover" />}
-                                <div className="flex-1">
-                                    <p className="text-sm font-bold">{dc.name}</p>
-                                    <p className="text-xs opacity-60">{dc.plmex.domain?.attributes?.length || 0} attributes</p>
-                                </div>
-                                <Button variant="outline" size="sm" onClick={() => addCharacterFromDomain(dc)}><Check /> Add</Button>
-                            </motion.div>
-                        ))}
+                        ) : (
+                            (() => {
+                                const byRoot = new Map<string, Array<AddableDomainChar>>();
+                                for (const dc of allDomainChars) {
+                                    const arr = byRoot.get(dc.rootId) ?? [];
+                                    arr.push(dc);
+                                    byRoot.set(dc.rootId, arr);
+                                }
+                                const groups = Array.from(byRoot.entries())
+                                    .map(([rootId, items]) => ({
+                                        rootId,
+                                        rootName: items[0].rootName,
+                                        items: items.slice().sort((a, b) => {
+                                            if (a.isBranch !== b.isBranch) return a.isBranch ? 1 : -1;
+                                            return (a.branchName ?? "").localeCompare(b.branchName ?? "");
+                                        }),
+                                    }))
+                                    .sort((a, b) => a.rootName.localeCompare(b.rootName));
+                                return groups.map((group) => (
+                                    <div key={group.rootId} className="flex flex-col gap-1">
+                                        <p className="text-[11px] font-bold uppercase tracking-wider opacity-50 flex items-center gap-2">
+                                            {group.rootName}
+                                            <span className="rounded-full border border-white/15 bg-white/5 px-1.5 py-px text-[8px] font-bold opacity-60">
+                                                {group.items.length} {group.items.length === 1 ? "version" : "versions"}
+                                            </span>
+                                        </p>
+                                        {group.items.map((dc, idx) => (
+                                            <motion.div
+                                                key={dc.id}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ type: 'spring', mass: 1, stiffness: 161, damping: 12, delay: idx * 0.05 }}
+                                                className="border-b border-white/10 p-2 flex items-center gap-3"
+                                            >
+                                                {dc.image && <img src={dc.image} alt={dc.name} className="size-10 rounded-lg object-cover" />}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-bold flex items-center gap-1.5">
+                                                        <span className="truncate">{dc.name}</span>
+                                                        {dc.isBranch ? (
+                                                            <span className="shrink-0 rounded-full border border-sky-400/30 bg-sky-400/10 px-1.5 py-px text-[8px] font-bold uppercase tracking-wider text-sky-300">
+                                                                Branch · {dc.branchName}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="shrink-0 rounded-full border border-white/15 bg-white/5 px-1.5 py-px text-[8px] font-bold uppercase tracking-wider opacity-60">
+                                                                Base
+                                                            </span>
+                                                        )}
+                                                    </p>
+                                                    <p className="text-xs opacity-60">{dc.plmex.domain?.attributes?.length || 0} attributes</p>
+                                                </div>
+                                                <Button variant="outline" size="sm" onClick={() => addCharacterFromDomain(dc)}><Check /> Add</Button>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                ));
+                            })()
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>
