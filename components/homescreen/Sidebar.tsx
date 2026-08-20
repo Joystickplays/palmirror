@@ -296,7 +296,7 @@ export default function Sidebar() {
                                 type="file"
                                 ref={fileInputRef}
                                 onChange={importCharacter}
-                                style={{ display: 'none' }}
+                                style={{ position: 'absolute', width: 1, height: 1, opacity: 0, overflow: 'hidden', zIndex: -1 }}
                                 accept=".plmc, .card.png"
                             />
                             <Button onClick={() => fileInputRef.current?.click()}><Import /> Import from file</Button>

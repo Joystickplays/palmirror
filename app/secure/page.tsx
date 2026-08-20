@@ -110,6 +110,8 @@ export default function Home() {
 
   const [checkpointName, setCheckpointName] = useState("");
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const handleKeyPressPin = (key: string) => {
     if (key === "⌫") {
       setPin((prev) => prev.slice(0, -1));
@@ -182,35 +184,6 @@ export default function Home() {
       );
     } catch (error) {
       PMNotify.error("Failed to setup! Canceled the dialog?");
-    }
-  };
-
-  const pickFile = async (): Promise<File | null> => {
-    try {
-      if (typeof window !== "undefined" && "showOpenFilePicker" in window) {
-        // use native file picker if available
-        const handles = await (window as any).showOpenFilePicker({ multiple: false });
-        if (handles && handles.length) {
-          return await handles[0].getFile();
-        }
-        return null;
-      }
-
-      // fallback for older browsers
-      return await new Promise((resolve) => {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.style.display = "none";
-        input.onchange = () => {
-          resolve(input.files && input.files[0] ? input.files[0] : null);
-          input.remove();
-        };
-        document.body.appendChild(input);
-        input.click();
-      });
-    } catch (e) {
-      console.error("File picker error or cancelled", e);
-      return null;
     }
   };
 
@@ -395,7 +368,7 @@ export default function Home() {
 
           <div className="flex gap-2">
             <Button className="flex-1" onClick={() => setShowingSVCPVerify(true)}>Create checkpoint</Button>
-            <Button variant={"outline"} onClick={() => setShowingLDCPVerify(true)}>Load checkpoint</Button>
+            <Button variant={"outline"} onClick={() => fileInputRef.current?.click()}>Load checkpoint</Button>
           </div>
 
 
@@ -427,15 +400,13 @@ export default function Home() {
 
           <AskForUnlockSecure open={showingLDCPVerify} onUnlock={async () => {
             setShowingLDCPVerify(false);
-            const file = await pickFile();
-            const metadata = await extractMetadata(file);
+            const metadata = await extractMetadata(checkpointFile);
             if (!metadata) {
               PMNotify.error("Not a valid checkpoint file, couldn't find the metadata.")
               return;
             }
             
             setCheckpointMetadata(metadata)
-            setCheckpointFile(file);
             setShowingConfirmLoadCheckpoint(true);
           }} onCancel={() => setShowingLDCPVerify(false)} />
 
@@ -621,6 +592,18 @@ export default function Home() {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+      <input
+        ref={fileInputRef}
+        type="file"
+        style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden", zIndex: -1 }}
+        onChange={(e) => {
+          const file = e.target.files?.[0] || null;
+          e.target.value = "";
+          if (!file) return;
+          setCheckpointFile(file);
+          setShowingLDCPVerify(true);
+        }}
+      />
       <ToastContainer
         position="top-right"
         autoClose={5000}
