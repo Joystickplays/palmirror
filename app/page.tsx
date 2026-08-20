@@ -1120,7 +1120,7 @@ export default function Home() {
         ref={fileInputRef}
         type="file"
         accept=".plmc"
-        style={{ display: "none" }}
+        style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden", zIndex: -1 }}
         onChange={importCharacter}
       />
     </motion.div>
@@ -1158,7 +1158,7 @@ export default function Home() {
         ref={fileInputRef}
         type="file"
         accept=".plmc"
-        style={{ display: "none" }}
+        style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden", zIndex: -1 }}
         onChange={importCharacter}
       />
     </div>
