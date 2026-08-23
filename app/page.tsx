@@ -157,7 +157,7 @@ function ChatCard({
       initial={
         (
           window.innerWidth < 640
-            ? index < 6
+            ? index < 8
             : PLMGlobalConfigServiceInstance.get("cardFlyIn")
               ? true
               : index < 9
@@ -167,7 +167,8 @@ function ChatCard({
               ? {
                 opacity: 0,
                 scale: 0.7,
-                y: -600,
+                y: 600,
+                width: "50%",
                 filter: PLMGlobalConfigServiceInstance.get("highend") ? "blur(50px)" : ""
               }
               : PLMGlobalConfigServiceInstance.get("cardFlyIn")
@@ -178,7 +179,8 @@ function ChatCard({
                 : {
                   opacity: 0,
                   scale: 0.7,
-                  y: -600,
+                  y: 600,
+                  width: "50%",
                   filter: PLMGlobalConfigServiceInstance.get("highend") ? "blur(50px)" : ""
                 }
           )
@@ -192,6 +194,7 @@ function ChatCard({
         scale: 1,
         y: 0,
         filter: "blur(0px)",
+        width: "100%",
       }}
       exit={{ opacity: 0, scale: 0.5 }}
       transition={ PLMGlobalConfigServiceInstance.get("cardFlyIn") && window.innerWidth > 640 ? {
@@ -217,7 +220,7 @@ function ChatCard({
         },
       }}
       key={chat.lastUpdated}
-      className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full ${
+      className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full mx-auto ${
         chat.plmex.domain?.active ? 
         PLMGlobalConfigServiceInstance.get("highend") ? "palmirror-exc" : "palmirror-exc--light"
         : ""
@@ -1072,7 +1075,7 @@ export default function Home() {
               className="w-full"
               key="chatList"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 grow w-full justify-center items-start ">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 grow w-full justify-center items-center ">
                 <AnimatePresence mode="popLayout">
                   {chatList.length > 0 ?
                   sortByLastUpdated(chatList).filter((chat) => { 

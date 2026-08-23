@@ -631,11 +631,27 @@ const ExperienceDomainPage: React.FC = () => {
                         ease: "easeInOut",
                     }}
                 />
-                <h1 className="font-extrabold text-xl flex-1 palmirror-exc-text md:min-w-[16rem]">{isWorld ? `The ${character.name}` : character.name}</h1>
+                <motion.h1 
+                initial={{ x: -30, "--stop": "0%" }}
+                animate={{ x: 0, "--stop": "100%" }}
+                transition={{ type: 'spring', mass: 1, stiffness: 100, damping: 40 }}
+                style={{
+                    maskImage: "linear-gradient(to right, black var(--stop), transparent calc(var(--stop) + 50%))",
+                }}
+                className="p-8 -m-8 font-extrabold text-xl flex-1 palmirror-exc-text md:min-w-[16rem]">{isWorld ? `The ${character.name}` : character.name}</motion.h1>
                 <div className=""></div>
                 <div className="flex overflow-x-scroll max-w-full md:max-w-lg pb-2 mt-4 md:pb-0 md:my-0 md:grid md:grid-cols-3 md:grid-rows-2 md:grid-flow-col md:auto-cols-max gap-4">
-                    {!isWorld && character.plmex.domain?.attributes.map(attr => (
-                        <AttributeProgress key={attr.key} attr={attr} />
+                    {!isWorld && character.plmex.domain?.attributes.map((attr, idx) => (
+                        <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: (0.1 * idx) + 0.4,
+                            type: 'spring', mass: 1, stiffness: 100, damping: 16
+                         }}
+                        key={attr.key}
+                        >
+                            <AttributeProgress key={attr.key} attr={attr} />
+                        </motion.div>
                     ))}
                 </div>
             </motion.div>
