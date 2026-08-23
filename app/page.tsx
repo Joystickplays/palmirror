@@ -220,7 +220,7 @@ function ChatCard({
         },
       }}
       key={chat.lastUpdated}
-      className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full mx-auto ${
+      className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full mx-auto sm:mx-0 ${
         chat.plmex.domain?.active ? 
         PLMGlobalConfigServiceInstance.get("highend") ? "palmirror-exc" : "palmirror-exc--light"
         : ""

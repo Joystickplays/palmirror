@@ -56,17 +56,19 @@ const KeypadButton: React.FC<KeypadButtonProps> = ({
         },
         tap: {
           backgroundColor: "rgba(255, 255, 255, 0.2)",
-          // transition: { 
-          //   backgroundColor: { duration: 0 }
-          //  },
+          transition: {
+            backgroundColor: { duration: 0.08 },
+          },
         },
       }}
       initial="hidden"
       animate="visible"
       whileTap="tap"
-      onAnimationComplete={() => setInitialAnimationComplete(true)}
+      onAnimationComplete={(definition) => {
+        if (definition === "visible") setInitialAnimationComplete(true);
+      }}
       className={`w-16 h-16 flex items-center justify-center text-2xl font-medium 
-        bg-white/10 rounded-full transition-colors
+        bg-white/10 rounded-full
         ${btn === "0" ? "col-span-2 justify-self-end" : ""}
         ${btn === "⌫" ? "justify-self-end" : ""}`}
       style={{ WebkitUserSelect: "none", userSelect: "none", touchAction: "manipulation" }}
