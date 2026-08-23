@@ -179,7 +179,7 @@ function ChatCard({
                 : {
                   opacity: 0,
                   scale: 0.7,
-                  y: 600,
+                  y: -600,
                   width: "50%",
                   filter: PLMGlobalConfigServiceInstance.get("highend") ? "blur(50px)" : ""
                 }
@@ -220,7 +220,7 @@ function ChatCard({
         },
       }}
       key={chat.lastUpdated}
-      className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full mx-auto sm:mx-0 ${
+      className={`flex flex-col gap-1.5 p-6 border rounded-xl h-full mx-auto ${PLMGlobalConfigServiceInstance.get("cardFlyIn") ? "sm:mx-0" : ""} ${
         chat.plmex.domain?.active ? 
         PLMGlobalConfigServiceInstance.get("highend") ? "palmirror-exc" : "palmirror-exc--light"
         : ""
