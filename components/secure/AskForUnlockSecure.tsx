@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Keypad from "@/components/keypad/Keypad";
@@ -29,9 +29,15 @@ export default function AskForUnlockSecure({ open, onUnlock, onCancel }: SecureU
   const [pass, setPass] = useState("");
   const [passkeyOngoing, setPasskeyOngoing] = useState(false);
 
-  const secureMetadata = typeof window !== "undefined" ? localStorage.getItem("secureMetadata") : null;
+  const [secureMetadata, setSecureMetadata] = useState<string | null>(null);
   const pinLength = secureMetadata ? JSON.parse(secureMetadata).length : 0;
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setSecureMetadata(localStorage.getItem("secureMetadata"));
+    }
+  }, []);
 
   useEffect(() => {
     if (pinLength > 0 && pass.length === pinLength) {
@@ -81,6 +87,7 @@ export default function AskForUnlockSecure({ open, onUnlock, onCancel }: SecureU
       <DialogContent className="w-full max-w-md">
         <DialogHeader>
           <DialogTitle>Verify secure</DialogTitle>
+          <DialogDescription>Enter your passcode to unlock PalMirror Secure</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">

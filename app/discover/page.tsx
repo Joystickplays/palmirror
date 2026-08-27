@@ -34,6 +34,11 @@ export default function DiscoverPage() {
 
     const [charCardOpen, setCharCardOpen] = useState(false);
     const [charCardData, setCharCardData] = useState<SearchResultItem | undefined>(undefined)
+    const [discoveredMounted, setDiscoveredMounted] = useState(false);
+
+    useEffect(() => {
+        setDiscoveredMounted(true);
+    }, []);
 
     useEffect(() => {
         (async () => {
@@ -98,8 +103,8 @@ export default function DiscoverPage() {
 
     return (
         <motion.div
-            initial={{ marginLeft: !isOpen ? 0 : window.innerWidth > 640 ? 110 : 0 }}
-            animate={{ marginLeft: !isOpen ? 0 : window.innerWidth > 640 ? 110 : 0 }}
+            initial={{ marginLeft: !isOpen ? 0 : (discoveredMounted ? window.innerWidth : 0) > 640 ? 110 : 0 }}
+            animate={{ marginLeft: !isOpen ? 0 : (discoveredMounted ? window.innerWidth : 0) > 640 ? 110 : 0 }}
             
             className="flex min-h-screen p-6 px-0 gap-4 font-sans!">
 

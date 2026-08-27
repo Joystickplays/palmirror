@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { Button } from "../../ui/button";
-import { Dialog, DialogTitle, DialogContent, DialogHeader } from "../../ui/dialog";
+import { Dialog, DialogTitle, DialogContent, DialogDescription, DialogHeader } from "../../ui/dialog";
 import { Input } from "../../ui/input";
 
 interface SuggestionBarProps {
@@ -14,7 +14,11 @@ interface SuggestionBarProps {
 }
 const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, startGeneration, suggestionPicked, requestHide }) => {
     const [arbitrarySuggestionDialogShow, setArbitrarySuggestionDialogShow] = useState(false);
-    const [arbitrarySuggestionInput, setArbitrarySuggestionInput] = useState(sessionStorage.getItem("arbitrarySuggestionInput") || ""); // lazy so thisll do
+    const [arbitrarySuggestionInput, setArbitrarySuggestionInput] = useState(""); // lazy so thisll do
+    useEffect(() => {
+        const saved = sessionStorage.getItem("arbitrarySuggestionInput");
+        if (saved) setArbitrarySuggestionInput(saved);
+    }, []);
 
     return (
         <>
@@ -79,6 +83,7 @@ const SuggestionBar: React.FC<SuggestionBarProps> = ({ generating, suggestions, 
                 <DialogContent className="font-sans">
                     <DialogHeader>
                         <DialogTitle className="text-center text-2xl mb-4">Reply from prompt</DialogTitle>
+                        <DialogDescription className="text-center">Write a custom reply prompt</DialogDescription>
                     </DialogHeader>
                     <Input value={arbitrarySuggestionInput} onChange={(e) => setArbitrarySuggestionInput(e.target.value)} placeholder="Prompt" />
                     <p className="opacity-50 text-xs">{`Just like the auto-generated prompt suggestions, yours should be written in the perspective of yourself.`}</p>
