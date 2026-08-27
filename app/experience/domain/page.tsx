@@ -201,16 +201,20 @@ const ExperienceDomainPage: React.FC = () => {
                         key.startsWith("METADATA")
                     );
                     const chatListPromises = filteredChats.map(async (key: string) => {
-                        const chatData = await PLMsecureContext?.getSecureData(key);
-                        return chatData;
+                        try {
+                            return await PLMsecureContext?.getSecureData(key);
+                        } catch {
+                            return null;
+                        }
                     });
                     Promise.all(chatListPromises).then((resolvedChatList) => {
+                        const validChats = resolvedChatList.filter((chat: any) => chat !== null && chat !== undefined);
                         if (chatListPromises.length < 3) {
-                            setChatList(resolvedChatList);
+                            setChatList(validChats);
                             return;
                         }
                         setTimeout(() => {
-                            setChatList(resolvedChatList);
+                            setChatList(validChats);
                         }, 0);
                     });
                 }

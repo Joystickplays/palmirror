@@ -9,8 +9,7 @@ interface SidebarState {
 }
 
 const getInitialState = () => {
-    if (typeof window === 'undefined') return false;
-    return window.innerWidth > 640;
+    return false;
 };
 
 export const useSidebarStore = create<SidebarState>((set) => ({

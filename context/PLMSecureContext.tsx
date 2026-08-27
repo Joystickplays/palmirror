@@ -114,7 +114,12 @@ const MergedProviderContent: React.FC<MergedProviderContentProps> = ({
     if (!derivedKey) {
       throw new Error('Derived key is not set');
     }
-    return await getSecureDataUtil(key, derivedKey, true);
+    try {
+      return await getSecureDataUtil(key, derivedKey, true);
+    } catch (e: any) {
+      if (e?.message === 'No data found') return null;
+      throw e;
+    }
   };
 
   const getAllKeys = async (): Promise<string[]> => {
