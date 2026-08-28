@@ -1,8 +1,17 @@
 import OpenAI from "openai";
-import { isPalMirrorSecureActivated, getSecureData, PLMSecureGeneralSettings } from './palMirrorSecureUtils';
+import { isPalMirrorSecureActivated, getSecureData as rawGetSecureData, PLMSecureGeneralSettings } from './palMirrorSecureUtils';
 import { getActivePLMSecureSession } from './palMirrorSecureSession';
 import { PLMGlobalConfigServiceInstance as PLMGC } from "@/context/PLMGlobalConfigService";
 import { ApiProfile } from "@/types/ApiProfile";
+
+const getSecureData: typeof rawGetSecureData = async (key, password, passAsKey) => {
+    try {
+        return await rawGetSecureData(key, password, passAsKey);
+    } catch (e: any) {
+        if (e?.message === 'No data found') return null;
+        throw e;
+    }
+};
 
 
 export interface ChatMessage {

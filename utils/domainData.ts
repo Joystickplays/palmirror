@@ -1,4 +1,4 @@
-import { isPalMirrorSecureActivated, setSecureData, getSecureData, getAllKeys, PLMSecureGeneralSettings, removeKey } from './palMirrorSecureUtils';
+import { isPalMirrorSecureActivated, setSecureData, getSecureData as rawGetSecureData, getAllKeys, PLMSecureGeneralSettings, removeKey } from './palMirrorSecureUtils';
 import { getActivePLMSecureSession } from './palMirrorSecureSession';
 
 import { getAttributesSysInst } from './domainInstructionShaping/attributesSysInst';
@@ -12,6 +12,15 @@ import { getTaggingSysInst } from './domainInstructionShaping/taggingSysInst';
 import { getRecallSysInst } from './domainInstructionShaping/recallSysInst';
 import { PLMGlobalConfigServiceInstance } from '@/context/PLMGlobalConfigService';
 import { getDomainGuideSysInst } from './domainInstructionShaping/domainGuideSysInst';
+
+const getSecureData: typeof rawGetSecureData = async (key, password, passAsKey) => {
+    try {
+        return await rawGetSecureData(key, password, passAsKey);
+    } catch (e: any) {
+        if (e?.message === 'No data found') return null;
+        throw e;
+    }
+};
 
 
 interface ChatMetadata {
