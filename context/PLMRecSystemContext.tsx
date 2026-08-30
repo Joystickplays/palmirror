@@ -45,10 +45,11 @@ export const RecProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (!secure?.isSecureReady()) return;
     if (DEBUG) console.debug('[Rec] Loading persisted recommendation data');
+    const safeGet = (key: string) => secure!.getSecureData(key).catch(() => null);
     Promise.all([
-      secure!.getSecureData('recTagScores'),
-      secure!.getSecureData('recDislikedTags'),
-      secure!.getSecureData('recCharHistory'),
+      safeGet('recTagScores'),
+      safeGet('recDislikedTags'),
+      safeGet('recCharHistory'),
     ]).then(([savedTags, savedDislikes, savedHistory]) => {
       if (savedTags) setTagScores(savedTags);
       if (savedDislikes) setTagDislikes(savedDislikes);

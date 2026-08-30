@@ -10,6 +10,7 @@ import { useTheme } from '@/context/PalMirrorThemeProvider';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -724,6 +725,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   <DialogContent className="font-sans!">
                     <DialogHeader>
                       <DialogTitle>Change this dynamic status</DialogTitle>
+                      <DialogDescription>Update the dynamic status value for this message</DialogDescription>
                     </DialogHeader>
                       <AnimateChangeInHeight>
                         <AnimatePresence mode="popLayout">

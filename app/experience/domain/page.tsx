@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -200,16 +201,20 @@ const ExperienceDomainPage: React.FC = () => {
                         key.startsWith("METADATA")
                     );
                     const chatListPromises = filteredChats.map(async (key: string) => {
-                        const chatData = await PLMsecureContext?.getSecureData(key);
-                        return chatData;
+                        try {
+                            return await PLMsecureContext?.getSecureData(key);
+                        } catch {
+                            return null;
+                        }
                     });
                     Promise.all(chatListPromises).then((resolvedChatList) => {
+                        const validChats = resolvedChatList.filter((chat: any) => chat !== null && chat !== undefined);
                         if (chatListPromises.length < 3) {
-                            setChatList(resolvedChatList);
+                            setChatList(validChats);
                             return;
                         }
                         setTimeout(() => {
-                            setChatList(resolvedChatList);
+                            setChatList(validChats);
                         }, 0);
                     });
                 }
@@ -553,6 +558,7 @@ const ExperienceDomainPage: React.FC = () => {
                 <DialogContent className="font-sans">
                     <DialogHeader>
                         <DialogTitle>Delete chat</DialogTitle>
+                        <DialogDescription>Permanently delete this chat entry</DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col gap-4">
                         <p className="text-sm opacity-80">Are you sure you want to delete this chat entry? To maintain continuity across chats in this domain, all attribute changes and memories created in this chat will be lost.</p>
@@ -623,6 +629,7 @@ const ExperienceDomainPage: React.FC = () => {
                 <DialogContent ref={newChatDialog} className="max-h-[90vh] overflow-y-auto font-sans">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold mb-4">Start a new chat</DialogTitle>
+                        <DialogDescription>Create a new chat entry in this domain</DialogDescription>
                     </DialogHeader>
                     <Label htmlFor="chat-name">Entry name</Label>
                     <Input ref={newChatInput} autoComplete="off" value={newChatName} onChange={(e) => setNewChatName(e.target.value)} id="chat-name" placeholder="Enter chat entry name" />
@@ -646,6 +653,7 @@ const ExperienceDomainPage: React.FC = () => {
                 <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold mb-4">Manage memories</DialogTitle>
+                        <DialogDescription>View and manage what your character remembers</DialogDescription>
                     </DialogHeader>
                     <p className="opacity-50 text-xs">These memories are what {character.name} remembered about you.</p>
                     <div
@@ -707,6 +715,7 @@ const ExperienceDomainPage: React.FC = () => {
                 <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold mb-4">Chat Timesteps</DialogTitle>
+                        <DialogDescription>View message timesteps for cross-referencing</DialogDescription>
                     </DialogHeader>
                     <p className="opacity-50 text-xs">View the timesteps of this chat. Each message creates a timestep to help PalMirror cross-reference moments between chats in this domain.</p>
                     <div className="flex flex-col gap-2">
@@ -727,6 +736,7 @@ const ExperienceDomainPage: React.FC = () => {
                 <DialogContent className="font-sans">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold mb-4">Delete {character.plmex.domain?.associatedDomainByBranch ? "branch" : "domain"}</DialogTitle>
+                        <DialogDescription>This action cannot be undone</DialogDescription>
                     </DialogHeader>
                     <p>Are you sure you want to delete this {character.plmex.domain?.associatedDomainByBranch ? "branch" : "domain"}? All associated chats, attributes and memory will also be deleted!</p>
                     <Button variant="destructive" onClick={() => {
@@ -776,6 +786,7 @@ const ExperienceDomainPage: React.FC = () => {
                             <DialogTitle className="text-2xl font-bold">Domain guide</DialogTitle>
                             <Button className="absolute right-4 top-0 hidden sm:flex" variant="outline" size="sm" onClick={() => { setShowingFlashcards(true); }}><Library /> Flashcards</Button>
                         </div>
+                        <DialogDescription>Edit the domain guide for character behavior</DialogDescription>
                     </DialogHeader>
                     <p className="opacity-50 text-xs whitespace-pre-line">{`Domain guides help set the overall context and rules for how the character should behave within this domain.
                         
@@ -795,6 +806,7 @@ const ExperienceDomainPage: React.FC = () => {
                 <DialogContent className="max-h-[90vh] overflow-y-auto font-sans">
                      <DialogHeader>
                         <DialogTitle className="text-2xl font-bold mb-4">Flashcards</DialogTitle>
+                        <DialogDescription>Manage periodic memory reinforcement cards</DialogDescription>
                     </DialogHeader>
                     <p className="opacity-50 text-xs">Flashcards are user-inserted memories that appear at a set frequency. When Domain Guide is not sufficient, these flashcards help reinforce important context even more periodically.</p>
                     
@@ -851,6 +863,7 @@ const ExperienceDomainPage: React.FC = () => {
                         <div className="flex items-center justify-between mb-4 relative">
                             <DialogTitle className="text-2xl font-bold">World Summary</DialogTitle>
                         </div>
+                        <DialogDescription>Overview of the world context for your domain</DialogDescription>
                     </DialogHeader>
                     <p className="opacity-50 text-xs whitespace-pre-line">{`World summaries provide a high-level overview of the world and its context, helping you save more tokens and to maintain consistency and continuity across different chats.
                     

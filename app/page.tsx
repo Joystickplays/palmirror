@@ -36,6 +36,7 @@ import { isPalMirrorSecureActivated } from "@/utils/palMirrorSecureUtils";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -135,7 +136,9 @@ function ChatCard({
   const ref = useRef<HTMLDivElement>(null);
   const setAlready = useRef(false)
   const [settled, setSettled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    setMounted(true);
     if (ref.current && !setAlready.current && PLMGlobalConfigServiceInstance.get("cardFlyIn")) {
       if (window.innerWidth > 1080) {
         ref.current.style.transformOrigin = getScreenCenterOrigin(ref.current);
@@ -156,19 +159,19 @@ function ChatCard({
       ref={ref}
       initial={
         (
-          window.innerWidth < 640
+          (mounted ? window.innerWidth : 0) < 640
             ? index < 6
             : PLMGlobalConfigServiceInstance.get("cardFlyIn")
               ? true
               : index < 9
         )
           ? (
-            window.innerWidth < 640
+            (mounted ? window.innerWidth : 0) < 640
               ? {
                 opacity: 0,
                 scale: 0.7,
                 y: -600,
-                filter: PLMGlobalConfigServiceInstance.get("highend") ? "blur(50px)" : ""
+                filter: PLMGlobalConfigServiceInstance.get("highend") ? "blur(50px)" : "none"
               }
               : PLMGlobalConfigServiceInstance.get("cardFlyIn")
                 ? {
@@ -179,7 +182,7 @@ function ChatCard({
                   opacity: 0,
                   scale: 0.7,
                   y: -600,
-                  filter: PLMGlobalConfigServiceInstance.get("highend") ? "blur(50px)" : ""
+                  filter: PLMGlobalConfigServiceInstance.get("highend") ? "blur(50px)" : "none"
                 }
           )
           : {
@@ -194,8 +197,8 @@ function ChatCard({
         filter: "blur(0px)",
       }}
       exit={{ opacity: 0, scale: 0.5 }}
-      transition={ PLMGlobalConfigServiceInstance.get("cardFlyIn") && window.innerWidth > 640 ? {
-        delay: window.innerWidth > 1080 ? (cardDelays[index] ?? 0) / 1500 : index * 0.05,
+      transition={ PLMGlobalConfigServiceInstance.get("cardFlyIn") && (mounted ? window.innerWidth : 0) > 640 ? {
+        delay: (mounted ? window.innerWidth : 0) > 1080 ? (cardDelays[index] ?? 0) / 1500 : index * 0.05,
         type: "spring",
         duration: 1.2 - (cardDelays[index] ?? 0) / 1500,
         bounce: 0.3,
@@ -309,6 +312,7 @@ function GetFromPlatform({
       <DialogContent className="w-full max-h-[80vh] overflow-y-auto flex flex-col gap-2 font-sans">
         <DialogHeader className="mb-2">
           <DialogTitle>Get from a platform</DialogTitle>
+          <DialogDescription>Import a character from an external platform</DialogDescription>
         </DialogHeader>
         <Button className="w-full" onClick={() => router.push("/search")}>
           Search for a character
@@ -358,6 +362,7 @@ function SetupCharacter({
             <div className="px-1">
           <DialogHeader>
             <DialogTitle>Setup character</DialogTitle>
+            <DialogDescription>Configure your character for a new chat</DialogDescription>
             <div className="palmirror-exc rounded-lg p-3 my-4! flex flex-col xl:flex-row justify-around items-center">
               <div className="flex justify-center items-center">
                 <h1 className="text-2xl font-extrabold! tracking-tight text-center w-full palmirror-exc-text">
@@ -506,7 +511,7 @@ export default function Home() {
 
   const [correctPINSecure, setCorrectPINSecure] = useState(false);
 
-  
+  const [homeMounted, setHomeMounted] = useState(false);
 
   const [tagline, setTagline] = useState("");
   
@@ -808,6 +813,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    setHomeMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (!localStorage.getItem("secureMetadata") && typeof window !== 'undefined') {
       const hasVisitedBefore = sessionStorage.getItem("palmirror_home_visited");
       
@@ -884,20 +893,24 @@ export default function Home() {
             key.startsWith("METADATA")
           );
           const chatListPromises = filteredChats.map(async (key: string) => {
-            const chatData = await PLMsecureContext?.getSecureData(key);
-            return chatData;
+            try {
+              return await PLMsecureContext?.getSecureData(key);
+            } catch {
+              return null;
+            }
           });
           const startTime = Date.now();
           Promise.all(chatListPromises).then((resolvedChatList) => {
+            const validChats = resolvedChatList.filter((chat: any) => chat !== null && chat !== undefined);
             setLoadingChatListTook(Date.now() - startTime);
             if (chatListPromises.length < 3) {
-              setChatList(resolvedChatList);
+              setChatList(validChats);
               setChatsLoading(false);
               return;
             }
             setTimeout(() => {
               setChatsLoading(false);
-              setChatList(resolvedChatList);
+              setChatList(validChats);
             }, 0);
           });
         }
@@ -947,8 +960,8 @@ export default function Home() {
 
   return isSecureActivated ? (
     <motion.div 
-    initial={{ marginLeft: !isOpen ? 0 : window.innerWidth > 640 ? 110 : 0 }}
-    animate={{ marginLeft: !isOpen ? 0 : window.innerWidth > 640 ? 110 : 0 }}
+    initial={{ marginLeft: !isOpen ? 0 : (homeMounted ? window.innerWidth : 0) > 640 ? 110 : 0 }}
+    animate={{ marginLeft: !isOpen ? 0 : (homeMounted ? window.innerWidth : 0) > 640 ? 110 : 0 }}
             
     className="flex flex-col items-center justify-items-center min-h-screen p-4  gap-4 sm:p-8 font-(family-name:--font-geist-sans)">
       <div className="flex grow w-full">
@@ -1006,7 +1019,7 @@ export default function Home() {
                       ? "blur(5px)"
                       : "blur(0px)",
                 }}
-                exit={{ scale: 0.9, opacity: 0, filter: PLMGlobalConfigServiceInstance.get("highend") ? 'blur(5px)' : '' }}
+                exit={{ scale: 0.9, opacity: 0, filter: PLMGlobalConfigServiceInstance.get("highend") ? 'blur(5px)' : 'none' }}
                 transition={{
                   type: "spring",
                   mass: 1,
@@ -1014,7 +1027,7 @@ export default function Home() {
                   stiffness: 400,
                 }}
                 className={`flex items-center justify-center gap-2 flex-col grow absolute top-1/2 left-1/2 w-full ${
-                  Date.now() < PLMSecureLockUntil ? "pointer-events-none" : null
+                  Date.now() < PLMSecureLockUntil ? "pointer-events-none" : ""
                 }`}
                 key="passkeyNeed"
               >
