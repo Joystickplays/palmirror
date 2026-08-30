@@ -113,8 +113,14 @@ export function parseWorldDialogue(content: string, characterNames: string[]): A
         const isKnown = canonical !== undefined;
 
         const nextIndex = i + 1 < markers.length ? markers[i + 1].index : content.length;
-        const remainder = content.slice(m.afterIndex, nextIndex).trim();
-        const hasQuote = /"/.test(remainder);
+        // Bound speech to the same line as the marker — orphaned quotes 2 paragraphs away
+        // must NOT be claimed by this marker (fixes apocalypse bug where
+        // `intramural softball` 2 paras down was swallowed by `**Unknown Voice:**`).
+        const lineEnd = content.indexOf("\n", m.afterIndex);
+        const effectiveLineEnd = lineEnd !== -1 && lineEnd < nextIndex ? lineEnd : nextIndex;
+        const lineText = content.slice(m.afterIndex, effectiveLineEnd).trim();
+        const trailingRaw = content.slice(effectiveLineEnd, nextIndex);
+        const hasQuote = /"/.test(lineText);
 
         if (m.index > cursor) {
             segments.push({
@@ -123,26 +129,31 @@ export function parseWorldDialogue(content: string, characterNames: string[]): A
             });
         }
 
-        if (!hasQuote) {
-            if (remainder !== "") {
-                segments.push({ type: "speech", name, text: remainder, isKnown });
-            }
-        } else {
-            const parts = splitQuotedFragments(remainder);
-            const hasSpeechPart = parts.some((p) => p.kind === "speech");
-            if (!hasSpeechPart) {
-                if (remainder !== "") {
-                    segments.push({ type: "speech", name, text: remainder, isKnown });
-                }
+        if (lineText !== "") {
+            if (!hasQuote) {
+                segments.push({ type: "speech", name, text: lineText, isKnown });
             } else {
-                for (const part of parts) {
-                    if (part.kind === "speech") {
-                        segments.push({ type: "speech", name, text: part.text, isKnown });
-                    } else {
-                        segments.push({ type: "narration", text: part.text });
+                const parts = splitQuotedFragments(lineText);
+                const hasSpeechPart = parts.some((p) => p.kind === "speech");
+                if (!hasSpeechPart) {
+                    segments.push({ type: "speech", name, text: lineText, isKnown });
+                } else {
+                    for (const part of parts) {
+                        if (part.kind === "speech") {
+                            segments.push({ type: "speech", name, text: part.text, isKnown });
+                        } else {
+                            segments.push({ type: "narration", text: part.text });
+                        }
                     }
                 }
             }
+        }
+
+        if (trailingRaw.trim() !== "") {
+            segments.push({
+                type: "narration",
+                text: trailingRaw,
+            });
         }
 
         cursor = nextIndex;

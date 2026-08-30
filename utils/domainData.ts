@@ -935,12 +935,23 @@ function sortByLastUpdated(
         );
     }
 
-export async function buildAssistantRecall(domainID: string) {
+export async function buildAssistantRecall(domainID: string, currentCast?: string[]) {
   const memories = getTrueDomainMemories(await getDomainMemories(domainID))
   const allChats = await totalChatsFromDomain(domainID);
   if (allChats.length < 2) {
     return "";
   }
   const flashcards = await getDomainFlashcards(domainID);
-  return getRecallSysInst(memories, sortByLastUpdated(allChats)[1], !!(await getDomainGuide(domainID)) ? await getDomainGuide(domainID) as string : undefined, flashcards.map(fc => fc.content));
+  const isWorld = await isWorldDomain(domainID);
+  let worldContext: { allNames: string[]; userName?: string | null; cast?: string[] } | undefined;
+  if (isWorld) {
+    const characters = await getWorldCharacters(domainID);
+    const userChar = await getWorldUserCharacter(domainID);
+    worldContext = {
+      allNames: characters.map(c => c.name).filter(Boolean),
+      userName: userChar?.name ?? null,
+      cast: currentCast && currentCast.length > 0 ? currentCast : undefined,
+    };
+  }
+  return getRecallSysInst(memories, sortByLastUpdated(allChats)[1], !!(await getDomainGuide(domainID)) ? await getDomainGuide(domainID) as string : undefined, flashcards.map(fc => fc.content), worldContext);
 }

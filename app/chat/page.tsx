@@ -984,7 +984,7 @@ ${entryTitle}
           }
         }
 
-        const assistantRecall = await buildAssistantRecall(associatedDomain)
+        const assistantRecall = await buildAssistantRecall(associatedDomain, chapterCast)
         devLog("Fetched assistant recall", "info", { recallLength: assistantRecall.length });
         if (assistantRecall !== "") {
           if (finalMessages.length < 7) {

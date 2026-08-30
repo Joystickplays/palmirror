@@ -564,6 +564,7 @@ const ExperienceDomainPage: React.FC = () => {
             setShowingUserCharWarning(true);
             return false;
         }
+        proceed();
         return true;
     };
 

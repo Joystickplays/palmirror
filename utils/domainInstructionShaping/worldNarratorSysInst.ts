@@ -34,7 +34,8 @@ Whenever a character speaks, ALWAYS mark their speech with an inline speaker lab
 - Replace CharacterName with the character's name, or a clear short form of it (such as their first name), e.g. **Kael Thorne:** "You came back." or **Kael:** "You came back."
 - The closing ** must come AFTER the colon, then the quote. Do not put quotes around the name.
 - Place the marker on the same line as the speech it introduces. Keep narration and actions unmarked.
-- Mark every spoken line, including quick back-and-forth between characters and people not yet listed in the cast. Do not use dialogue markers for the player.`;
+- Mark every spoken line, including quick back-and-forth between characters and people not yet listed in the cast. Do not use dialogue markers for the player.
+- New scene descriptions are their OWN NEW LINES. Avoid putting narration and dialogue on the same line, or this could horribly ruin the formatting for the user.`;
 
     return `WORLD NARRATOR MODE
 
