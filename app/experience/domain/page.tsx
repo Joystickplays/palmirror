@@ -1083,8 +1083,8 @@ const ExperienceDomainPage: React.FC = () => {
 
                                         <div className="flex flex-col gap-2 ml-2 mt-4">
                                             <p className="text-sm opacity-50 font-bold">Chats for reference</p>
-                                            <div className="flex gap-2 items-center">
-                                                <p>Last</p>
+                                            <div className="flex flex-col sm:flex-row gap-2 items-center">
+                                                <p className="w-full text-start sm:w-fit">Last</p>
                                                 <div className="flex gap-4 justify-between items-center border border-white/10 p-2 px-4 rounded-xl mx-1 w-full">
                                                     <NumberFlow value={worldSumRefineChatCount} className="font-bold" spinTiming={{
                                                         duration: 833,
@@ -1097,7 +1097,7 @@ const ExperienceDomainPage: React.FC = () => {
                                                         onValueChange={(value) => setWorldSumRefineChatCount(value[0])}
                                                     />
                                                 </div>
-                                                <p>chats</p>
+                                                <p className="w-full text-end sm:w-fit">chats</p>
                                             </div>
                                         </div>
 
