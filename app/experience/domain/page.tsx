@@ -878,6 +878,8 @@ const ExperienceDomainPage: React.FC = () => {
                             }
                             if (!requireUserCharacter(startNewChapter)) {
                                 setShowingNewChat(false);
+                            } else {
+                                startNewChapter();
                             }
                         }}>Start</Button>
                 </DialogContent>
