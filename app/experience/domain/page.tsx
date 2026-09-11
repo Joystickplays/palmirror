@@ -538,21 +538,26 @@ const ExperienceDomainPage: React.FC = () => {
         setShowingNewChat(true);
     };
 
-    const startNewChapter = () => {
+    const startNewChapter = (nameOverride?: string, castOverride?: Array<string>) => {
+        const finalName = (nameOverride ?? newChatName).trim();
+        const finalCast = castOverride ?? newChatCast;
         setShowingNewChat(false);
-        if (newChatName.trim() === "") {
+        if (finalName === "") {
             return;
         }
 
         sessionStorage.setItem("chatSelect", "");
         sessionStorage.setItem("chatAssociatedDomain", domainId);
-        sessionStorage.setItem("chatEntryName", newChatName.trim());
-        sessionStorage.setItem("chatChapterCast", JSON.stringify(newChatCast));
+        sessionStorage.setItem("chatEntryName", finalName);
+        sessionStorage.setItem("chatChapterCast", JSON.stringify(finalCast));
         sessionStorage.setItem("chatFromNewDomain", "1");
         router.push(`/chat`);
     };
 
     const requireUserCharacter = (proceed: () => void) => {
+        if (!isWorld) {
+            return true;
+        }
         const userChar = worldCharacters.find(c => c.isUser);
         if (!userChar && !skipUserCharacterWarning) {
             pendingUserWarningAction.current = proceed;
@@ -569,12 +574,19 @@ const ExperienceDomainPage: React.FC = () => {
     };
 
     const handleUserCharWarningContinue = async () => {
-        const config = (await getWorldConfig(domainId)) ?? defaultCharacterData.plmex.domain!.worldConfig!;
-        await setWorldConfig(domainId, { ...config, skipUserCharacterWarning: true });
-        setSkipUserCharacterWarning(true);
-        setShowingUserCharWarning(false);
-        pendingUserWarningAction.current?.();
+        const proceed = pendingUserWarningAction.current;
         pendingUserWarningAction.current = null;
+        setShowingUserCharWarning(false);
+        try {
+            const config = (await getWorldConfig(domainId)) ?? defaultCharacterData.plmex.domain!.worldConfig!;
+            await setWorldConfig(domainId, { ...config, skipUserCharacterWarning: true });
+            setSkipUserCharacterWarning(true);
+        } catch (e) {
+            console.warn(e);
+            PMNotify.error("Could not save the warning preference, continuing anyway.");
+        } finally {
+            proceed?.();
+        }
     };
 
     const openStatusEditor = () => {
@@ -873,13 +885,16 @@ const ExperienceDomainPage: React.FC = () => {
                         </div>
                     )}
                         <Button onClick={() => {
-                            if (newChatName.trim() === "") {
+                            const nameAtClick = newChatName;
+                            const castAtClick = newChatCast;
+                            if (nameAtClick.trim() === "") {
                                 return;
                             }
-                            if (!requireUserCharacter(startNewChapter)) {
+                            const proceed = () => startNewChapter(nameAtClick, castAtClick);
+                            if (!requireUserCharacter(proceed)) {
                                 setShowingNewChat(false);
                             } else {
-                                startNewChapter();
+                                proceed();
                             }
                         }}>Start</Button>
                 </DialogContent>
