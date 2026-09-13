@@ -22,7 +22,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library, GitBranch, Plus, Loader2, Earth } from 'lucide-react';
+import { CirclePlus, Trash2, ArrowRight, ArrowLeft, BrainCircuit, Eraser, EllipsisVertical, History, Info, Book, Check, Library, GitBranch, Plus, Loader2, Earth, Pencil, Save, X } from 'lucide-react';
 
 import AttributeProgress from "@/components/domains/AttributeProgress";
 
@@ -145,6 +145,10 @@ const ExperienceDomainPage: React.FC = () => {
 
     const [worldSumRefineChatCount, setWorldSumRefineChatCount] = useState(5);
     const [worldSumReasoningEffort, setWorldSumReasoningEffort] = useState(0);
+    const [worldSumRefineGuide, setWorldSumRefineGuide] = useState("");
+
+    const [isEditingWorldSum, setIsEditingWorldSum] = useState(false);
+    const [editWorldSumText, setEditWorldSumText] = useState("");
 
     const [isSecureReady, setIsSecureReady] = useState(false);
     const [character, setCharacter] = useState<CharacterData>(defaultCharacterData);
@@ -281,6 +285,14 @@ const ExperienceDomainPage: React.FC = () => {
         }
         prevSumLen.current = localCharWorldSummaries.length;
     }, [localCharWorldSummaries.length, worldSumPage])
+
+    // sync edit buffer when page or summary changes, and exit edit on page switch
+    useEffect(() => {
+        if (localCharWorldSummaries[worldSumPage]) {
+            setEditWorldSumText(localCharWorldSummaries[worldSumPage].summary);
+        }
+        setIsEditingWorldSum(false);
+    }, [worldSumPage, localCharWorldSummaries])
 
     useEffect(() => {
         (async () => {
@@ -458,6 +470,10 @@ const ExperienceDomainPage: React.FC = () => {
             const reasoningEffortOptions: (string | undefined)[] = [undefined, "minimal", "low", "medium", "high"];
             const reasoningEffortLabel = reasoningEffortOptions[worldSumReasoningEffort];
 
+            const refineGuideBlock = worldSumRefineGuide.trim()
+                ? `\n\nREFINE GUIDE (user instruction — prioritize this when merging):\n${worldSumRefineGuide.trim()}\n— Apply this guide strictly on top of the recent chats. If it asks to add/emphasize/remove specific detail, do so while keeping the 6-section format intact.`
+                : "";
+
             const stream = generateChatCompletion({
                 model: modelName,
                 temperature: 0.3,
@@ -466,7 +482,7 @@ const ExperienceDomainPage: React.FC = () => {
                 ...(worldSumReasoningEffort === 0 ? { thinking: { type: "disabled" } } : worldSumReasoningEffort > 0 ? { thinking: { type: "enabled" } } : {}),
                 messages: [
                     { role: "system", content: worldSummarizerRefineSysInst.trim() },
-                    { role: "user", content: `EXISTING WORLD SUMMARY:\n${existingEntry.summary}\n\nRECENT CHATS (last ${N}):\n${recentPrompt}\n\nINSTRUCTION: Overwrite the summary above using the recent chats. Output only the final 6-section block.` },
+                    { role: "user", content: `EXISTING WORLD SUMMARY:\n${existingEntry.summary}\n\nRECENT CHATS (last ${N}):\n${recentPrompt}${refineGuideBlock}\n\nINSTRUCTION: Overwrite the summary above using the recent chats${refineGuideBlock ? " and the refine guide" : ""}. Output only the final 6-section block.` },
                 ],
             });
 
@@ -550,6 +566,53 @@ const ExperienceDomainPage: React.FC = () => {
         setCharacter(updated);
         await PLMsecureContext?.setSecureData(`METADATA${domainId}`, updated);
         PMNotify.success("World summary refined.");
+    }
+
+    const handleSaveWorldSumEdit = async () => {
+        if (localCharWorldSummaries.length === 0 || worldSumPage < 0 || worldSumPage >= localCharWorldSummaries.length) return;
+        const trimmed = editWorldSumText.trim();
+        if (!trimmed) {
+            PMNotify.error("World summary cannot be empty.");
+            return;
+        }
+        const existing = localCharWorldSummaries[worldSumPage];
+        const updatedEntry: DomainWorldSummaryEntry = {
+            ...existing,
+            summary: trimmed,
+            timestamp: Math.floor(Date.now() / 1000),
+        };
+
+        setLocalCharWorldSummaries((prev) => {
+            const next = [...prev];
+            next[worldSumPage] = updatedEntry;
+            return next;
+        });
+
+        const currentWorldSummary = character.plmex.domain?.worldSummary || [];
+        const updatedWorldSummary = [...currentWorldSummary];
+        const idxById = updatedWorldSummary.findIndex((s) => s.id === existing.id);
+        if (idxById !== -1) {
+            updatedWorldSummary[idxById] = updatedEntry;
+        } else if (worldSumPage < updatedWorldSummary.length) {
+            updatedWorldSummary[worldSumPage] = updatedEntry;
+        } else {
+            updatedWorldSummary.push(updatedEntry);
+        }
+
+        const updated = {
+            ...character,
+            plmex: {
+                ...character.plmex,
+                domain: {
+                    ...character.plmex.domain,
+                    worldSummary: updatedWorldSummary,
+                },
+            },
+        } as CharacterData;
+        setCharacter(updated);
+        await PLMsecureContext?.setSecureData(`METADATA${domainId}`, updated);
+        setIsEditingWorldSum(false);
+        PMNotify.success("World summary updated.");
     }
     
     const initiateBranchCreation = async () => {
@@ -1054,60 +1117,112 @@ const ExperienceDomainPage: React.FC = () => {
                         {localCharWorldSummaries.length > 0 ? (
                             <>
                                 <div className="border border-white/10 rounded-xl p-4 flex flex-col gap-1 rounded-b-none">
-                                    <p ref={summaryScrollRef} className="text-sm whitespace-pre-line max-h-48 overflow-y-auto">
-                                        <Markdown>{localCharWorldSummaries[worldSumPage].summary}</Markdown>
-                                    </p>
+                                    {isEditingWorldSum ? (
+                                        <Textarea
+                                            value={editWorldSumText}
+                                            onChange={(e) => setEditWorldSumText(e.target.value)}
+                                            rows={10}
+                                            className="text-sm whitespace-pre-line max-h-64 min-h-48"
+                                            placeholder="Edit world summary..."
+                                            disabled={localGenWorldSumActive}
+                                        />
+                                    ) : (
+                                        <p ref={summaryScrollRef} className="text-sm whitespace-pre-line max-h-48 overflow-y-auto">
+                                            <Markdown>{localCharWorldSummaries[worldSumPage].summary}</Markdown>
+                                        </p>
+                                    )}
                                     <div className="flex items-center justify-between mt-2">
-                                        <p className="text-xs opacity-50">{new Date(localCharWorldSummaries[worldSumPage].timestamp).toLocaleString()}</p>
-                                        <Button 
-                                            variant={character.plmex.domain?.usedWorldSumId === localCharWorldSummaries[worldSumPage].id ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={async () => {
-                                                const updated = { ...character };
-                                                if (!updated.plmex.domain) return;
-                                                const currentId = character.plmex.domain?.usedWorldSumId;
-                                                const newId = currentId === localCharWorldSummaries[worldSumPage].id ? undefined : localCharWorldSummaries[worldSumPage].id;
-                                                updated.plmex.domain = { ...updated.plmex.domain, usedWorldSumId: newId };
-                                                setCharacter(updated);
-                                                await PLMsecureContext?.setSecureData(`METADATA${domainId}`, updated);
-                                            }}
-                                        >
-                                            {character.plmex.domain?.usedWorldSumId === localCharWorldSummaries[worldSumPage].id ? "Selected" : "Select"}
-                                        </Button>
+                                        <p className="text-xs opacity-50">{new Date(localCharWorldSummaries[worldSumPage].timestamp * 1000).toLocaleString()}</p>
+                                        {isEditingWorldSum ? (
+                                            <div className="flex gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => {
+                                                    setEditWorldSumText(localCharWorldSummaries[worldSumPage].summary);
+                                                    setIsEditingWorldSum(false);
+                                                }}>
+                                                    <X size={14} /> Cancel
+                                                </Button>
+                                                <Button size="sm" onClick={handleSaveWorldSumEdit} disabled={localGenWorldSumActive}>
+                                                    <Save size={14} /> Save
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <Button variant="outline" size="sm" disabled={localGenWorldSumActive} onClick={() => {
+                                                    setEditWorldSumText(localCharWorldSummaries[worldSumPage].summary);
+                                                    setIsEditingWorldSum(true);
+                                                }}>
+                                                    <Pencil size={14} /> Edit
+                                                </Button>
+                                                <Button
+                                                    variant={character.plmex.domain?.usedWorldSumId === localCharWorldSummaries[worldSumPage].id ? "default" : "outline"}
+                                                    size="sm"
+                                                    disabled={localGenWorldSumActive}
+                                                    onClick={async () => {
+                                                        const updated = { ...character };
+                                                        if (!updated.plmex.domain) return;
+                                                        const currentId = character.plmex.domain?.usedWorldSumId;
+                                                        const newId = currentId === localCharWorldSummaries[worldSumPage].id ? undefined : localCharWorldSummaries[worldSumPage].id;
+                                                        updated.plmex.domain = { ...updated.plmex.domain, usedWorldSumId: newId };
+                                                        setCharacter(updated);
+                                                        await PLMsecureContext?.setSecureData(`METADATA${domainId}`, updated);
+                                                    }}
+                                                >
+                                                    {character.plmex.domain?.usedWorldSumId === localCharWorldSummaries[worldSumPage].id ? "Selected" : "Select"}
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 {character.plmex.domain?.worldSummary && worldSumPage >= 0 ? (
-                                    <div className="flex flex-col gap-1 border border-white/10 rounded-xl p-4 -mt-3 rounded-t-none">
-                                        <h2 className="font-bold">Refine world summary</h2>
-                                        <p className="text-sm opacity-75">If a part of the story has changed, you can refine the existing world summary above without regenerating the entire thing.</p>
+                                    <Accordion type="single" collapsible className="border border-white/10 rounded-xl -mt-3 rounded-t-none overflow-hidden bg-transparent">
+                                        <AccordionItem value="refine" className="border-b-0">
+                                            <AccordionTrigger className="px-4 py-3 hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                                                <span className="font-bold text-sm">Refine world summary</span>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="px-4 pb-4">
+                                                <div className="flex flex-col gap-1">
+                                                    <p className="text-sm opacity-75">If a part of the story has changed, you can refine the existing world summary above without regenerating the entire thing.</p>
 
-                                        <div className="flex flex-col gap-2 ml-2 mt-4">
-                                            <p className="text-sm opacity-50 font-bold">Chats for reference</p>
-                                            <div className="flex flex-col sm:flex-row gap-2 items-center">
-                                                <p className="w-full text-start sm:w-fit">Last</p>
-                                                <div className="flex gap-4 justify-between items-center border border-white/10 p-2 px-4 rounded-xl mx-1 w-full">
-                                                    <NumberFlow value={worldSumRefineChatCount} className="font-bold" spinTiming={{
-                                                        duration: 833,
-                                                        easing: 'linear(0, 0.03, 0.11 5%, 0.81 20%, 0.94, 1.02, 1.05, 1.06 38%, 1 65%, 1)'
-                                                    }} />
-                                                    <Slider 
-                                                        min={3} 
-                                                        max={20} 
-                                                        defaultValue={[worldSumRefineChatCount]} 
-                                                        onValueChange={(value) => setWorldSumRefineChatCount(value[0])}
-                                                    />
+                                                    <div className="flex flex-col gap-2 ml-1 mt-4">
+                                                        <p className="text-sm opacity-50 font-bold">Chats for reference</p>
+                                                        <div className="flex flex-col sm:flex-row gap-2 items-center">
+                                                            <p className="w-full text-start sm:w-fit">Last</p>
+                                                            <div className="flex gap-4 justify-between items-center border border-white/10 p-2 px-4 rounded-xl mx-1 w-full">
+                                                                <NumberFlow value={worldSumRefineChatCount} className="font-bold" spinTiming={{
+                                                                    duration: 833,
+                                                                    easing: 'linear(0, 0.03, 0.11 5%, 0.81 20%, 0.94, 1.02, 1.05, 1.06 38%, 1 65%, 1)'
+                                                                }} />
+                                                                <Slider
+                                                                    min={3}
+                                                                    max={20}
+                                                                    defaultValue={[worldSumRefineChatCount]}
+                                                                    onValueChange={(value) => setWorldSumRefineChatCount(value[0])}
+                                                                />
+                                                            </div>
+                                                            <p className="w-full text-end sm:w-fit">chats</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-2 ml-1 mt-3">
+                                                        <p className="text-sm opacity-50 font-bold">Refine guide <span className="opacity-40 font-normal">(optional)</span></p>
+                                                        <Textarea
+                                                            value={worldSumRefineGuide}
+                                                            onChange={(e) => setWorldSumRefineGuide(e.target.value)}
+                                                            rows={3}
+                                                            placeholder="Guide the refinement — e.g., 'Add more detail about the Ashen Guild's motives', 'Fix X's location to the northern outpost', 'Emphasize the betrayal in chat 3'…"
+                                                            className="text-sm"
+                                                            disabled={localGenWorldSumActive || isEditingWorldSum}
+                                                        />
+                                                        <p className="text-xs opacity-30">This note is sent as an extra instruction when refining. Leave empty to just merge recent chats.</p>
+                                                    </div>
+
+                                                    <Button className="ml-auto mt-3" onClick={initiateWorldSummaryRefinement} disabled={localGenWorldSumActive || isEditingWorldSum}>
+                                                        {localGenWorldSumActive ? <><Loader2 className="animate-spin mr-2" size={16} /> Refining...</> : "Refine now"}
+                                                    </Button>
                                                 </div>
-                                                <p className="w-full text-end sm:w-fit">chats</p>
-                                            </div>
-                                        </div>
-
-                                        <Button className="ml-auto mt-2" onClick={initiateWorldSummaryRefinement} disabled={localGenWorldSumActive}>
-                                            {localGenWorldSumActive ? <><Loader2 className="animate-spin mr-2" size={16} /> Refining...</> : "Refine now"}
-                                        </Button>
-
-                                        
-
-                                    </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Accordion>
                                 ) : (<></>)}
                                 <div className="flex items-center justify-between">
                                     <Button 
