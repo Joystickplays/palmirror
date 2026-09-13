@@ -389,6 +389,15 @@ export async function structureDomainTimesteps(chatID: string): Promise<string> 
     const timestepRecall = PLMGlobalConfigServiceInstance.get("domains_timestep_recall")
     
     const recallLimit = timestepRecall ?? 20;
+
+    // 30 (slider max) = recall all timesteps, no truncation
+    if (recallLimit >= 30) {
+        timesteps.forEach((timestep, index) => {
+            structuredTimesteps += `Timestep ${index + 1}: ${timestep.entry}\n`;
+        });
+        return structuredTimesteps;
+    }
+
     const startIndex = Math.max(0, timesteps.length - recallLimit);
     
     timesteps.slice(-recallLimit).forEach((timestep, index) => {
