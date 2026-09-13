@@ -304,7 +304,7 @@ const ExperienceDomainPage: React.FC = () => {
         if (showWorldSummary) {
             const calculateTokenCost = async () => {
                 const baseSystemPrompt = worldSummarizerSysInst
-                const allChats = getChatsOnlySysInst(await totalChatsFromDomain(domainId))
+                const allChats = getChatsOnlySysInst(await totalChatsFromDomain(domainId, true))
 
                 const totalChars = baseSystemPrompt.length + allChats.length
                 const roughTokens = Math.ceil(totalChars / 5.0)
@@ -337,7 +337,7 @@ const ExperienceDomainPage: React.FC = () => {
                 modelName = settingsParse.modelName
             }
 
-            const allChats = getChatsOnlySysInst(await totalChatsFromDomain(domainId))
+            const allChats = getChatsOnlySysInst(await totalChatsFromDomain(domainId, true))
 
             const reasoningEffortOptions: (string | undefined)[] = [undefined, "minimal", "low", "medium", "high"];
             const reasoningEffortLabel = reasoningEffortOptions[worldSumReasoningEffort];
@@ -456,7 +456,7 @@ const ExperienceDomainPage: React.FC = () => {
                 modelName = settingsParse.modelName || modelName;
             }
 
-            const allChatsRaw = await totalChatsFromDomain(domainId);
+            const allChatsRaw = await totalChatsFromDomain(domainId, true);
             const N = Math.min(worldSumRefineChatCount, allChatsRaw.length);
             if (N === 0) {
                 PMNotify.error("No chats available for refinement.");
