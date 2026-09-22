@@ -708,7 +708,7 @@ const ChatPage = () => {
         {
           role: "user",
           name: "user",
-          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality.
+          content: `[SYSTEM NOTE]: Detach from {{char}}'s voice only — still follow DOMAIN GUIDE and world state in system prompt when present, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality.
 THIS REPLY should be about the {{user}} doing this: "${rewriteBase}".
 IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* BE THE CHARACTER!
 
