@@ -1,4 +1,4 @@
-export const deriveKey = async (password: string, salt: Uint8Array) => {
+export const deriveKey = async (password: string, salt: Uint8Array<ArrayBuffer>) => {
     const encoder = new TextEncoder();
     const passwordBuffer = encoder.encode(password);
     const keyMaterial = await window.crypto.subtle.importKey(
@@ -34,7 +34,7 @@ const fromStringToCryptoKey = async (key: string): Promise<CryptoKey> => {
 }
 
 
-export const encryptData = async (data: string, password: string | CryptoKey, salt: Uint8Array, iv: Uint8Array, passAsKey: boolean) => {
+export const encryptData = async (data: string, password: string | CryptoKey, salt: Uint8Array<ArrayBuffer>, iv: Uint8Array<ArrayBuffer>, passAsKey: boolean) => {
     const encoder = new TextEncoder();
     const dataBuffer = encoder.encode(data);
     const key = passAsKey ? password as CryptoKey : await deriveKey(password as string, salt);
@@ -46,7 +46,7 @@ export const encryptData = async (data: string, password: string | CryptoKey, sa
     return { encryptedData };
 };
 
-export const decryptData = async (password: string | CryptoKey, data: { encryptedData: ArrayBuffer }, salt: Uint8Array, iv: Uint8Array, passAsKey: boolean) => {
+export const decryptData = async (password: string | CryptoKey, data: { encryptedData: ArrayBuffer }, salt: Uint8Array<ArrayBuffer>, iv: Uint8Array<ArrayBuffer>, passAsKey: boolean) => {
     const key = passAsKey ? password as CryptoKey : (await deriveKey(password as string, salt))
     const decryptedData = await window.crypto.subtle.decrypt(
         { name: 'AES-GCM', iv: iv },

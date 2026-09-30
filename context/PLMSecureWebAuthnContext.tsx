@@ -19,7 +19,7 @@ export interface AuthContextType {
   authenticate: () => Promise<ArrayBuffer>;        
   logout: () => void;        
   deleteCredential: () => Promise<void>;        
-  decryptedPrimaryKey?: Uint8Array;        
+  decryptedPrimaryKey?: Uint8Array<ArrayBuffer>;        
 }        
         
 const AuthContext = createContext<AuthContextType | undefined>(undefined);        
@@ -84,15 +84,15 @@ function deletePersistedCredential(): Promise<void> {
 }        
         
 // ----- Utility Functions -----        
-const hexToUint8Array = (hex: string): Uint8Array =>        
-  new Uint8Array(hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));        
-        
-const uint8ArrayToHex = (arr: Uint8Array): string =>        
+const hexToUint8Array = (hex: string): Uint8Array<ArrayBuffer> =>
+  new Uint8Array(hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
+
+const uint8ArrayToHex = (arr: Uint8Array<ArrayBufferLike>): string =>
   Array.from(arr)        
     .map((b) => b.toString(16).padStart(2, "0"))        
     .join("");        
         
-const generateRandomBuffer = (length: number): Uint8Array => {        
+const generateRandomBuffer = (length: number): Uint8Array<ArrayBuffer> => {        
   const buffer = new Uint8Array(length);        
   window.crypto.getRandomValues(buffer);        
   return buffer;        
@@ -116,12 +116,12 @@ const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
   for (let i = 0; i < len; i++) {        
     bytes[i] = binary.charCodeAt(i);        
   }        
-  return bytes.buffer;        
+  return bytes.buffer as ArrayBuffer;        
 };        
         
 const deriveKey = async (        
   credentialIdHex: string,        
-  salt: Uint8Array        
+  salt: Uint8Array<ArrayBuffer>        
 ): Promise<CryptoKey> => {        
   const idBuffer = hexToUint8Array(credentialIdHex);        
   const baseKey = await window.crypto.subtle.importKey(        
@@ -147,7 +147,7 @@ const deriveKey = async (
         
 const encryptPrimaryKey = async (        
   derivedKey: CryptoKey,        
-  keyToEncrypt: Uint8Array        
+  keyToEncrypt: Uint8Array<ArrayBuffer>        
 ): Promise<{ ciphertext: string; iv: string }> => {        
   const iv = generateRandomBuffer(12);        
   const ciphertextBuffer = await window.crypto.subtle.encrypt(        
@@ -157,7 +157,7 @@ const encryptPrimaryKey = async (
   );        
   return {        
     ciphertext: arrayBufferToBase64(ciphertextBuffer),        
-    iv: arrayBufferToBase64(iv.buffer),        
+    iv: arrayBufferToBase64(iv.buffer as ArrayBuffer),        
   };        
 };        
         
@@ -184,7 +184,7 @@ export const WebAuthnProvider: React.FC<{ children: React.ReactNode }> = ({
     undefined        
   );        
   const [decryptedPrimaryKey, setDecryptedPrimaryKey] = useState<        
-    Uint8Array | undefined        
+    Uint8Array<ArrayBuffer> | undefined        
   >(undefined);        
         
   // On mount, load the persisted credential from IndexedDB.        
