@@ -194,9 +194,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const fontSize = useMotionValue(1);
   const blur = useMotionValue(0);
   const xOffset = useMotionValue(0);
+  const pullScale = useMotionValue(1);
 
   const animatedScale = useSpring(scale, { stiffness: 200, damping: 15 });
   const animatedXOffset = useSpring(xOffset, { stiffness: 200, damping: 15 });
+  const animatedPullScale = useSpring(pullScale, { stiffness: 200, damping: 15 });
   const animatedHeight = useSpring(height, { stiffness: 600, damping: 30 });
   const animatedFontSize = useSpring(fontSize, { stiffness: 600, damping: 30 });
   const animatedBlur = useSpring(blur, { stiffness: 600, damping: 30 });
@@ -212,8 +214,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const cardPaddingTransform = useTransform(animatedFontSize, s => `${s / 2}rem`);
   const cardPaddingLeftTransform = useTransform(animatedFontSize, s => `${s}rem`);
 
+  const pullScaleY = useTransform(animatedPullScale, (v) => 2 - v);
+
+  const reentering = useRef(false);
+
   const overlayOpacity = useTransform(x, (val) => {
-    const threshold = val > 0 ? 25 : 50;
+    const threshold = val > 0 ? 10 : 10;
     const absVal = Math.abs(val);
     return absVal > threshold ? Math.min((absVal - threshold) / threshold, 1) : 0;
   });
@@ -263,7 +269,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const currentX = x.get();
     
-    const dragThreshold = -100;
+    const dragThreshold = -30;
     const isRegenerateAction = currentX < dragThreshold && isEligibleForRegenerate;
     
     setCanRegenerate(isEligibleForRegenerate);
@@ -271,11 +277,24 @@ const MessageCard: React.FC<MessageCardProps> = ({
     if (isRegenerateAction && !aboutToRegenerate) {
       aboutToRegenerate = true;
       setUserAboutToRegen(true);
-      // console.log("Message card - regen vibrate...")
-      //debugger;
+      animatedPullScale.set(1);
+
     } else if (!isRegenerateAction) {
-      aboutToRegenerate = false;
-      setUserAboutToRegen(false);
+      const target = currentX <  0 ? 1 + Math.abs(currentX * 0.004) : 1
+
+      if (aboutToRegenerate) {
+        aboutToRegenerate = false;
+        setUserAboutToRegen(false);
+        reentering.current = true;
+        animatedPullScale.set(target);
+      } else if (reentering.current) {
+        animatedPullScale.set(target);
+        if (Math.abs(animatedPullScale.get() - target) < 0.01) {
+          reentering.current = false;
+        }
+      } else {
+        animatedPullScale.jump(target);   // normal immediate tracking
+      }
     }
 
     if (currentX < 0) {
@@ -288,8 +307,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
       }
     }
 
+    
     scale.set(isRegenerateAction ? 0.95 : 1);
-    xOffset.set(isRegenerateAction ? -50 : 0);
+    xOffset.set((isRegenerateAction ? -50 : 0));
 
     if (configHighend) {
        const targetBlur = isRegenerateAction ? 4 : (isEligibleForRegenerate ? Math.abs(currentX) * 0.01 : 0);
@@ -345,6 +365,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
           bounceStiffness: 200,
           bounceDamping: 20
          });
+        animatedPullScale.set(1);
         xOffset.set(0);
         blur.set(0);
       }
@@ -910,14 +931,16 @@ const MessageCard: React.FC<MessageCardProps> = ({
       dragControls={dragControls}
       dragListener={false}
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={isEligibleForRegenerate ? { left: 0.7, right: 0.3 } : { left: 0.05, right: 0.05 }}
+      dragElastic={isEligibleForRegenerate ? { left: 0.2, right: 0.2 } : { left: 0.05, right: 0.05 }}
       onDragStart={() => setDragStarted(true)}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
       style={{
         x,
+        scaleX: animatedPullScale,
+        scaleY: pullScaleY,
         y: 0,
-        scale: animatedScale,
+        // scale: animatedScale,
         height: heightTransform,
         fontSize: fontSizeTransform,
         filter: blurTransform,
