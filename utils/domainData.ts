@@ -1,4 +1,4 @@
-import { isPalMirrorSecureActivated, setSecureData, getSecureData, getAllKeys, PLMSecureGeneralSettings, removeKey } from './palMirrorSecureUtils';
+import { isPalMirrorSecureActivated, setSecureData, getSecureData as rawGetSecureData, getAllKeys, PLMSecureGeneralSettings, removeKey } from './palMirrorSecureUtils';
 import { getActivePLMSecureSession } from './palMirrorSecureSession';
 
 import { getAttributesSysInst } from './domainInstructionShaping/attributesSysInst';
@@ -13,6 +13,15 @@ import { getRecallSysInst } from './domainInstructionShaping/recallSysInst';
 import { PLMGlobalConfigServiceInstance } from '@/context/PLMGlobalConfigService';
 import { getDomainGuideSysInst } from './domainInstructionShaping/domainGuideSysInst';
 import { getWorldNarratorSysInst } from './domainInstructionShaping/worldNarratorSysInst';
+
+const getSecureData: typeof rawGetSecureData = async (key, password, passAsKey) => {
+    try {
+        return await rawGetSecureData(key, password, passAsKey);
+    } catch (e: any) {
+        if (e?.message === 'No data found') return null;
+        throw e;
+    }
+};
 
 
 interface ChatMetadata {
@@ -374,13 +383,29 @@ export async function removeDomainTimestep(chatID: string, associatedMessage: st
     }
 }
 
-export async function structureDomainTimesteps(chatID: string): Promise<string> {
+export async function structureDomainTimesteps(chatID: string, includeAll: boolean = false): Promise<string> {
     const timesteps = await getDomainTimesteps(chatID);
     let structuredTimesteps = "";
+
+    if (includeAll) {
+        timesteps.forEach((timestep, index) => {
+            structuredTimesteps += `Timestep ${index + 1}: ${timestep.entry}\n`;
+        });
+        return structuredTimesteps;
+    }
 
     const timestepRecall = PLMGlobalConfigServiceInstance.get("domains_timestep_recall")
     
     const recallLimit = timestepRecall ?? 20;
+
+    // 30 (slider max) = recall all timesteps, no truncation
+    if (recallLimit >= 30) {
+        timesteps.forEach((timestep, index) => {
+            structuredTimesteps += `Timestep ${index + 1}: ${timestep.entry}\n`;
+        });
+        return structuredTimesteps;
+    }
+
     const startIndex = Math.max(0, timesteps.length - recallLimit);
     
     timesteps.slice(-recallLimit).forEach((timestep, index) => {
@@ -398,7 +423,7 @@ type ChatHistoryTimed = ChatHistory & {
     lastUpdated: string;
 };
 
-export async function totalChatsFromDomain(domainID: string) {
+export async function totalChatsFromDomain(domainID: string, includeAllTimesteps: boolean = false) {
     if (typeof window === 'undefined') return [];
 
     const sessionKey = getActivePLMSecureSession();
@@ -424,7 +449,7 @@ export async function totalChatsFromDomain(domainID: string) {
                 return {
                     id: data.id,
                     entryTitle: data.entryTitle,
-                    timestampStructure: await structureDomainTimesteps(data.id),
+                    timestampStructure: await structureDomainTimesteps(data.id, includeAllTimesteps),
                     lastUpdated: data.lastUpdated,
                 } as ChatHistoryTimed;
             })

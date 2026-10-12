@@ -56,6 +56,7 @@ export default function SettingsPage() {
         min: number;
         max: number;
         step?: number;
+        maxLabel?: string;
         onChange?: (value: number) => void;
         hidden?: boolean;
     };
@@ -133,6 +134,7 @@ export default function SettingsPage() {
                     min: 3,
                     max: 30,
                     step: 1,
+                    maxLabel: "ALL",
                 },
                 domainChatCompressor: {
                     type: 'boolean',
@@ -284,7 +286,9 @@ export default function SettingsPage() {
                         </Label>
                     </div>
                 );
-            case "number":
+            case "number": {
+                const currentVal = settings[settingId] ?? cfg.default;
+                const showMaxLabel = cfg.maxLabel !== undefined && currentVal >= cfg.max;
                 return (
                     <div className="flex flex-col gap-2">
                         <Label htmlFor={`slider-${settingId}`} className="text-xs">
@@ -296,16 +300,21 @@ export default function SettingsPage() {
                                 min={cfg.min}
                                 max={cfg.max}
                                 step={cfg.step ?? 1}
-                                value={[settings[settingId]]}
+                                value={[currentVal]}
                                 defaultValue={[cfg.default]}
                                 onValueChange={(e) => updateSetting(settingId, Number(e[0]))}
                             />
-                            <NumberFlow transformTiming={{ duration: 30 }} opacityTiming={{ duration: 0 }} value={settings[settingId]} className="text-sm opacity-50 w-10 text-right">
-                            </NumberFlow>
+                            {showMaxLabel ? (
+                                <span className="text-sm font-bold w-10 text-right">{cfg.maxLabel}</span>
+                            ) : (
+                                <NumberFlow transformTiming={{ duration: 30 }} opacityTiming={{ duration: 0 }} value={currentVal} className="text-sm opacity-50 w-10 text-right">
+                                </NumberFlow>
+                            )}
                             
                         </div>
                     </div>
                 );
+            }
         }
     }
 

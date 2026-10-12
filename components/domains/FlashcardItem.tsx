@@ -94,15 +94,15 @@ const FlashcardItem = ({ flashcard, onUpdate, onDelete }: FlashcardItemProps) =>
                     />
                     <div className="flex justify-between w-full px-1 text-muted-foreground text-xs">
                         <div className="flex flex-col gap-1 flex-1">
-                            <div className="w-1 h-4 rounded-full bg-white/20"></div>
+                            <div className="size-1 rounded-full bg-white/20"></div>
                             <span className="text-[10px]">Start only</span>
                         </div>
                         <div className="flex flex-col items-center gap-1 flex-1">
-                            <div className="w-1 h-4 rounded-full bg-white/20"></div>
+                            <div className="size-1 rounded-full bg-white/20"></div>
                             <span className="text-[10px]">Occasionally</span>
                         </div>
                         <div className="flex flex-col items-end gap-1 flex-1">
-                            <div className="w-1 h-4 rounded-full bg-white/20"></div>
+                            <div className="size-1 rounded-full bg-white/20"></div>
                             <span className="text-[10px]">Every message</span>
                         </div>
                         {/* <span className="text-xs">Start only</span>
@@ -146,15 +146,15 @@ const FlashcardItem = ({ flashcard, onUpdate, onDelete }: FlashcardItemProps) =>
                     />
                     <div className="flex justify-between w-full px-1 text-muted-foreground text-xs">
                         <div className="flex flex-col gap-1 flex-1">
-                            <div className="w-1 h-4 rounded-full bg-white/20"></div>
+                            <div className="size-1 rounded-full bg-white/20"></div>
                             <span className="text-[10px]">Literally never</span>
                         </div>
                         <div className="flex flex-col items-center gap-1 flex-1">
-                            <div className="w-1 h-4 rounded-full bg-white/20"></div>
+                            <div className="size-1 rounded-full bg-white/20"></div>
                             <span className="text-[10px]">50/50</span>
                         </div>
                         <div className="flex flex-col items-end gap-1 flex-1">
-                            <div className="w-1 h-4 rounded-full bg-white/20"></div>
+                            <div className="size-1 rounded-full bg-white/20"></div>
                             <span className="text-[10px]">Always</span>
                         </div>
                     </div>
@@ -196,15 +196,15 @@ const FlashcardItem = ({ flashcard, onUpdate, onDelete }: FlashcardItemProps) =>
                     />
                     <div className="flex justify-between w-full px-1 text-muted-foreground text-xs">
                         <div className="flex flex-col gap-1 flex-1">
-                            <div className="w-1 h-4 rounded-full bg-white/20"></div>
+                            <div className="size-1 rounded-full bg-white/20"></div>
                             <span className="text-[10px]">Subtle</span>
                         </div>
                         <div className="flex flex-col items-center gap-1 flex-1">
-                            <div className="w-1 h-4 rounded-full bg-white/20"></div>
+                            <div className="size-1 rounded-full bg-white/20"></div>
                             <span className="text-[10px]">Mild</span>
                         </div>
                         <div className="flex flex-col items-end gap-1 flex-1">
-                            <div className="w-1 h-4 rounded-full bg-white/20"></div>
+                            <div className="size-1 rounded-full bg-white/20"></div>
                             <span className="text-[10px]">Strong</span>
                         </div>
                         {/* <span className="text-xs">Start only</span>

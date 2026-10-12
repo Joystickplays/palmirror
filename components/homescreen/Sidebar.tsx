@@ -171,6 +171,8 @@ export default function Sidebar() {
 
         if (pathname === "/chat") {
             setOpen(false);
+        } else if (window.innerWidth > 640) {
+            setOpen(true);
         }
     }, [pathname]);
 

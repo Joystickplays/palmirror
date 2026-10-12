@@ -67,7 +67,28 @@ interface ChatCompletionMessageParam {
 
 
 
-
+export const regenOptInfluence = {
+  0: {
+    short: "Takes your notes as loose inspiration.",
+    prompt: "Treat the instructions as loose inspiration. Take the general idea or mood and reinterpret it freely. You may reword, restructure, and expand the message as long as the core events stay intact. If part of the instructions doesn't fit the scene, you may skip it."
+  },
+  1: {
+    short: "Takes your notes into account, but changes a lot.",
+    prompt: "Take the instructions into account, but use your own judgment on how to apply them. You may change wording, pacing, and detail considerably, as long as the overall direction of the instructions is reflected."
+  },
+  2: {
+    short: "Follows your notes with some creative expression.",
+    prompt: "Follow the instructions, while keeping some creative freedom in phrasing and detail. Every point in the instructions should be reflected, but you decide how to express it naturally."
+  },
+  3: {
+    short: "Follows your notes with minimal creativity.",
+    prompt: "Follow the instructions closely. Apply every point as written and only make small changes beyond what was asked. Keep the original wording wherever the instructions don't require a change."
+  },
+  4: {
+    short: "Strictly follows your notes, with no creative expression.",
+    prompt: "Follow the instructions exactly and literally. Apply every point precisely as written. Do not add, remove, or change anything beyond what the instructions specify. Keep everything else word-for-word identical to the original."
+  }
+}
 
 interface Message {
     id: string;
@@ -82,11 +103,13 @@ interface Message {
     focusingOnIdx: number; // 0 for main content, 1+ for extra contents
     regenerationOptions?: {
       rewriteBase?: string;
+      influence?: number;
       recalledFlashcards?: Array<DomainFlashcardEntry>;
       recallDomainGuide?: boolean;
     };
     stillGenerating: boolean;
 }
+
 
 
 const ChatPage = () => {
@@ -729,6 +752,11 @@ const ChatPage = () => {
         chapterCast,
         showDialogueFormat,
       );
+
+      if (configBestEffortSystemCache) {
+        devLog("Caching system message", "info", { characterDataName: characterData?.name, associatedDomain, entryTitle, modelInstructionsLength: modelInstructions.length });
+        setCachedSystemP(systemPrompt);
+      }
     }
 
     // hopefully doesnt break anything further
@@ -758,7 +786,7 @@ const ChatPage = () => {
         {
           role: "user",
           name: "user",
-          content: `[SYSTEM NOTE]: Detach from the character personality, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality.
+          content: `[SYSTEM NOTE]: Detach from {{char}}'s voice only — still follow DOMAIN GUIDE and world state in system prompt when present, and create a reply for {{user}} in accordance to ${characterData.userName}'s personality.
 THIS REPLY should be about the {{user}} doing this: "${rewriteBase}".
 IMPORTANT: You are REPLYING {{char}} FOR {{user}}, *NOT* BE THE CHARACTER!
 
@@ -1108,7 +1136,7 @@ ${entryTitle}
 
         if (lastUserMessage) {
           if (assistantMessageObject.regenerationOptions?.rewriteBase && assistantMessageObject.regenerationOptions?.rewriteBase !== "") {
-            lastUserMessage.content = lastUserMessage.content + "\n\n[SYSTEM NOTE]: For your next message, please generate in accordance to this user note: " + assistantMessageObject.regenerationOptions?.rewriteBase + "\nYou must follow this instruction strictly. Do not acknowledge, just follow it.";
+            lastUserMessage.content = lastUserMessage.content + "\n\n[SYSTEM NOTE]: For your next message, please generate in accordance to this user note: " + assistantMessageObject.regenerationOptions?.rewriteBase + "\n\n" + (regenOptInfluence[(assistantMessageObject.regenerationOptions?.influence ?? 2) as keyof typeof regenOptInfluence]?.prompt || "You must follow this instruction strictly.") + " Do not acknowledge, just follow it.";
           }
         }
       }

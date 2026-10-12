@@ -17,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -306,6 +307,7 @@ export default function Search() {
         <DialogContent className="font-sans">
           <DialogHeader>
             <DialogTitle>You are being blocked by Cloudflare</DialogTitle>
+            <DialogDescription>Cloudflare anti-bot protection is blocking requests</DialogDescription>
           </DialogHeader>
           <div className="opacity-80 flex flex-col gap-2 text-sm">
             <p>{`The request to the JannyAI character's data was unexpectedly blocked by Cloudflare.` +
