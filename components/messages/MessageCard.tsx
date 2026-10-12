@@ -927,7 +927,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   <p>{"Flexible"}</p>
 
                     <AnimateChangeInSize>
-                      <div className="border border-white/10 rounded-lg px-3 py-1 mx-auto overflow-hidden">
+                      <div className="border border-white/10 rounded-lg px-3 py-1 mx-auto overflow-hidden hidden sm:block">
                         <AnimatePresence mode="popLayout">
                           <motion.p 
                           initial={{ opacity: 0, y: 10 }}
@@ -944,6 +944,20 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   
 
                   <p>{"Strict"}</p>
+                </div>
+
+                <div className="border border-white/10 rounded-lg px-3 py-2 mx-auto overflow-hidden w-full sm:hidden text-xs opacity-50 text-center">
+                  <AnimatePresence mode="popLayout">
+                    <motion.p 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
+                    key={regenOptInfluence[(localRegenOptions?.influence ?? 2) as keyof typeof regenOptInfluence]?.short}
+                    className="whitespace-nowrap">{
+                        regenOptInfluence[(localRegenOptions?.influence ?? 2) as keyof typeof regenOptInfluence]?.short
+                    }</motion.p>
+                  </AnimatePresence>
                 </div>
 
                 {domainFlashcards.length > 0 && (
