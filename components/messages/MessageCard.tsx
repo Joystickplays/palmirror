@@ -43,6 +43,8 @@ import { AnimateChangeInSize } from '../utilities/animate/AnimateSize';
 import { Label } from "@/components/ui/label"
 import { PLMGlobalConfigServiceInstance } from '@/context/PLMGlobalConfigService';
 import { Textarea } from '../ui/textarea';
+import { Slider } from '../ui/slider';
+import { regenOptInfluence } from '@/app/chat/page';
 
 const MarkdownView = React.memo(
   ({ content, className }: { content: string; className?: string }) => {
@@ -127,11 +129,13 @@ interface MessageCardProps {
   domainGuide: string;
   regenerationOptions?: {
     rewriteBase?: string;
+    influence?: number;
     recalledFlashcards?: Array<DomainFlashcardEntry>;
     recallDomainGuide?: boolean;
   };
   changeRegenOptions: (options: {
     rewriteBase?: string;
+    influence?: number;
     recalledFlashcards?: Array<DomainFlashcardEntry>;
     recallDomainGuide?: boolean;
   }) => void;
@@ -155,6 +159,7 @@ const vibrate = (duration: number) => {
 };
 
 const MotionButton = motion(Button);
+
 
 
 const MessageCard: React.FC<MessageCardProps> = ({
@@ -216,6 +221,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const pullScaleY = useTransform(animatedPullScale, (v) => 2 - v);
 
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const transformOrigin = useMotionValue("50% 0px");
+  const isDraggingRef = useRef(false);
+
   const reentering = useRef(false);
 
   const overlayOpacity = useTransform(x, (val) => {
@@ -266,12 +276,72 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const isEligibleForRegenerate = !globalIsThinking && !stillGenerating && role !== "user" && !isEditing && isLastMessage;
 
+  // Compute the pivot from the card's current viewport intersection
+  const updatePivot = useCallback(() => {
+    const el = cardRef.current;
+    if (!el || isDraggingRef.current) return;
+
+    const cardHeight = el.offsetHeight;
+    if (!cardHeight) return;
+
+    const scrollEl = messageListRef.current;
+    const viewportRect = scrollEl?.getBoundingClientRect();
+    const viewportTop = viewportRect ? viewportRect.top : 0;
+    const viewportBottom = viewportRect
+      ? viewportRect.bottom
+      : window.visualViewport?.height ?? window.innerHeight;
+
+    const rect = el.getBoundingClientRect();
+
+    // Only the part of the card currently on screen should drive the pivot.
+    const visibleTop = Math.max(rect.top, viewportTop);
+    const visibleBottom = Math.min(rect.bottom, viewportBottom);
+
+    const pivotY =
+      visibleBottom <= visibleTop
+        ? cardHeight / 2 // entirely off-screen: fall back to card center
+        : (visibleTop + visibleBottom) / 2 - rect.top;
+
+    transformOrigin.set(`50% ${pivotY}px`);
+  }, [messageListRef, transformOrigin]);
+
+  // Keep the pivot continuously correct so a drag never has to compute it at the last moment
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const scrollEl = messageListRef.current;
+
+    let raf = 0;
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (!isDraggingRef.current) updatePivot();
+      });
+    };
+
+    const resizeObserver = new ResizeObserver(schedule);
+    resizeObserver.observe(el);
+
+    scrollEl?.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    schedule();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      resizeObserver.disconnect();
+      scrollEl?.removeEventListener("scroll", schedule);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [messageListRef, updatePivot]);
+
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const currentX = x.get();
-    
+
     const dragThreshold = -30;
     const isRegenerateAction = currentX < dragThreshold && isEligibleForRegenerate;
-    
+
     setCanRegenerate(isEligibleForRegenerate);
 
     if (isRegenerateAction && !aboutToRegenerate) {
@@ -318,6 +388,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   }
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      isDraggingRef.current = false;
       const currentX = x.get();
       const dragThreshold = -100;
       
@@ -822,7 +893,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
           className={`${!showRegenOptions && "absolute"} mt-4 flex top-0 left-0 w-full h-full`}>
               <div className="flex flex-col gap-1 w-full border border-white/10 rounded-xl p-4">
                 <h1 className="font-extrabold text-xl">Rewrite Options</h1>
-                <p className="opacity-75 text-sm mb-4">Influence how future rewrites in this message are made</p>
+                <p className="opacity-75 text-sm mb-4">How should PalMirror rewrite this message?</p>
                 <Textarea
                 value={localRegenOptions?.rewriteBase || ""}
                 onChange={(e) => {
@@ -831,7 +902,50 @@ const MessageCard: React.FC<MessageCardProps> = ({
                     rewriteBase: e.target.value
                   })
                 }}
-                placeholder='Information on how to write this message'></Textarea>
+                placeholder='The dragon fiery breath burned the village...'></Textarea>
+
+                <h2 className="opacity-50 font-bold uppercase text-xs my-2">Influence</h2>
+                <Slider 
+                  min={0}
+                  max={4}
+                  step={1}
+                  value={[localRegenOptions?.influence ?? 2]}
+                  // onValueChange={(e) => setLocalRegenOptions({ ...localRegenOptions, influence: Number(e[0]) })}
+                  onValueChange={(e) => {
+                      setLocalRegenOptions({
+                        ...localRegenOptions,
+                        influence: Number(e[0])
+                      })
+                  }}
+                />
+                <div className="flex justify-between items-center opacity-30 py-1">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <div key={i} className="w-1 h-1 rounded-full bg-white/50"></div>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center py-2 text-xs opacity-50">
+                  <p>{"Flexible"}</p>
+
+                    <AnimateChangeInSize>
+                      <div className="border border-white/10 rounded-lg px-3 py-1 mx-auto overflow-hidden">
+                        <AnimatePresence mode="popLayout">
+                          <motion.p 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ type: 'spring', mass: 1, stiffness: 160, damping: 16 }}
+                          key={regenOptInfluence[(localRegenOptions?.influence ?? 2) as keyof typeof regenOptInfluence]?.short}
+                          className="whitespace-nowrap">{
+                              regenOptInfluence[(localRegenOptions?.influence ?? 2) as keyof typeof regenOptInfluence]?.short
+                          }</motion.p>
+                        </AnimatePresence>
+                      </div>
+                    </AnimateChangeInSize>
+                  
+
+                  <p>{"Strict"}</p>
+                </div>
+
                 {domainFlashcards.length > 0 && (
                   <div className="mt-4 flex flex-col gap-2">
                     <Label className="text-xs opacity-70">Flashcard Recalls</Label>
@@ -927,18 +1041,24 @@ const MessageCard: React.FC<MessageCardProps> = ({
         )}
       </AnimatePresence>
     <motion.div
+      ref={cardRef}
       drag="x"
       dragControls={dragControls}
       dragListener={false}
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={isEligibleForRegenerate ? { left: 0.2, right: 0.2 } : { left: 0.05, right: 0.05 }}
-      onDragStart={() => setDragStarted(true)}
+      onDragStart={() => {
+        updatePivot();
+        isDraggingRef.current = true;
+        setDragStarted(true);
+      }}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
       style={{
         x,
         scaleX: animatedPullScale,
         scaleY: pullScaleY,
+        transformOrigin,
         y: 0,
         // scale: animatedScale,
         height: heightTransform,
