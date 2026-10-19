@@ -352,6 +352,59 @@
   }
 }
 
+@property --wheel {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+
+.bubble-spin {
+  animation: bubble-wheel 18s linear infinite;
+  --x: calc(cos(var(--wheel)) * 12px);
+  --y: calc(sin(var(--wheel)) * 12px);
+  --nx: calc(var(--x) * -1);
+  --ny: calc(var(--y) * -1);
+}
+
+.bubble-halo-glow {
+  box-shadow:
+    var(--nx) var(--ny) 38px 2px rgb(255 140 161 / 0.45),
+    var(--y) var(--nx) 38px 2px rgb(140 193 230 / 0.45),
+    var(--x) var(--y) 38px 2px rgb(158 140 230 / 0.45),
+    var(--ny) var(--x) 38px 2px rgb(255 179 198 / 0.45),
+    0 0 70px 6px rgb(255 140 161 / 0.14);
+}
+
+.bubble-rim-glow {
+  box-shadow:
+    inset 0 0 0 1.5px rgb(255 255 255 / 0.45),
+    inset var(--x) var(--y) 22px 1px rgb(255 140 161 / 0.72),
+    inset var(--ny) var(--x) 22px 1px rgb(140 193 230 / 0.72),
+    inset var(--nx) var(--ny) 22px 1px rgb(158 140 230 / 0.72),
+    inset var(--y) var(--nx) 22px 1px rgb(255 179 198 / 0.72),
+    inset 0 0 14px rgb(255 255 255 / 0.1);
+}
+
+.bubble-drift {
+  animation: bubble-drift 8s ease-in-out infinite;
+}
+
+@keyframes bubble-wheel {
+  to { --wheel: 360deg; }
+}
+
+@keyframes bubble-drift {
+  0%, 100% { translate: 0 0; opacity: 0.55; }
+  33% { translate: 14px 8px; opacity: 0.8; }
+  66% { translate: -6px -4px; opacity: 0.5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble-spin,
+  .bubble-drift {
+    animation: none;
+  }
+}
 
 /* 0 0 30px #ffa06977, 
   0 0 40px #73ffab77; */
