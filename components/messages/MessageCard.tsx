@@ -56,21 +56,12 @@ MarkdownView.displayName = "MarkdownView";
 
 
 function fixEmphasisStyling(): void {
-
-  const nestedEms = document.querySelectorAll<HTMLElement>(".markdown-content em em");
-  nestedEms.forEach(innerEm => {
-    const parentEm = innerEm.parentElement;
-
-    if (parentEm && parentEm.tagName === 'EM') {
-
-      const textNode = document.createTextNode(innerEm.textContent || "");
-
-      parentEm.replaceChild(textNode, innerEm);
-    }
-  });
+  // Nested <em> handling lives in globals.css (`em em` rules) — mutating
+  // React-managed DOM here caused removeChild NotFoundErrors during streaming.
 
   const elements = document.querySelectorAll<HTMLElement>(".markdown-content em");
   elements.forEach(em => {
+    // classList-only: safe to touch React nodes
     const parent = em.parentElement;
     if (!parent) return;
 
@@ -800,10 +791,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
         )}
 
         {statuses.length > 0 && (
-          <motion.div key="idkwhatyouwant" style={{ marginTop: fontSizeTransform }} className="flex gap-2 overflow-x-auto">
-            {statuses.map((status) => (
-              <AnimatePresence key={status.key} mode="popLayout">
-                <Dialog>
+          <motion.div style={{ marginTop: fontSizeTransform }} className="flex gap-2 overflow-x-auto">
+            <AnimatePresence mode="popLayout">
+              {statuses.map((status) => (
+                <motion.div key={status.key}>
+                  <Dialog>
                   <DialogTrigger asChild>
                     <Button disabled={!isLastMessage} size="sm" variant="outline" className="text-xs" onClick={() => {
                       setChangingStatus(status.key);
@@ -862,9 +854,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
                       </DialogClose>
                   </DialogContent>
                 </Dialog>
-              </AnimatePresence>
-            ))}
-
+                </motion.div>
+              ))}        </AnimatePresence>
           </motion.div>
         )}
       </div>
