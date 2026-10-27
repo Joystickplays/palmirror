@@ -200,6 +200,15 @@
   white-space: pre;
 }
 
+/* nested emphasis: no double-muting, no extra newline (replaces old DOM flattening) */
+.markdown-content em em {
+  opacity: 1;
+}
+
+.markdown-content em em::after {
+  content: "";
+}
+
 .markdown-content em.no-newline::after {
   content: "";
 }
