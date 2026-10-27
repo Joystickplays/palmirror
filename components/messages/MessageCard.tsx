@@ -800,10 +800,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
         )}
 
         {statuses.length > 0 && (
-          <motion.div key="idkwhatyouwant" style={{ marginTop: fontSizeTransform }} className="flex gap-2 overflow-x-auto">
-            {statuses.map((status) => (
-              <AnimatePresence key={status.key} mode="popLayout">
-                <Dialog>
+          <motion.div style={{ marginTop: fontSizeTransform }} className="flex gap-2 overflow-x-auto">
+            <AnimatePresence mode="popLayout">
+              {statuses.map((status) => (
+                <motion.div key={status.key}>
+                  <Dialog>
                   <DialogTrigger asChild>
                     <Button disabled={!isLastMessage} size="sm" variant="outline" className="text-xs" onClick={() => {
                       setChangingStatus(status.key);
@@ -862,9 +863,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
                       </DialogClose>
                   </DialogContent>
                 </Dialog>
-              </AnimatePresence>
-            ))}
-
+                </motion.div>
+              ))}        </AnimatePresence>
           </motion.div>
         )}
       </div>
