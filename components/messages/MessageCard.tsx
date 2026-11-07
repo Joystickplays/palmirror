@@ -1070,8 +1070,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
       onDragEnd={handleDragEnd}
       style={{
         x,
-        scaleX: animatedPullScale,
-        scaleY: pullScaleY,
+        scaleX: configHighend ? animatedPullScale : 1,
+        scaleY: configHighend ? pullScaleY : 1,
         transformOrigin,
         y: 0,
         // scale: animatedScale,
