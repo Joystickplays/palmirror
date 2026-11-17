@@ -14,6 +14,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSystemMessage } from "@/utils/systemMessageGeneration";
 import OpenAI from "openai";
+import type { CompletionUsage } from "openai/resources/completions";
 import { CharacterData, ChatMetadata, defaultCharacterData } from "@/types/CharacterData";
 import { DomainAttributeEntry, DomainMemoryEntry, DomainTimestepEntry, DomainFlashcardEntry } from "@/types/EEDomain"
 
@@ -911,7 +912,7 @@ ${entryTitle}
           const distances = Object.keys(groupedByDistance).map(Number).sort((a, b) => b - a);
           for (const dist of distances) {
             const content = `\n[ Context Reminders ]:\n${groupedByDistance[dist].map(c => `- ${c}`).join('\n')}\n`;
-            let index = finalMessages.length - 1 - dist;
+            let index = configBestEffortSystemCache ? finalMessages.length - 1 : finalMessages.length - 1 - dist;
             if (index < 0) index = 0;
             if (index >= finalMessages.length) index = finalMessages.length - 1;
 
@@ -924,7 +925,10 @@ ${entryTitle}
         const assistantRecall = await buildAssistantRecall(associatedDomain)
         devLog("Fetched assistant recall", "info", { recallLength: assistantRecall.length });
         if (assistantRecall !== "") {
-          if (finalMessages.length < 7) {
+          const recallActive = configBestEffortSystemCache
+            ? messagesList.filter((m) => m.role === "assistant").length <= 1
+            : finalMessages.length < 7;
+          if (recallActive) {
             finalMessages.unshift({
               role: "system" as "user" | "assistant" | "system",
               content: assistantRecall,
@@ -1098,6 +1102,7 @@ ${entryTitle}
 
       let assistantMessage = "";
       let reasoning = "";
+      let lastUsage: CompletionUsage | undefined;
 
 
       if (destination === "chat") {
@@ -1121,6 +1126,7 @@ ${entryTitle}
           } 
           // if (c_reason === "") some other provider implementation here; 
           reasoning += c_reason;
+          if ("usage" in chunk && chunk.usage) lastUsage = chunk.usage;
           if ("usage" in chunk && chunk.usage?.total_tokens) setTokenCount(chunk.usage.total_tokens);
             if (configTokenWatch) {
               setTokenHitStamps((p) => [...p, Date.now()]);
@@ -1182,7 +1188,23 @@ ${entryTitle}
           regenerationOptions: assistantMessageObject.regenerationOptions,
           stillGenerating: false,
         });
-        devLog("Message generated successfully", "info", { tokenCount });
+        if (configBestEffortSystemCache) {
+          const u = (lastUsage ?? {}) as CompletionUsage & {
+            prompt_tokens_details?: { cached_tokens?: number; cache_write_tokens?: number };
+            prompt_cache_hit_tokens?: number;
+            prompt_cache_miss_tokens?: number;
+            cache_read_input_tokens?: number;
+            cache_creation_input_tokens?: number;
+          };
+          const read = u.prompt_tokens_details?.cached_tokens ?? u.prompt_cache_hit_tokens ?? u.cache_read_input_tokens ?? 0;
+          const write = u.prompt_tokens_details?.cache_write_tokens ?? u.cache_creation_input_tokens ?? 0;
+          const total = u.prompt_tokens ?? 0;
+          const uncached = u.prompt_cache_miss_tokens ?? Math.max(0, total - read - write);
+          const pct = total > 0 ? ((read / total) * 100).toFixed(1) : "0.0";
+          devLog(`Cache: ${uncached} uncached, ${write} write, ${read} read (${pct}% cached)`, "info", { uncached, write, read, total, usage: lastUsage });
+        } else {
+          devLog("Message generated successfully", "info", { tokenCount });
+        }
       } else if (destination === "suggest-bar") {
         for await (const chunk of comp) {
           if (abortController.current?.signal.aborted) break;
